@@ -4,7 +4,7 @@ STEP-Import und Angebotskalkulation für die Lohnfertigung. Eine Web-App,
 die offline läuft: auf dem iPhone über die Verknüpfung auf dem
 Home-Bildschirm, am Laptop per Doppelklick auf die HTML-Datei.
 
-**Live:** https://danielziliack-collab.github.io/werkstatt-pipeline/
+**Live:** https://dz-werkstatt.github.io/werkstatt-pipeline/
 
 ## Was sie tut
 

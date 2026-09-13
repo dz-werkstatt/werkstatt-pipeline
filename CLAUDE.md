@@ -200,7 +200,7 @@ Dieser Abschnitt stammt aus der Sitzung des Schwesterprojekts, die das Lastenhef
 
 **Korrekturen zum Abschnitt 1:**
 - Die Fräs-CAM-App (`dz-cam-fraesen.html`) ist auf **Heidenhain iTNC 530 Klartext** gebaut und am Programmierplatz getestet. Siemens 840D powerline ist dort als zweites Profil geplant, nicht gebaut.
-- Abschnitt 0 sagt GitHub Pages, Abschnitt 2 sagt Vercel oder Netlify. Die beiden Schwesterprojekte laufen auf GitHub Pages (Konto `danielziliack-collab`, gh-CLI ist am Rechner eingeloggt). Vorschlag: GitHub Pages.
+- Abschnitt 0 sagt GitHub Pages, Abschnitt 2 sagt Vercel oder Netlify. Die beiden Schwesterprojekte laufen auf GitHub Pages (Konto `dz-werkstatt`, gh-CLI ist am Rechner eingeloggt). Vorschlag: GitHub Pages.
 
 **Was am Rechner schon vorhanden ist und wiederverwendet werden kann (kopieren, nicht verlinken; die Schwesterprojekte bleiben unangetastet):**
 - **Eigener STEP-Leser ohne OpenCascade**, DOM-frei, in `Dokumente euroturn/quellen/F10-kern.js` (Funktionen `fStepSaetze` bis `fStepSollfeld`, ca. Zeile 2590 bis 3100): liest AP203/AP214 (mm, Zoll, Meter), liefert Flächen mit Art (Ebene, Zylinder, Kegel, Torus, Freiform), Achsen, Randkurven, Hüllquader, Kanten und einen Achsenvorschlag. An 143 von 145 echten Modellen ohne Ausnahme gelaufen, größte Datei 176 ms. Er liefert **kein Volumen und keine Oberfläche**; Bohrungen erkennt er als Zylinderflächen. Rotationssymmetrie erkennt er nicht.
@@ -216,9 +216,9 @@ Dieser Abschnitt stammt aus der Sitzung des Schwesterprojekts, die das Lastenhef
 
 | | |
 |---|---|
-| App (Pages, `main /docs`) | https://danielziliack-collab.github.io/werkstatt-pipeline/ |
-| öffentliches Repo | `danielziliack-collab/werkstatt-pipeline` (Remote `origin`) |
-| privates Repo, Historie | `danielziliack-collab/werkstatt-pipeline-projekt` (Remote `backup`) |
+| App (Pages, `main /docs`) | https://dz-werkstatt.github.io/werkstatt-pipeline/ |
+| öffentliches Repo | `dz-werkstatt/werkstatt-pipeline` (Remote `origin`) |
+| privates Repo, Historie | `dz-werkstatt/werkstatt-pipeline-projekt` (Remote `backup`) |
 | Name auf dem Home-Bildschirm | **Angebot** |
 
 Vor dem Veröffentlichen liefen Bau-Wache und Prüfstand (95 Haken grün). Veröffentlicht wird mit `veroeffentlichen.ps1`; es ist idempotent und wartet auf GitHub. **Vor dem ersten Lauf musste es repariert werden:** es enthielt drei Gedankenstriche, und PowerShell 5.1 liest eine UTF-8-Datei **ohne BOM** als ANSI — aus den Bytes `E2 80 94` wird dabei unter anderem `0x94`, ein typografisches Anführungszeichen, das PowerShell als Zeichenketten-Begrenzer akzeptiert. Die Zeichenkette in Zeile 47 brach dort ab, der Rest wurde als Code gelesen, und der Parser meldete eine fehlende Klammer in Zeile 46. **Nur ASCII in PowerShell-Skripten** — die Warnung steht jetzt im Kopf der Datei. Aufgefallen war es nie, weil das Skript nie laufen konnte: GitHub war vom Heimnetz aus nicht erreichbar (und der erste Push ans Backup brach auch an diesem Abend nach 21 s ab, der zweite ging durch).
