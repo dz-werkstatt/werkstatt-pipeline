@@ -1,0 +1,26 @@
+
+/* ---- Start ----------------------------------------------------------
+   Alles ist geladen; jetzt werden die Startwerte geholt, die Knoepfe
+   verdrahtet und die leeren Blaetter gemalt. Ein Fehler hier darf die
+   Seite nicht stumm lassen — er steht dann im Meldungsfeld. */
+function start(){
+  try{
+    einLaden();
+    bedienungVerdrahten();
+    vorschauVerdrahten();
+    angebotVerdrahten();
+    werkstoffWahlMalen();
+    kalkMalen();
+    vorschauMalen();
+  }catch(e){
+    const m = document.getElementById('meldungen');
+    if(m) m.innerHTML = '<div class="meldung fehler">Die App konnte nicht starten: ' +
+      String(e && e.message) + '</div>';
+    if(typeof console !== 'undefined') console.error(e);
+  }
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+else start();
+</script>
+</body>
+</html>

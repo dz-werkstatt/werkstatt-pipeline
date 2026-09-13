@@ -1,0 +1,176 @@
+<header>
+  <span class="marke">Werkstatt-Pipeline</span>
+  <span class="schritt">
+    <button id="tabImport" class="an">1 Teil</button>
+    <button id="tabKalk">2 Angebot</button>
+    <button id="tabEin">3 Einstellungen</button>
+  </span>
+</header>
+
+<main>
+
+<!-- ================= 1 TEIL ================= -->
+<section class="blatt an" id="blattImport">
+
+  <div class="karte">
+    <div id="ablage">
+      <div class="gross">STEP-Datei hierher ziehen oder antippen</div>
+      <div class="klein">.step / .stp (AP203, AP214, AP242) &middot; auch .dxf (2D) und .pdf (nur ablegen)</div>
+      <input type="file" id="datei" accept=".step,.stp,.STEP,.STP,.dxf,.DXF,.pdf,.PDF" multiple hidden>
+    </div>
+    <div id="laden" style="margin-top:10px">
+      <div class="balken"><i id="ladenBalken"></i></div>
+      <div class="klein" id="ladenText" style="color:var(--text-blass);font-size:13px;margin-top:4px"></div>
+    </div>
+    <div id="meldungen"></div>
+  </div>
+
+  <div class="zwei" id="teilBereich" style="display:none">
+    <div>
+      <div class="karte">
+        <h2>Vorschau</h2>
+        <div id="vorschau">
+          <canvas id="vorschauCv"></canvas>
+          <div class="knopfzeile kein-druck">
+            <button class="knopf" id="vsRohteil">Rohteil</button>
+            <button class="knopf" id="vsZuruck">Ansicht</button>
+          </div>
+          <div class="hinweis">ziehen = drehen &middot; Rad / zwei Finger = zoomen</div>
+        </div>
+      </div>
+
+      <div class="karte">
+        <h2>Teil und Rohteil</h2>
+        <div class="feld"><label for="teilName">Benennung</label><input type="text" id="teilName"></div>
+        <div class="feld"><label for="teilZnr">Zeichnungsnummer</label><input type="text" id="teilZnr"></div>
+        <div class="feld"><label for="teilRev">Revision</label><input type="text" id="teilRev"></div>
+        <div class="feld"><label for="teilKlasse">Klasse</label>
+          <select id="teilKlasse">
+            <option value="drehteil_einfach">Drehteil einfach</option>
+            <option value="drehteil_fraes">Drehteil mit Fr&auml;santeil</option>
+            <option value="fraesteil_3ax">Fr&auml;steil 3-Achs</option>
+            <option value="fraesteil_komplex">Fr&auml;steil komplex</option>
+          </select>
+          <span class="marke" id="klasseMarke"></span>
+        </div>
+        <div class="feld"><label for="rohForm">Rohteilform</label>
+          <select id="rohForm">
+            <option value="rund">Rund</option>
+            <option value="flach">Flach / Vierkant</option>
+            <option value="sechskant">Sechskant</option>
+            <option value="rohr">Rohr</option>
+          </select>
+        </div>
+        <div id="rohMasse"></div>
+        <div class="feld"><label for="aufD">Aufma&szlig; Durchmesser</label><input type="number" id="aufD" step="any"><span class="einheit">mm</span></div>
+        <div class="feld"><label for="aufL">Aufma&szlig; L&auml;nge</label><input type="number" id="aufL" step="any"><span class="einheit">mm</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="karte">
+        <h2>Geometrie</h2>
+        <div class="tabellenrahmen"><table id="geoTab"></table></div>
+      </div>
+      <div class="karte" id="bohrKarte" style="display:none">
+        <h2>Bohrungen</h2>
+        <div class="tabellenrahmen"><table id="bohrTab"></table></div>
+      </div>
+      <div class="karte" id="quelleKarte" style="display:none">
+        <h2>Unterlagen</h2>
+        <div id="quelleListe"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2 ANGEBOT ================= -->
+<section class="blatt" id="blattKalk">
+  <div class="karte kein-druck">
+    <h2>Vorgaben</h2>
+    <div class="feld"><label for="kWerkstoff">Werkstoff</label><select id="kWerkstoff"></select><span class="marke pflege" id="kPreisMarke"></span></div>
+    <div class="feld"><label for="kToleranz">Toleranz</label>
+      <select id="kToleranz"><option value="mittel">mittel (IT8&ndash;IT10)</option><option value="fein">fein (&le; IT7 / Passungen)</option></select></div>
+    <div class="feld"><label for="kOberflaeche">Oberfl&auml;che</label>
+      <select id="kOberflaeche"><option value="normal">normal</option><option value="fein">Ra &le; 0,8</option></select></div>
+    <div class="feld"><label for="kSeiten">Bearbeitungsseiten</label><input type="number" id="kSeiten" step="1" min="1"><span class="einheit"></span></div>
+    <div class="feld"><label for="kStueck">St&uuml;ckzahl</label><input type="number" id="kStueck" step="1" min="1"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="kVersandArt">Versand</label>
+      <select id="kVersandArt"><option value="versand">Versand</option><option value="abholung">Abholung</option></select></div>
+  </div>
+
+  <div class="karte">
+    <h2>Aufschl&uuml;sselung</h2>
+    <div class="meldung info kein-druck" style="margin-top:0">
+      Jeder Wert l&auml;sst sich &uuml;berschreiben. &Uuml;berschriebene Werte sind
+      <span style="color:var(--geaendert)">gelb umrandet</span>; der Knopf setzt sie zur&uuml;ck.
+    </div>
+    <div class="tabellenrahmen"><table id="kalkTab"></table></div>
+    <div class="knopfzeile kein-druck" style="margin-top:10px">
+      <button class="knopf" id="kalkZuruck">&Uuml;berschreibungen zur&uuml;cknehmen</button>
+    </div>
+  </div>
+
+  <div class="karte">
+    <h2>Staffelpreise</h2>
+    <div class="staffel" id="staffel"></div>
+    <div class="feld kein-druck" style="margin-top:10px"><label for="kStaffel">Staffel</label><input type="text" id="kStaffel" style="width:220px"></div>
+  </div>
+
+  <div class="karte kein-druck">
+    <h2>Angebot</h2>
+    <div class="feld"><label for="aKunde">Kunde</label><input type="text" id="aKunde"></div>
+    <div class="feld"><label for="aNummer">Angebotsnummer</label><input type="text" id="aNummer"></div>
+    <div class="feld"><label for="aLieferzeit">Lieferzeit</label><input type="text" id="aLieferzeit"></div>
+    <div class="feld"><label for="aIstzeit">Ist-Zeit je St&uuml;ck (sp&auml;ter)</label><input type="number" id="aIstzeit" step="any"><span class="einheit">min</span></div>
+    <div id="istVergleich"></div>
+    <div class="knopfzeile" style="margin-top:10px">
+      <button class="knopf haupt" id="btnPdf">Angebot drucken / PDF</button>
+      <button class="knopf" id="btnJson">Angebot sichern (JSON)</button>
+      <button class="knopf" id="btnJsonLaden">Angebot laden</button>
+      <input type="file" id="jsonDatei" accept=".json,.JSON" hidden>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3 EINSTELLUNGEN ================= -->
+<section class="blatt" id="blattEin">
+  <div class="karte">
+    <h2>Stundens&auml;tze</h2>
+    <div id="einSaetze"></div>
+  </div>
+  <div class="karte">
+    <h2>Werkstoffe</h2>
+    <div class="meldung warn" style="margin-top:0">Die Preise sind <b>Platzhalter</b> und noch zu pflegen. Bis dahin ist jeder Materialposten nur eine Gr&ouml;&szlig;enordnung.</div>
+    <div class="tabellenrahmen"><table id="einWerkstoffe"></table></div>
+    <div class="knopfzeile" style="margin-top:8px"><button class="knopf" id="btnWstNeu">Werkstoff hinzuf&uuml;gen</button></div>
+  </div>
+  <div class="karte">
+    <h2>Zerspanleistung</h2>
+    <div class="meldung warn" style="margin-top:0">Erste N&auml;herung. Mit den ersten echten Zeiten kalibrieren &mdash; bis dahin <span class="marke schaetz">Sch&auml;tzwert</span>.</div>
+    <div class="tabellenrahmen"><table id="einLeistung"></table></div>
+  </div>
+  <div class="karte">
+    <h2>Zuschl&auml;ge, Zeiten, Nebenkosten</h2>
+    <div id="einRest"></div>
+  </div>
+  <div class="karte">
+    <h2>Firmendaten f&uuml;r das Angebot</h2>
+    <div id="einFirma"></div>
+  </div>
+  <div class="karte">
+    <h2>Einstellungen sichern</h2>
+    <div class="knopfzeile">
+      <button class="knopf" id="btnEinExport">Als Datei sichern</button>
+      <button class="knopf" id="btnEinImport">Aus Datei laden</button>
+      <input type="file" id="einDatei" accept=".json,.JSON" hidden>
+      <button class="knopf" id="btnEinReset">Auf Startwerte zur&uuml;cksetzen</button>
+    </div>
+    <div class="klein" style="color:var(--text-blass);font-size:13px;margin-top:8px">
+      Die Einstellungen liegen im Browser dieses Ger&auml;ts. Wer sie auf ein zweites Ger&auml;t bringen will, sichert sie als Datei und l&auml;dt sie dort.
+    </div>
+  </div>
+</section>
+
+</main>
+<script>

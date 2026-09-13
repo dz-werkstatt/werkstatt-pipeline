@@ -1,0 +1,41 @@
+{
+  "hinweis": "Reihenfolge der Byte-Verkettung durch bauen.js. NICHT die gebauten Dateien editieren — immer hier in den Quellen.",
+  "erzeugt": "2026-09-13",
+  "ziele": [
+    "werkstatt-pipeline.html",
+    "docs/index.html"
+  ],
+  "einbetten": {
+    "kalkulation/defaults.json": "KALK_VORGABEN"
+  },
+  "dateien": [
+    "shared/00-kopf.html",
+    "shared/01-stil.html",
+    "ui/10-oberflaeche.html",
+    "shared/20-schema.js",
+    "kalkulation/defaults.json",
+    "import/30-step.js",
+    "import/31-geometrie.js",
+    "import/32-dxf.js",
+    "kalkulation/40-kalk.js",
+    "ui/50-bedienung.js",
+    "ui/51-vorschau3d.js",
+    "ui/52-angebot.js",
+    "ui/99-schluss.html"
+  ],
+  "inhalt": {
+    "shared/00-kopf.html": "DOCTYPE, head-Anfang, Titel, Symbol",
+    "shared/01-stil.html": "Stylesheet (Farbregler --ton = 212, Akzent #1858a0), head-Ende, body-Anfang",
+    "ui/10-oberflaeche.html": "Die ganze Oberflaeche: Import, Geometrietabelle, Kalkulationsblatt, Einstellungen",
+    "shared/20-schema.js": "Austauschformat 1.0, Typen, Zahl- und Textwerkzeuge",
+    "kalkulation/defaults.json": "Startwerte, eingebettet als KALK_VORGABEN",
+    "import/30-step.js": "STEP-Leser (AP203/AP214/AP242): Saetze, Geometrie, Kanten, Flaechen",
+    "import/31-geometrie.js": "Volumen, Oberflaeche, Rotation, Bohrungen, Rohteilvorschlag, Klassifikation",
+    "import/32-dxf.js": "DXF-Leser (2D): Huellrechteck und Flaecheninhalt",
+    "kalkulation/40-kalk.js": "Zeitmodell und Preisrechnung, DOM-frei",
+    "ui/50-bedienung.js": "Dateiannahme, Tabellen, Masken, Speicher",
+    "ui/51-vorschau3d.js": "3D-Vorschau des Teils mit halbdurchsichtigem Rohteil",
+    "ui/52-angebot.js": "Staffelpreise, Ueberschreiben, Angebots-PDF, JSON-Export",
+    "ui/99-schluss.html": "Script-Ende, body- und html-Ende"
+  }
+}

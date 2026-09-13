@@ -1,0 +1,3030 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1858a0">
+<title>Werkstatt-Pipeline — Angebot</title>
+<!-- Symbol: Rohteilklotz mit Fertigteil darin. Inline, damit die Datei
+     offline nichts nachlaedt (dieselbe Doktrin wie in den beiden CAM-Apps). -->
+<!-- Fuer die Verknuepfung auf dem Home-Bildschirm. Beide Verweise sind
+     RELATIV: im veroeffentlichten Ordner liegen sie daneben, bei der
+     Datei zum Doppelklicken fehlen sie einfach, und das stoert nichts. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="symbol-180.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%231858a0'/%3E%3Crect x='14' y='18' width='36' height='28' fill='none' stroke='%23ffffff' stroke-width='2.5' stroke-dasharray='4 3'/%3E%3Crect x='21' y='25' width='22' height='14' rx='2' fill='%23ffffff'/%3E%3C/svg%3E">
+<style>
+/* =====================================================================
+   Stylesheet — hell, flach, praezise (Lastenheft Abschnitt 2).
+   Ein Farbregler wie in den Schwester-Apps: --ton haelt den Farbton der
+   ganzen Oberflaeche, jeder Ton steht als hsl(var(--ton), S%, L%) und
+   behaelt seine eigene Saettigung und Helligkeit. Neue Farbe = eine Zahl.
+   212 ist der Ton der geforderten Akzentfarbe #1858a0
+   (= hsl(212, 74%, 36%), nachgerechnet).
+   KEINE Verlaeufe, keine Schlagschatten auf Knoepfen, kein dunkles
+   Dashboard — Werkstatt, nicht Parfuemwerbung.
+   ===================================================================== */
+:root{
+  --ton: 212;
+  --akzent:      hsl(var(--ton), 74%, 36%);   /* #1858a0 */
+  --akzent-hell: hsl(var(--ton), 74%, 46%);
+  --akzent-blass:hsl(var(--ton), 60%, 95%);
+  --rand:        hsl(var(--ton), 18%, 84%);
+  --rand-fein:   hsl(var(--ton), 18%, 90%);
+  --grund:       hsl(var(--ton), 25%, 98%);
+  --flaeche:     #fff;
+  --text:        hsl(var(--ton), 22%, 16%);
+  --text-blass:  hsl(var(--ton), 12%, 42%);
+  --gut:   #17734a;
+  --warn:  #9a6100;
+  --schlecht: #a32020;
+  --geaendert: #9a6100;                        /* ueberschriebene Werte */
+}
+*{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--text); background: var(--grund);
+  -webkit-text-size-adjust: 100%;
+}
+/* Zahlen immer in Tabellenziffern — sonst tanzen die Spalten */
+.zahl, input[type=number], td.z, .preis{ font-variant-numeric: tabular-nums; }
+
+/* ---- Kopfzeile ---- */
+header{
+  display:flex; align-items:center; gap:10px;
+  padding: 10px 14px; background: var(--akzent); color:#fff;
+  position: sticky; top:0; z-index: 30;
+}
+header .marke{ font-weight:600; letter-spacing:.2px; }
+header .schritt{ margin-left:auto; display:flex; gap:6px; }
+header .schritt button{
+  background: rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.3);
+  border-radius:6px; padding:5px 11px; font-size:14px; cursor:pointer;
+}
+header .schritt button.an{ background:#fff; color:var(--akzent); border-color:#fff; font-weight:600; }
+
+/* ---- Seitenaufbau ---- */
+main{ padding: 14px; max-width: 1400px; margin: 0 auto; }
+.blatt{ display:none; }
+.blatt.an{ display:block; }
+.karte{
+  background: var(--flaeche); border:1px solid var(--rand); border-radius:8px;
+  padding: 14px; margin-bottom: 14px;
+}
+.karte > h2{ margin:0 0 10px; font-size:15px; font-weight:600; color: var(--akzent); }
+.karte > h3{ margin:14px 0 6px; font-size:14px; font-weight:600; }
+.zwei{ display:grid; grid-template-columns: 1fr; gap:14px; }
+@media (min-width: 900px){ .zwei{ grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
+
+/* ---- Ablagefeld fuer Dateien ---- */
+#ablage{
+  border:2px dashed var(--rand); border-radius:10px; background:var(--akzent-blass);
+  padding: 26px 16px; text-align:center; cursor:pointer;
+}
+#ablage.drueber{ border-color: var(--akzent); background:#fff; }
+#ablage .gross{ font-size:16px; font-weight:600; color:var(--akzent); }
+#ablage .klein{ color:var(--text-blass); font-size:13px; margin-top:4px; }
+
+/* ---- Knoepfe: flach, gedrueckt = dunkler ---- */
+button{ font: inherit; color: var(--akzent); }
+.knopf{
+  background: var(--flaeche); color: var(--akzent);
+  border:1px solid var(--rand); border-radius:6px; padding:8px 14px; cursor:pointer;
+}
+.knopf:active{ background: var(--rand-fein); }
+.knopf.haupt{ background: var(--akzent); color:#fff; border-color: var(--akzent); font-weight:600; }
+.knopf.haupt:active{ background: hsl(var(--ton), 74%, 28%); }
+.knopf[disabled]{ opacity:.45; cursor:default; }
+.knopfzeile{ display:flex; flex-wrap:wrap; gap:8px; }
+
+/* ---- Tabellen ---- */
+table{ border-collapse: collapse; width:100%; font-size:14px; }
+th,td{ text-align:left; padding:5px 8px; border-bottom:1px solid var(--rand-fein); }
+th{ color: var(--text-blass); font-weight:600; font-size:13px; }
+td.z, th.z{ text-align:right; }
+tr.summe td{ border-top:2px solid var(--rand); border-bottom:none; font-weight:600; }
+.tabellenrahmen{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+/* ---- Felder ---- */
+.feld{ display:flex; align-items:center; gap:8px; margin:5px 0; }
+.feld label{ flex:0 0 auto; min-width:190px; color:var(--text-blass); font-size:13px; }
+.feld input, .feld select{
+  font: inherit; padding:6px 8px; border:1px solid var(--rand); border-radius:5px;
+  background:#fff; color:var(--text); width:120px; text-align:right;
+}
+.feld input[type=text], .feld select{ text-align:left; width:220px; }
+.feld input:focus, .feld select:focus{ outline:2px solid var(--akzent-hell); outline-offset:0; border-color:var(--akzent); }
+.feld .einheit{ color:var(--text-blass); font-size:13px; min-width:46px; }
+.feld input.geaendert{ border-color: var(--geaendert); background:#fffaf0; }
+
+/* Schaetzwert- und Pflege-Marke */
+.marke{ font-size:11px; padding:1px 6px; border-radius:10px; border:1px solid currentColor; }
+.marke.schaetz{ color: var(--warn); }
+.marke.pflege{ color: var(--schlecht); }
+.marke.gemessen{ color: var(--gut); }
+
+/* ---- Meldungen ---- */
+.meldung{ padding:8px 11px; border-radius:6px; margin:8px 0; font-size:14px; border:1px solid; }
+.meldung.info{ color:var(--akzent); border-color:var(--rand); background:var(--akzent-blass); }
+.meldung.warn{ color:var(--warn); border-color:#e6cf9a; background:#fff8e8; }
+.meldung.fehler{ color:var(--schlecht); border-color:#e6b0b0; background:#fdf1f1; }
+.meldung ul{ margin:5px 0 0 18px; padding:0; }
+
+/* ---- 3D-Vorschau ---- */
+#vorschau{ position:relative; background:#fff; border:1px solid var(--rand); border-radius:8px; overflow:hidden; }
+#vorschauCv{ display:block; width:100%; height:300px; touch-action:none; cursor:grab; }
+@media (min-width: 900px){ #vorschauCv{ height:420px; } }
+#vorschau .hinweis{ position:absolute; left:8px; bottom:6px; font-size:12px; color:var(--text-blass); }
+#vorschau .knopfzeile{ position:absolute; right:8px; top:8px; }
+
+/* ---- Ladebalken (WASM/grosse Dateien brauchen am iPhone Geduld) ---- */
+#laden{ display:none; }
+#laden.an{ display:block; }
+.balken{ height:6px; background:var(--rand-fein); border-radius:3px; overflow:hidden; }
+.balken > i{ display:block; height:100%; width:30%; background:var(--akzent); transition: width .2s; }
+
+/* ---- Staffel ---- */
+.staffel{ display:grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap:8px; }
+.staffel .stueck{
+  border:1px solid var(--rand); border-radius:8px; padding:9px; text-align:center; background:#fff;
+}
+.staffel .stueck b{ display:block; font-size:19px; color:var(--akzent); font-variant-numeric:tabular-nums; }
+.staffel .stueck span{ font-size:12px; color:var(--text-blass); }
+
+/* ---- Druck: nur das Angebot ---- */
+@media print{
+  header, .kein-druck{ display:none !important; }
+  body{ background:#fff; }
+  .karte{ border:none; padding:0; }
+  main{ padding:0; max-width:none; }
+}
+</style>
+</head>
+<body>
+<header>
+  <span class="marke">Werkstatt-Pipeline</span>
+  <span class="schritt">
+    <button id="tabImport" class="an">1 Teil</button>
+    <button id="tabKalk">2 Angebot</button>
+    <button id="tabEin">3 Einstellungen</button>
+  </span>
+</header>
+
+<main>
+
+<!-- ================= 1 TEIL ================= -->
+<section class="blatt an" id="blattImport">
+
+  <div class="karte">
+    <div id="ablage">
+      <div class="gross">STEP-Datei hierher ziehen oder antippen</div>
+      <div class="klein">.step / .stp (AP203, AP214, AP242) &middot; auch .dxf (2D) und .pdf (nur ablegen)</div>
+      <input type="file" id="datei" accept=".step,.stp,.STEP,.STP,.dxf,.DXF,.pdf,.PDF" multiple hidden>
+    </div>
+    <div id="laden" style="margin-top:10px">
+      <div class="balken"><i id="ladenBalken"></i></div>
+      <div class="klein" id="ladenText" style="color:var(--text-blass);font-size:13px;margin-top:4px"></div>
+    </div>
+    <div id="meldungen"></div>
+  </div>
+
+  <div class="zwei" id="teilBereich" style="display:none">
+    <div>
+      <div class="karte">
+        <h2>Vorschau</h2>
+        <div id="vorschau">
+          <canvas id="vorschauCv"></canvas>
+          <div class="knopfzeile kein-druck">
+            <button class="knopf" id="vsRohteil">Rohteil</button>
+            <button class="knopf" id="vsZuruck">Ansicht</button>
+          </div>
+          <div class="hinweis">ziehen = drehen &middot; Rad / zwei Finger = zoomen</div>
+        </div>
+      </div>
+
+      <div class="karte">
+        <h2>Teil und Rohteil</h2>
+        <div class="feld"><label for="teilName">Benennung</label><input type="text" id="teilName"></div>
+        <div class="feld"><label for="teilZnr">Zeichnungsnummer</label><input type="text" id="teilZnr"></div>
+        <div class="feld"><label for="teilRev">Revision</label><input type="text" id="teilRev"></div>
+        <div class="feld"><label for="teilKlasse">Klasse</label>
+          <select id="teilKlasse">
+            <option value="drehteil_einfach">Drehteil einfach</option>
+            <option value="drehteil_fraes">Drehteil mit Fr&auml;santeil</option>
+            <option value="fraesteil_3ax">Fr&auml;steil 3-Achs</option>
+            <option value="fraesteil_komplex">Fr&auml;steil komplex</option>
+          </select>
+          <span class="marke" id="klasseMarke"></span>
+        </div>
+        <div class="feld"><label for="rohForm">Rohteilform</label>
+          <select id="rohForm">
+            <option value="rund">Rund</option>
+            <option value="flach">Flach / Vierkant</option>
+            <option value="sechskant">Sechskant</option>
+            <option value="rohr">Rohr</option>
+          </select>
+        </div>
+        <div id="rohMasse"></div>
+        <div class="feld"><label for="aufD">Aufma&szlig; Durchmesser</label><input type="number" id="aufD" step="any"><span class="einheit">mm</span></div>
+        <div class="feld"><label for="aufL">Aufma&szlig; L&auml;nge</label><input type="number" id="aufL" step="any"><span class="einheit">mm</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="karte">
+        <h2>Geometrie</h2>
+        <div class="tabellenrahmen"><table id="geoTab"></table></div>
+      </div>
+      <div class="karte" id="bohrKarte" style="display:none">
+        <h2>Bohrungen</h2>
+        <div class="tabellenrahmen"><table id="bohrTab"></table></div>
+      </div>
+      <div class="karte" id="quelleKarte" style="display:none">
+        <h2>Unterlagen</h2>
+        <div id="quelleListe"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2 ANGEBOT ================= -->
+<section class="blatt" id="blattKalk">
+  <div class="karte kein-druck">
+    <h2>Vorgaben</h2>
+    <div class="feld"><label for="kWerkstoff">Werkstoff</label><select id="kWerkstoff"></select><span class="marke pflege" id="kPreisMarke"></span></div>
+    <div class="feld"><label for="kToleranz">Toleranz</label>
+      <select id="kToleranz"><option value="mittel">mittel (IT8&ndash;IT10)</option><option value="fein">fein (&le; IT7 / Passungen)</option></select></div>
+    <div class="feld"><label for="kOberflaeche">Oberfl&auml;che</label>
+      <select id="kOberflaeche"><option value="normal">normal</option><option value="fein">Ra &le; 0,8</option></select></div>
+    <div class="feld"><label for="kSeiten">Bearbeitungsseiten</label><input type="number" id="kSeiten" step="1" min="1"><span class="einheit"></span></div>
+    <div class="feld"><label for="kStueck">St&uuml;ckzahl</label><input type="number" id="kStueck" step="1" min="1"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="kVersandArt">Versand</label>
+      <select id="kVersandArt"><option value="versand">Versand</option><option value="abholung">Abholung</option></select></div>
+  </div>
+
+  <div class="karte">
+    <h2>Aufschl&uuml;sselung</h2>
+    <div class="meldung info kein-druck" style="margin-top:0">
+      Jeder Wert l&auml;sst sich &uuml;berschreiben. &Uuml;berschriebene Werte sind
+      <span style="color:var(--geaendert)">gelb umrandet</span>; der Knopf setzt sie zur&uuml;ck.
+    </div>
+    <div class="tabellenrahmen"><table id="kalkTab"></table></div>
+    <div class="knopfzeile kein-druck" style="margin-top:10px">
+      <button class="knopf" id="kalkZuruck">&Uuml;berschreibungen zur&uuml;cknehmen</button>
+    </div>
+  </div>
+
+  <div class="karte">
+    <h2>Staffelpreise</h2>
+    <div class="staffel" id="staffel"></div>
+    <div class="feld kein-druck" style="margin-top:10px"><label for="kStaffel">Staffel</label><input type="text" id="kStaffel" style="width:220px"></div>
+  </div>
+
+  <div class="karte kein-druck">
+    <h2>Angebot</h2>
+    <div class="feld"><label for="aKunde">Kunde</label><input type="text" id="aKunde"></div>
+    <div class="feld"><label for="aNummer">Angebotsnummer</label><input type="text" id="aNummer"></div>
+    <div class="feld"><label for="aLieferzeit">Lieferzeit</label><input type="text" id="aLieferzeit"></div>
+    <div class="feld"><label for="aIstzeit">Ist-Zeit je St&uuml;ck (sp&auml;ter)</label><input type="number" id="aIstzeit" step="any"><span class="einheit">min</span></div>
+    <div id="istVergleich"></div>
+    <div class="knopfzeile" style="margin-top:10px">
+      <button class="knopf haupt" id="btnPdf">Angebot drucken / PDF</button>
+      <button class="knopf" id="btnJson">Angebot sichern (JSON)</button>
+      <button class="knopf" id="btnJsonLaden">Angebot laden</button>
+      <input type="file" id="jsonDatei" accept=".json,.JSON" hidden>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3 EINSTELLUNGEN ================= -->
+<section class="blatt" id="blattEin">
+  <div class="karte">
+    <h2>Stundens&auml;tze</h2>
+    <div id="einSaetze"></div>
+  </div>
+  <div class="karte">
+    <h2>Werkstoffe</h2>
+    <div class="meldung warn" style="margin-top:0">Die Preise sind <b>Platzhalter</b> und noch zu pflegen. Bis dahin ist jeder Materialposten nur eine Gr&ouml;&szlig;enordnung.</div>
+    <div class="tabellenrahmen"><table id="einWerkstoffe"></table></div>
+    <div class="knopfzeile" style="margin-top:8px"><button class="knopf" id="btnWstNeu">Werkstoff hinzuf&uuml;gen</button></div>
+  </div>
+  <div class="karte">
+    <h2>Zerspanleistung</h2>
+    <div class="meldung warn" style="margin-top:0">Erste N&auml;herung. Mit den ersten echten Zeiten kalibrieren &mdash; bis dahin <span class="marke schaetz">Sch&auml;tzwert</span>.</div>
+    <div class="tabellenrahmen"><table id="einLeistung"></table></div>
+  </div>
+  <div class="karte">
+    <h2>Zuschl&auml;ge, Zeiten, Nebenkosten</h2>
+    <div id="einRest"></div>
+  </div>
+  <div class="karte">
+    <h2>Firmendaten f&uuml;r das Angebot</h2>
+    <div id="einFirma"></div>
+  </div>
+  <div class="karte">
+    <h2>Einstellungen sichern</h2>
+    <div class="knopfzeile">
+      <button class="knopf" id="btnEinExport">Als Datei sichern</button>
+      <button class="knopf" id="btnEinImport">Aus Datei laden</button>
+      <input type="file" id="einDatei" accept=".json,.JSON" hidden>
+      <button class="knopf" id="btnEinReset">Auf Startwerte zur&uuml;cksetzen</button>
+    </div>
+    <div class="klein" style="color:var(--text-blass);font-size:13px;margin-top:8px">
+      Die Einstellungen liegen im Browser dieses Ger&auml;ts. Wer sie auf ein zweites Ger&auml;t bringen will, sichert sie als Datei und l&auml;dt sie dort.
+    </div>
+  </div>
+</section>
+
+</main>
+<script>
+'use strict';
+/* =====================================================================
+   shared/20-schema.js — das Austauschformat und die kleinen Werkzeuge
+   ---------------------------------------------------------------------
+   Das Format aus Abschnitt 6 des Lastenhefts ist VERBINDLICH: spaetere
+   Pakete (Konturableitung fuer die Dreh-App, Arbeitsplan, Belegung)
+   haengen daran. Deshalb steht es hier als EINE Quelle — als Bauplan
+   (neuerDatensatz) und als Wache (schemaPruefen). Bestehende Felder
+   werden nie umbenannt; neue kommen dazu.
+
+   Warum eine Wache und nicht nur ein Bauplan: ein Angebot wird als JSON
+   gesichert und spaeter wieder geladen, moeglicherweise von einem
+   anderen Paket geschrieben. Ein stumm fehlendes Feld faellt sonst erst
+   im Preis auf.
+   ===================================================================== */
+
+const SCHEMA_VERSION = '1.0';
+
+function neuerDatensatz(){
+  return {
+    version: SCHEMA_VERSION,
+    teil: {
+      name: '', zeichnungsnr: '', revision: '',
+      klasse: 'fraesteil_3ax',
+      werkstoff: '',
+      bbox: {x:0, y:0, z:0},
+      volumen_cm3: 0, oberflaeche_cm2: 0,
+      rotation: {ja:false, achse:'Z', dmax:0, laenge:0, innen:false},
+      bohrungen: [],
+      flaechen: 0, kanten: 0
+    },
+    rohteil: {form:'flach', masse:{}, volumen_cm3:0},
+    kalkulation: {parameter:{}, zeiten:{}, preise:{}},
+    quelle: {step:'', pdf:''}
+  };
+}
+
+const SCHEMA_KLASSEN = ['drehteil_einfach', 'drehteil_fraes', 'fraesteil_3ax', 'fraesteil_komplex'];
+const SCHEMA_FORMEN  = ['rund', 'flach', 'sechskant', 'rohr'];
+
+/* Liefert eine Liste der Beanstandungen; leer heisst in Ordnung.
+   Geprueft wird das Geruest, nicht die Plausibilitaet der Zahlen —
+   ob ein Volumen SINNVOLL ist, entscheidet die Geometrie (31). */
+function schemaPruefen(d){
+  const f = [];
+  const zahl = (v) => typeof v === 'number' && isFinite(v);
+  if(!d || typeof d !== 'object') return ['Datensatz fehlt.'];
+  if(d.version !== SCHEMA_VERSION) f.push('Version ist "' + d.version + '", erwartet "' + SCHEMA_VERSION + '".');
+  const t = d.teil;
+  if(!t || typeof t !== 'object') return f.concat(['teil fehlt.']);
+  ['name', 'zeichnungsnr', 'revision', 'klasse', 'werkstoff'].forEach(k => {
+    if(typeof t[k] !== 'string') f.push('teil.' + k + ' ist kein Text.');
+  });
+  if(t.klasse && SCHEMA_KLASSEN.indexOf(t.klasse) < 0) f.push('teil.klasse "' + t.klasse + '" ist keine der vier Klassen.');
+  if(!t.bbox || !zahl(t.bbox.x) || !zahl(t.bbox.y) || !zahl(t.bbox.z)) f.push('teil.bbox unvollstaendig.');
+  if(!zahl(t.volumen_cm3)) f.push('teil.volumen_cm3 fehlt.');
+  if(!zahl(t.oberflaeche_cm2)) f.push('teil.oberflaeche_cm2 fehlt.');
+  const r = t.rotation;
+  if(!r || typeof r.ja !== 'boolean' || !zahl(r.dmax) || !zahl(r.laenge) || typeof r.innen !== 'boolean')
+    f.push('teil.rotation unvollstaendig.');
+  if(!Array.isArray(t.bohrungen)) f.push('teil.bohrungen ist keine Liste.');
+  else t.bohrungen.forEach((b, i) => {
+    if(!zahl(b.d) || !zahl(b.tiefe) || typeof b.durch !== 'boolean')
+      f.push('teil.bohrungen[' + i + '] unvollstaendig (d, tiefe, durch).');
+  });
+  if(!zahl(t.flaechen) || !zahl(t.kanten)) f.push('teil.flaechen/kanten fehlen.');
+  const ro = d.rohteil;
+  if(!ro || typeof ro !== 'object') f.push('rohteil fehlt.');
+  else{
+    if(SCHEMA_FORMEN.indexOf(ro.form) < 0) f.push('rohteil.form "' + ro.form + '" ist keine bekannte Form.');
+    if(!ro.masse || typeof ro.masse !== 'object') f.push('rohteil.masse fehlt.');
+    if(!zahl(ro.volumen_cm3)) f.push('rohteil.volumen_cm3 fehlt.');
+  }
+  if(!d.kalkulation || typeof d.kalkulation !== 'object') f.push('kalkulation fehlt.');
+  else ['parameter', 'zeiten', 'preise'].forEach(k => {
+    if(!d.kalkulation[k] || typeof d.kalkulation[k] !== 'object') f.push('kalkulation.' + k + ' fehlt.');
+  });
+  if(!d.quelle || typeof d.quelle.step !== 'string' || typeof d.quelle.pdf !== 'string')
+    f.push('quelle unvollstaendig.');
+  return f;
+}
+
+/* ---- Kleine Werkzeuge ----------------------------------------------
+   Anzeige mit Dezimalkomma, intern immer Punkt (Lastenheft Abschnitt 2). */
+function fRund(v, n){ const p = Math.pow(10, n == null ? 3 : n); return Math.round(v * p) / p; }
+function fZahl(v, n){
+  if(v == null || !isFinite(v)) return '—';
+  return Number(v).toFixed(n == null ? 2 : n).replace('.', ',');
+}
+function fEuro(v){ return fZahl(v, 2) + ' €'; }
+/* Minuten als m:ss — eine Zeit liest man nicht als 7,43 min */
+function fMin(v){
+  if(v == null || !isFinite(v)) return '—';
+  const s = Math.round(v * 60), m = Math.floor(s / 60);
+  return m + ':' + String(s - m * 60).padStart(2, '0') + ' min';
+}
+/* Eingaben kommen mit Komma herein (Daniel tippt am iPhone) */
+function fLesen(s){
+  if(typeof s === 'number') return s;
+  const v = parseFloat(String(s == null ? '' : s).replace(',', '.').trim());
+  return isFinite(v) ? v : NaN;
+}
+function fText(s){ return String(s == null ? '' : s); }
+/* Eine tiefe Kopie ohne Verweise — gespeicherte Staende duerfen sich
+   nicht nachtraeglich aendern, wenn im Blatt weitergerechnet wird. */
+function fKopie(o){ return JSON.parse(JSON.stringify(o)); }
+
+if(typeof module !== 'undefined' && module.exports){
+  module.exports = {SCHEMA_VERSION, neuerDatensatz, schemaPruefen, SCHEMA_KLASSEN, SCHEMA_FORMEN,
+                    fRund, fZahl, fEuro, fMin, fLesen, fText, fKopie};
+}
+const KALK_VORGABEN = {
+  "_hinweis": "Startwerte der Kalkulation. Lastenheft Regel 7: JEDER Startwert steht hier, nicht im Code. Wird beim Bauen als Konstante KALK_VORGABEN eingebettet; im Browser ueberschreibt der gespeicherte Stand diese Werte je Feld.",
+  "_stand": "2026-09-13",
+  "version": "1.0",
+
+  "_saetze_hinweis": "PLATZHALTER, bewusst runde Zahlen. Daniels Entscheid vom 13.09.2026: dieses Repo ist oeffentlich, und die Stundensaetze und die Marge eines Lohnfertigers gehen niemanden etwas an. Seine echten Werte traegt er im Blatt ein; sie liegen dann im Speicher seines Geraets, nie hier. Damit daraus keine Falle wird, ist gepflegt false: das Blatt zeigt einen Hinweis und die Felder tragen eine Marke, bis er sie einmal gestellt hat.",
+  "saetze": {
+    "drehen": 50,
+    "fraesen": 50,
+    "handarbeit": 50,
+    "ruesten_wie_maschine": true,
+    "ruesten": 50,
+    "gepflegt": false
+  },
+
+  "werkstoffe": [
+    {"name": "S235",     "gruppe": "stahl",      "dichte": 7.85, "preis": 2.20,  "faktor": 1.00, "gepflegt": false},
+    {"name": "C45",      "gruppe": "stahl",      "dichte": 7.85, "preis": 2.60,  "faktor": 1.15, "gepflegt": false},
+    {"name": "42CrMo4",  "gruppe": "stahl",      "dichte": 7.85, "preis": 3.50,  "faktor": 1.40, "gepflegt": false},
+    {"name": "1.4301",   "gruppe": "edelstahl",  "dichte": 7.90, "preis": 7.50,  "faktor": 1.90, "gepflegt": false},
+    {"name": "1.4571",   "gruppe": "edelstahl",  "dichte": 8.00, "preis": 11.00, "faktor": 2.10, "gepflegt": false},
+    {"name": "AlMg3",    "gruppe": "alu",        "dichte": 2.66, "preis": 6.50,  "faktor": 0.45, "gepflegt": false},
+    {"name": "AlMgSi1",  "gruppe": "alu",        "dichte": 2.70, "preis": 6.80,  "faktor": 0.40, "gepflegt": false},
+    {"name": "POM",      "gruppe": "kunststoff", "dichte": 1.41, "preis": 9.00,  "faktor": 0.30, "gepflegt": false},
+    {"name": "PA6",      "gruppe": "kunststoff", "dichte": 1.14, "preis": 8.00,  "faktor": 0.35, "gepflegt": false},
+    {"name": "PE-HD",    "gruppe": "kunststoff", "dichte": 0.95, "preis": 4.50,  "faktor": 0.30, "gepflegt": false},
+    {"name": "PTFE",     "gruppe": "kunststoff", "dichte": 2.16, "preis": 28.00, "faktor": 0.40, "gepflegt": false}
+  ],
+
+  "zerspanleistung": {
+    "_einheit": "cm3/min, wirksam ueber den ganzen Schnitt gerechnet",
+    "stahl":      {"drehen": 60,  "fraesen": 40},
+    "edelstahl":  {"drehen": 33,  "fraesen": 22},
+    "alu":        {"drehen": 150, "fraesen": 120},
+    "kunststoff": {"drehen": 200, "fraesen": 160}
+  },
+
+  "zuschlaege": {
+    "verschnitt": 0.10,
+    "toleranz_mittel": 1.0,
+    "toleranz_fein": 1.4,
+    "oberflaeche_fein": 1.3,
+    "_gewinn_hinweis": "Gewinn und Mindestauftrag sind wie die Stundensaetze PLATZHALTER — s. _saetze_hinweis.",
+    "gewinn": 0.15,
+    "mindestauftrag": 100,
+    "gepflegt": false
+  },
+
+  "zeiten": {
+    "nebenzeit_anteil": 0.25,
+    "nebenzeit_je_bohrung": 0.3,
+    "nebenzeit_je_seite": 0.2,
+    "entgraten_je_kante": 0.02,
+    "entgraten_min": 1.0,
+    "pruefen_je_teil": 2.0
+  },
+
+  "ruesten": {
+    "drehteil_einfach": 20,
+    "drehteil_fraes": 40,
+    "fraesteil_3ax": 45,
+    "fraesteil_komplex": 90
+  },
+
+  "nebenkosten": {
+    "verpackung_auftrag": 8,
+    "verpackung_teil": 0.5,
+    "versand": 12,
+    "abholung": false
+  },
+
+  "rohteil": {
+    "aufmass_durchmesser": 3,
+    "aufmass_laenge": 2,
+    "aufmass_flach": 3
+  },
+
+  "staffel": [1, 5, 10, 25, 50, 100],
+
+  "firma": {
+    "name": "", "strasse": "", "ort": "", "telefon": "", "mail": "",
+    "ustid": "", "lieferzeit": "nach Vereinbarung", "gueltigkeit_tage": 30
+  },
+
+  "schaetzwerte": [
+    "werkstoffe.faktor",
+    "zerspanleistung.edelstahl.drehen",
+    "zerspanleistung.edelstahl.fraesen",
+    "zerspanleistung.kunststoff.fraesen",
+    "zeiten.nebenzeit_anteil",
+    "zeiten.nebenzeit_je_bohrung",
+    "zeiten.nebenzeit_je_seite",
+    "zeiten.entgraten_je_kante"
+  ],
+
+  "_belege": {
+    "aus_dem_lastenheft": "saetze, zuschlaege, nebenkosten, ruesten, staffel, rohteil.aufmass_*, zeiten.pruefen_je_teil, zeiten.entgraten_min, zerspanleistung stahl/alu/kunststoff drehen und stahl/alu fraesen",
+    "geschaetzt": "Alles unter schaetzwerte. Im Lastenheft nicht genannt oder nur als Groessenordnung; im Blatt als Schaetzwert markiert und mit den ersten echten Zeiten zu kalibrieren.",
+    "zu_pflegen": "Alle Werkstoffpreise (gepflegt: false). Sie sind Platzhalter, keine Marktpreise."
+  }
+}
+;
+/* =====================================================================
+   import/30-step.js — STEP lesen (AP203 / AP214 / AP242)
+   ---------------------------------------------------------------------
+   UEBERNOMMEN aus der Fraes-App (quellen/F10-kern.js, Paket S1 vom
+   14.09.2026). Dort ist der Leser an 143 von 145 echten Modellen ohne
+   eine einzige Ausnahme gelaufen, groesste Datei 176 ms. Die beiden
+   uebrigen sind Skizzen ohne Volumen. Kopiert statt verlinkt — die
+   Schwesterprojekte werden nicht angefasst (Lastenheft Regel 7).
+
+   DREI ERWEITERUNGEN fuer dieses Paket, ohne die es kein Volumen gibt:
+     1. Jede Flaeche traegt ihren vollen RAHMEN (Ursprung und die drei
+        Achsen), nicht nur die Achsrichtung. Ohne ihn laesst sich eine
+        Zylinder- oder Kegelflaeche nicht in ihre Parameterebene legen
+        und damit nicht vernetzen.
+     2. Jede Flaeche traegt den ORIENTIERUNGSSINN (same_sense der
+        ADVANCED_FACE). Er sagt, ob die Flaechennormale nach aussen oder
+        nach innen zeigt. Das Volumen nach dem Satz von Gauss ist ohne
+        ihn nur bis aufs Vorzeichen bestimmt — und zwar je Flaeche
+        einzeln, was die Summe unbrauchbar machen wuerde.
+     3. Die Flaechen werden ihren KOERPERN zugeordnet
+        (MANIFOLD_SOLID_BREP mit seiner CLOSED_SHELL). Nur Flaechen an
+        einer geschlossenen Schale umschliessen ein Volumen. Gemessen an
+        127 Dateien: 102 tragen einen Koerper, 25 sind Flaechenmodelle —
+        die haben mit keinem Werkzeug ein Volumen, und das sagt die App
+        dann auch statt eine Zahl zu erfinden. 8 Dateien tragen mehrere
+        Koerper.
+   ===================================================================== */
+
+/* Saetze der Form "#12 = TYP(...);" einsammeln. Der Scanner achtet auf
+   Zeichenketten und Klammern, weil ein Semikolon auch in einem Namen
+   stehen darf. */
+function fStepSaetze(text){
+  const s = String(text || '');
+  const ab = s.indexOf('DATA;');
+  const d = ab >= 0 ? s.slice(ab + 5) : s;
+  const E = new Map();
+  const n = d.length;
+  let i = 0;
+  while(i < n){
+    while(i < n && d.charCodeAt(i) !== 35) i++;                 /* '#' */
+    if(i >= n) break;
+    let j = i + 1, id = '';
+    while(j < n && d[j] >= '0' && d[j] <= '9') id += d[j++];
+    if(!id){ i = j; continue; }
+    let k = j;
+    while(k < n && (d[k] === ' ' || d[k] === '\t' || d[k] === '\r' || d[k] === '\n')) k++;
+    if(d[k] !== '='){ i = j; continue; }
+    k++;
+    const start = k;
+    let str = false, tief = 0;
+    while(k < n){
+      const c = d[k];
+      if(str){ if(c === "'"){ if(d[k + 1] === "'") k++; else str = false; } }
+      else if(c === "'") str = true;
+      else if(c === '(') tief++;
+      else if(c === ')') tief--;
+      else if(c === ';' && tief <= 0) break;
+      k++;
+    }
+    const koerper = d.slice(start, k).trim();
+    const m = koerper.match(/^([A-Za-z0-9_]+)\s*\(([\s\S]*)\)$/);
+    E.set(+id, m ? {typ:m[1], arg:m[2]} : {typ:'', arg:koerper});
+    i = k + 1;
+  }
+  return E;
+}
+
+/* Argumente auf oberster Ebene trennen (Klammern und Zeichenketten beachten). */
+function fStepArgs(s){
+  const aus = []; let tief = 0, str = false, akt = '';
+  for(let i = 0; i < s.length; i++){
+    const c = s[i];
+    if(str){ akt += c; if(c === "'"){ if(s[i + 1] === "'") akt += s[++i]; else str = false; } continue; }
+    if(c === "'"){ str = true; akt += c; continue; }
+    if(c === '('){ tief++; akt += c; continue; }
+    if(c === ')'){ tief--; akt += c; continue; }
+    if(c === ',' && tief === 0){ aus.push(akt.trim()); akt = ''; continue; }
+    akt += c;
+  }
+  if(akt.trim() !== '') aus.push(akt.trim());
+  return aus;
+}
+
+const fStepRefs = (s) => (String(s).match(/#\d+/g) || []).map(v => +v.slice(1));
+const fStepZahl = (s) => { const m = String(s).match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/); return m ? +m[0] : NaN; };
+
+/* Millimeter oder Zoll? Die Laengeneinheit steht als SI_UNIT(.MILLI.,.METRE.)
+   oder als CONVERSION_BASED_UNIT mit dem Namen INCH. */
+function fStepEinheit(text){
+  const t = String(text || '');
+  if(/CONVERSION_BASED_UNIT\s*\(\s*'INCH'/i.test(t)) return 25.4;
+  if(/SI_UNIT\s*\(\s*\.MILLI\.\s*,\s*\.METRE\./i.test(t)) return 1;
+  if(/SI_UNIT\s*\(\s*\$\s*,\s*\.METRE\./i.test(t)) return 1000;
+  return 1;
+}
+/* Winkel stehen fast immer im Bogenmass; manche Ausgaben fuehren Grad.
+   Betrifft nur den halben Oeffnungswinkel des Kegels — ein uebersehenes
+   Grad machte daraus einen Kegel mit 57-fachem Anstieg. */
+function fStepWinkelMass(text){
+  return /CONVERSION_BASED_UNIT\s*\(\s*'DEGREE'/i.test(String(text || '')) ? Math.PI / 180 : 1;
+}
+
+/* ---- Geometrie aufloesen (mit Gedaechtnis, die Punkte werden oft geteilt) ---- */
+function fStepGeo(E, einheit){
+  const merkP = new Map(), merkR = new Map(), merkL = new Map();
+  const G = {};
+  G.punkt = (id) => {
+    if(merkP.has(id)) return merkP.get(id);
+    const e = E.get(id); let p = null;
+    if(e && e.typ === 'CARTESIAN_POINT'){
+      const z = (fStepArgs(e.arg)[1] || '').match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || [];
+      p = [(+z[0] || 0) * einheit, (+z[1] || 0) * einheit, (+z[2] || 0) * einheit];
+    }
+    merkP.set(id, p); return p;
+  };
+  G.richtung = (id) => {
+    if(merkR.has(id)) return merkR.get(id);
+    const e = E.get(id); let r = null;
+    if(e && e.typ === 'DIRECTION'){
+      const z = (fStepArgs(e.arg)[1] || '').match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || [];
+      const v = [+z[0] || 0, +z[1] || 0, +z[2] || 0], L = Math.hypot(v[0], v[1], v[2]) || 1;
+      r = [v[0] / L, v[1] / L, v[2] / L];
+    }
+    merkR.set(id, r); return r;
+  };
+  /* AXIS2_PLACEMENT_3D: Ursprung, Achse z, Bezugsrichtung x. Fehlen
+     Richtungen, gelten die Vorgaben der Norm (z = 0/0/1, x = 1/0/0). */
+  G.lage = (id) => {
+    if(merkL.has(id)) return merkL.get(id);
+    const e = E.get(id); let L = null;
+    if(e && /AXIS2_PLACEMENT_3D/.test(e.typ)){
+      const a = fStepArgs(e.arg);
+      const p = G.punkt(fStepRefs(a[1])[0]) || [0, 0, 0];
+      let z = (a[2] && a[2] !== '$') ? G.richtung(fStepRefs(a[2])[0]) : null;
+      let x = (a[3] && a[3] !== '$') ? G.richtung(fStepRefs(a[3])[0]) : null;
+      z = z || [0, 0, 1];
+      x = x || (Math.abs(z[2]) < 0.9 ? [0, 0, 1] : [1, 0, 0]);
+      const d = x[0] * z[0] + x[1] * z[1] + x[2] * z[2];
+      let xx = [x[0] - d * z[0], x[1] - d * z[1], x[2] - d * z[2]];
+      const lx = Math.hypot(xx[0], xx[1], xx[2]);
+      xx = lx > 1e-9 ? [xx[0] / lx, xx[1] / lx, xx[2] / lx] : [1, 0, 0];
+      const y = [z[1] * xx[2] - z[2] * xx[1], z[2] * xx[0] - z[0] * xx[2], z[0] * xx[1] - z[1] * xx[0]];
+      L = {p:p, z:z, x:xx, y:y};
+    }
+    merkL.set(id, L); return L;
+  };
+  return G;
+}
+
+/* Eine Kante als Streckenzug PLUS ihrer Art. Gerade: zwei Punkte. Kreis:
+   abgetastet, die Richtung folgt dem Sinn der Kante. Die Bogendaten
+   (Mitte, Radius, Achse) bleiben erhalten — ohne sie wuerde aus jedem
+   Radius spaeter ein Vieleck.
+   Rueckgabe: {p:[Punkte], art:'gerade'|'bogen'|'frei', b:{c, r, achse}|null} */
+function fStepKante(E, G, id, aus, einheit){
+  const e = E.get(id);
+  if(!e || e.typ !== 'EDGE_CURVE') return null;
+  const a = fStepArgs(e.arg);
+  const v1 = E.get(fStepRefs(a[1])[0]), v2 = E.get(fStepRefs(a[2])[0]);
+  const p1 = v1 ? G.punkt(fStepRefs(v1.arg)[0]) : null;
+  const p2 = v2 ? G.punkt(fStepRefs(v2.arg)[0]) : null;
+  const sinn = /\.T\./.test(a[4] || '');
+  let k = E.get(fStepRefs(a[3])[0]);
+  /* EINE KANTE, DREI VERPACKUNGEN. Fast die Haelfte aller Kanten in
+     echten Dateien (11480 von 24620 gemessen) steht nicht als LINE oder
+     CIRCLE am Satz, sondern als SURFACE_CURVE: ein Umschlag, der die
+     echte Raumkurve und zusaetzlich ihre Abbildungen auf den beiden
+     angrenzenden Flaechen fuehrt. Wer den Umschlag nicht oeffnet, sieht
+     eine unbekannte Kurve und macht aus jedem Bogen eine Sehne — an
+     einer Lehre fehlten dadurch zwei Drittel der Oberflaeche. Das erste
+     Bezugsargument ist die Raumkurve. */
+  for(let t = 0; k && t < 4; t++){
+    if(k.typ !== 'SURFACE_CURVE' && k.typ !== 'SEAM_CURVE' && k.typ !== 'INTERSECTION_CURVE') break;
+    k = E.get(fStepRefs(fStepArgs(k.arg)[1])[0]);
+  }
+  const gerade = () => (p1 && p2) ? {p:[p1, p2], art:'gerade', b:null} : null;
+  if(!k) return gerade();
+  if(k.typ === 'LINE'){ aus.linien++; return gerade(); }
+  if(k.typ === 'CIRCLE' || k.typ === 'ELLIPSE'){
+    const ka = fStepArgs(k.arg), L = G.lage(fStepRefs(ka[1])[0]);
+    const r = fStepZahl(ka[2]) * einheit, r2 = k.typ === 'ELLIPSE' ? fStepZahl(ka[3]) * einheit : r;
+    if(!L || !isFinite(r)) return gerade();
+    const wink = (p) => {
+      if(!p) return null;
+      const d = [p[0] - L.p[0], p[1] - L.p[1], p[2] - L.p[2]];
+      return Math.atan2(d[0] * L.y[0] + d[1] * L.y[1] + d[2] * L.y[2], d[0] * L.x[0] + d[1] * L.x[1] + d[2] * L.x[2]);
+    };
+    let a0 = wink(p1), a1 = wink(p2);
+    if(a0 == null || a1 == null){ a0 = 0; a1 = 2 * Math.PI; }
+    else {
+      let d = a1 - a0;
+      /* Anfang gleich Ende heisst VOLLKREIS: die Schleife macht daraus von
+         selbst einen ganzen Umlauf, weil 0 unter der Schwelle liegt. */
+      if(sinn){ while(d <= 1e-9) d += 2 * Math.PI; }
+      else { while(d >= -1e-9) d -= 2 * Math.PI; }
+      a1 = a0 + d;
+    }
+    /* Bogenfeinheit nach der PFEILHOEHE, nicht nach einem festen Winkel.
+       Der Bogen wird durch einen Streckenzug ersetzt; der groesste
+       Abstand dazwischen ist r*(1-cos(halber Schritt)). Bei 0,01 mm
+       bleibt der Flaechenfehler einer vollen Kreisflaeche unter
+       0,03 Prozent — deutlich unter allem, was ein Zeitmodell hergibt.
+       Ein fester Winkelschritt waere bei kleinen Radien verschwenderisch
+       und bei grossen zu grob. */
+    const dw = 2 * Math.acos(Math.max(0, Math.min(1, 1 - 0.01 / Math.max(r, r2, 0.01))));
+    const n = Math.max(2, Math.min(240, Math.ceil(Math.abs(a1 - a0) / Math.max(dw, 1e-3))));
+    const pts = [];
+    for(let q = 0; q <= n; q++){
+      const w = a0 + (a1 - a0) * q / n, c = Math.cos(w), s = Math.sin(w);
+      pts.push([L.p[0] + r * c * L.x[0] + r2 * s * L.y[0],
+                L.p[1] + r * c * L.x[1] + r2 * s * L.y[1],
+                L.p[2] + r * c * L.x[2] + r2 * s * L.y[2]]);
+    }
+    aus.bogen++;
+    return {p:pts, art:(k.typ === 'CIRCLE' && Math.abs(r - r2) < 1e-9) ? 'bogen' : 'frei',
+      b:(k.typ === 'CIRCLE') ? {c:[L.p[0], L.p[1], L.p[2]], r:r, achse:[L.z[0], L.z[1], L.z[2]]} : null};
+  }
+  /* B-Spline: richtig auswerten statt die Kontrollpunkte als Kurve
+     auszugeben. Das Kontrollpolygon ist nur die Huelle — an einem
+     Pruefteil lag das Volumen dadurch um 2,9 Prozent daneben. */
+  const bs = fStepBSpline(E, G, k);
+  if(bs){ aus.spline++; return {p:bs, art:'frei', b:null}; }
+  /* Alles Uebrige (rationale und zusammengesetzte Kurven): ueber die
+     Kontrollpunkte genaehert, und als solches gezaehlt. */
+  const refs = fStepRefs(k.arg).map(q => G.punkt(q)).filter(q => q);
+  aus.frei++;
+  if(refs.length >= 2) return {p:refs, art:'frei', b:null};
+  return gerade();
+}
+
+/* ---- B-Spline-Kurve nach de Boor ------------------------------------
+   Gedeckt sind die beiden Formen, die in echten Dateien vorkommen:
+   B_SPLINE_CURVE_WITH_KNOTS mit ausgeschriebenem Knotenvektor und
+   QUASI_UNIFORM_CURVE / UNIFORM_CURVE mit stillschweigend gleichmaessigen
+   Knoten. Rationale Kurven (mit Gewichten) stehen in den Dateien als
+   zusammengesetzter Satz und bleiben der Naeherung ueberlassen. */
+function fStepBSpline(E, G, k){
+  const mitKnoten = k.typ === 'B_SPLINE_CURVE_WITH_KNOTS';
+  const quasi = k.typ === 'QUASI_UNIFORM_CURVE' || k.typ === 'UNIFORM_CURVE';
+  if(!mitKnoten && !quasi) return null;
+  const a = fStepArgs(k.arg);
+  const grad = Math.round(fStepZahl(a[1]));
+  const P = fStepRefs(a[2]).map(q => G.punkt(q)).filter(q => q);
+  if(!(grad >= 1) || P.length < grad + 1) return null;
+
+  let K = [];
+  if(mitKnoten){
+    const mult = (a[6] || '').match(/\d+/g) || [];
+    const wert = (a[7] || '').match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || [];
+    if(mult.length !== wert.length || !mult.length) return null;
+    for(let i = 0; i < mult.length; i++)
+      for(let j = 0, n = +mult[i]; j < n; j++) K.push(+wert[i]);
+  } else {
+    /* gleichmaessig, an den Enden festgeklemmt */
+    const inn = P.length - grad - 1;
+    for(let i = 0; i <= grad; i++) K.push(0);
+    for(let i = 1; i <= inn; i++) K.push(i);
+    for(let i = 0; i <= grad; i++) K.push(inn + 1);
+  }
+  if(K.length !== P.length + grad + 1) return null;
+
+  const t0 = K[grad], t1 = K[P.length];
+  if(!(t1 > t0)) return null;
+  const auswerten = (t) => {
+    let s = grad;
+    while(s < P.length - 1 && K[s + 1] <= t) s++;
+    const d = [];
+    for(let j = 0; j <= grad; j++) d.push(P[j + s - grad].slice());
+    for(let r = 1; r <= grad; r++){
+      for(let j = grad; j >= r; j--){
+        const u0 = K[j + s - grad], u1 = K[j + 1 + s - r];
+        const al = (u1 - u0) > 1e-12 ? (t - u0) / (u1 - u0) : 0;
+        for(let c = 0; c < 3; c++) d[j][c] = (1 - al) * d[j - 1][c] + al * d[j][c];
+      }
+    }
+    return d[grad];
+  };
+  const spannen = Math.max(1, P.length - grad);
+  const n = Math.max(8, Math.min(160, spannen * 8));
+  const aus = [];
+  for(let i = 0; i <= n; i++) aus.push(auswerten(t0 + (t1 - t0) * i / n));
+  return aus;
+}
+
+/* Welche Flaechenarten kann die App EXAKT beschreiben? Alles andere wird
+   ueber den Flaechenrand genaehert und als solches ausgewiesen. */
+const F_STEP_EXAKT = {
+  PLANE:'ebene', CYLINDRICAL_SURFACE:'zylinder', CONICAL_SURFACE:'kegel',
+  TOROIDAL_SURFACE:'torus', SPHERICAL_SURFACE:'kugel'
+};
+
+/* Das ganze Modell: Flaechen mit Art, Rahmen, Sinn und Randkurven,
+   dazu die Koerperzuordnung und ein Bericht. */
+function fStepModell(text){
+  const E = fStepSaetze(text);
+  const einheit = fStepEinheit(text);
+  const wm = fStepWinkelMass(text);
+  const G = fStepGeo(E, einheit);
+  const aus = {linien:0, bogen:0, frei:0, spline:0};
+  const flaechen = [];
+  const nachId = new Map();                 /* Satznummer -> Platz in flaechen */
+  const zaehl = {ebene:0, zylinder:0, kegel:0, torus:0, kugel:0, frei:0};
+
+  E.forEach((e, id) => {
+    if(e.typ !== 'ADVANCED_FACE') return;
+    const a = fStepArgs(e.arg);
+    const fl = E.get(fStepRefs(a[2])[0]);
+    if(!fl) return;
+    const art = F_STEP_EXAKT[fl.typ] || 'frei';
+    let rahmen = null, r = 0, r2 = 0;
+    if(art !== 'frei'){
+      const fa = fStepArgs(fl.arg);
+      rahmen = G.lage(fStepRefs(fa[1])[0]);
+      if(fa[2] != null) r = (fStepZahl(fa[2]) || 0) * einheit;
+      if(art === 'kegel')  r2 = (fStepZahl(fa[3]) || 0) * wm;      /* halber Oeffnungswinkel */
+      if(art === 'torus')  r2 = (fStepZahl(fa[3]) || 0) * einheit; /* Rohrradius */
+    }
+    if(!rahmen && art !== 'frei') return;   /* ohne Rahmen unbrauchbar */
+    zaehl[art]++;
+    /* same_sense: zeigt die Flaechennormale wie die Normale der
+       Traegerflaeche (.T.) oder entgegen (.F.)? Entscheidet beim
+       Volumen ueber innen und aussen. */
+    const sinn = !/\.F\./.test(String(a[3] || ''));
+
+    /* Randkurven, nach SCHLEIFEN getrennt: die aeussere umschliesst die
+       Flaeche, jede weitere ist ein Loch darin. */
+    const rand = [];
+    fStepRefs(a[1]).forEach(bid => {
+      const b = E.get(bid); if(!b) return;
+      const aussen = /FACE_OUTER_BOUND/.test(b.typ);
+      const ba = fStepArgs(b.arg);
+      /* .F. an der Berandung kehrt die Schleifenrichtung um. */
+      const bsinn = !/\.F\./.test(String(ba[2] || ''));
+      const loop = E.get(fStepRefs(ba[1])[0]); if(!loop || loop.typ !== 'EDGE_LOOP') return;
+      const kanten = [];
+      fStepRefs(fStepArgs(loop.arg)[1]).forEach(oid => {
+        const oe = E.get(oid); if(!oe || oe.typ !== 'ORIENTED_EDGE') return;
+        const oa = fStepArgs(oe.arg);
+        const kid = fStepRefs(oa[3])[0];
+        const kk = fStepKante(E, G, kid, aus, einheit);
+        if(!kk || kk.p.length < 2) return;
+        kk.kid = kid;
+        kanten.push(/\.F\./.test(oa[4] || '') ? {p:kk.p.slice().reverse(), art:kk.art, b:kk.b, kid:kid} : kk);
+      });
+      if(!kanten.length) return;
+      if(!bsinn) kanten.reverse().forEach(k => k.p.reverse());
+      rand.push({aussen:aussen, kanten:kanten});
+    });
+    nachId.set(id, flaechen.length);
+    flaechen.push({id:id, art:art, rahmen:rahmen, r:r, r2:r2, sinn:sinn,
+      achse:rahmen ? rahmen.z : null, ort:rahmen ? rahmen.p : null,
+      rand:rand, koerper:-1});
+  });
+
+  /* ---- Koerper: nur eine GESCHLOSSENE Schale umschliesst ein Volumen ---- */
+  const koerper = [];
+  E.forEach((e) => {
+    if(e.typ !== 'MANIFOLD_SOLID_BREP' && e.typ !== 'BREP_WITH_VOIDS') return;
+    const schalen = fStepRefs(e.arg);       /* aeussere Schale, dann etwaige Hohlraeume */
+    const idx = koerper.length, meine = [];
+    schalen.forEach(sid => {
+      const s = E.get(sid);
+      if(!s || !/CLOSED_SHELL/.test(s.typ)) return;
+      fStepRefs(fStepArgs(s.arg)[1]).forEach(fid => {
+        const k = nachId.get(fid);
+        if(k != null && flaechen[k].koerper < 0){ flaechen[k].koerper = idx; meine.push(k); }
+      });
+    });
+    if(meine.length) koerper.push({flaechen:meine});
+  });
+
+  /* KEIN geschlossener Koerper im Satz — und trotzdem vielleicht einer.
+     Manche Ausgaben (FreeCAD zum Beispiel) schreiben ein Teil als
+     SHELL_BASED_SURFACE_MODEL mit lauter offenen Schalen, obwohl die
+     Flaechen zusammen dicht sind. Gemessen: 18 von 127 Dateien. Ob sie
+     dicht sind, laesst sich nachrechnen statt glauben — in einem
+     geschlossenen Gebilde gehoert JEDE Kante zu genau zwei Flaechen.
+     Genau das prueft der Satz von Gauss auch stillschweigend voraus. */
+  let genaeht = false;
+  if(!koerper.length && flaechen.length){
+    const dichtNach = (schluessel) => {
+      const z = new Map();
+      flaechen.forEach(f => f.rand.forEach(lo => lo.kanten.forEach(k => {
+        const s = schluessel(k); if(s == null) return;
+        z.set(s, (z.get(s) || 0) + 1);
+      })));
+      if(!z.size) return false;
+      let ok = true; z.forEach(v => { if(v !== 2) ok = false; });
+      return ok;
+    };
+    /* Geprueft wird TOPOLOGISCH: teilen sich zwei Flaechen dieselbe
+       Kante? Das trifft zu, wenn die Datei eine ordentliche Schale
+       fuehrt und sie nur nicht als geschlossen deklariert.
+       NICHT geprueft wird geometrisch. Der Versuch steht hier als
+       Erfahrung: FreeCAD-Ausgaben geben jeder Flaeche ihre EIGENE Kopie
+       jeder Kante (gemessen: 504 Kanten, jede genau einmal benutzt),
+       und die beiden Kopien sind unterschiedlich fein zerlegt. Ueber
+       Endpunkte allein zusammenzufuehren waere geraten, und der Lauf
+       kostete 20 Sekunden mehr ohne eine einzige Datei zu gewinnen.
+       Solche Dateien bekommen ehrlich kein Volumen. */
+    if(dichtNach(k => k.kid)){
+      flaechen.forEach(f => { f.koerper = 0; });
+      koerper.push({flaechen:flaechen.map((_, i) => i)});
+      genaeht = true;
+    }
+  }
+
+  /* Huellquader ueber alle Randpunkte */
+  const box = {x0:Infinity, y0:Infinity, z0:Infinity, x1:-Infinity, y1:-Infinity, z1:-Infinity};
+  flaechen.forEach(f => f.rand.forEach(lo => lo.kanten.forEach(k => k.p.forEach(p => {
+    if(p[0] < box.x0) box.x0 = p[0]; if(p[0] > box.x1) box.x1 = p[0];
+    if(p[1] < box.y0) box.y0 = p[1]; if(p[1] > box.y1) box.y1 = p[1];
+    if(p[2] < box.z0) box.z0 = p[2]; if(p[2] > box.z1) box.z1 = p[2];
+  }))));
+
+  const warnungen = [];
+  if(!flaechen.length) warnungen.push('Keine Flaechen gefunden — ist das ein Flaechen- oder Punktmodell statt eines Volumens?');
+  else if(!koerper.length) warnungen.push('Kein geschlossener Koerper in der Datei: es sind lose Flaechen, und sie schliessen nicht dicht ab. Ein Volumen laesst sich daraus nicht rechnen — weder hier noch mit einem anderen Programm.');
+  else if(genaeht) warnungen.push('Die Datei fuehrt keinen Koerper, sondern lose Flaechen. Sie schliessen aber dicht ab — jede Kante gehoert zu genau zwei Flaechen — deshalb ist das Volumen gerechnet.');
+  if(koerper.length > 1) warnungen.push(koerper.length + ' getrennte Koerper: die Werte gelten fuer alle zusammen.');
+  if(zaehl.frei) warnungen.push(zaehl.frei + ' Freiformflaeche(n): dort wird ueber den Flaechenrand genaehert.');
+  if(einheit !== 1) warnungen.push('Zeichnungseinheit umgerechnet (Faktor ' + einheit + ').');
+  const teile = [...E.values()].filter(e => e.typ === 'NEXT_ASSEMBLY_USAGE_OCCURRENCE').length;
+  if(teile) warnungen.push('Baugruppe mit ' + teile + ' Verknuepfung(en): die Teile werden dort gelesen, wo sie im Modell liegen.');
+
+  return {flaechen:flaechen, koerper:koerper, box:box, einheit:einheit,
+    bericht:{saetze:E.size, flaechen:flaechen.length, ebenen:zaehl.ebene, zylinder:zaehl.zylinder,
+      kegel:zaehl.kegel, torus:zaehl.torus, kugel:zaehl.kugel, frei:zaehl.frei,
+      linien:aus.linien, bogen:aus.bogen, freieKanten:aus.frei, splines:aus.spline,
+      teile:teile, koerper:koerper.length, genaeht:genaeht},
+    warnungen:warnungen};
+}
+/* =====================================================================
+   import/31-geometrie.js — aus dem STEP-Modell werden Zahlen
+   ---------------------------------------------------------------------
+   Volumen, Oberflaeche, Rotation, Bohrungen, Rohteilvorschlag, Klasse.
+
+   WIE DAS VOLUMEN GERECHNET WIRD, und warum so:
+   Nach dem Satz von Gauss ist das Volumen eines Koerpers
+       V = 1/3 * (Fluss des Ortsvektors durch seine Oberflaeche).
+   Der Fluss zerfaellt in die Beitraege der einzelnen Flaechen. Jede
+   Flaeche wird dafuer in ihre eigene PARAMETEREBENE gelegt (Ebene:
+   zwei Achsen; Zylinder und Kegel: Winkel und Hoehe; Torus und Kugel:
+   zwei Winkel), und das Flaechenintegral wird mit dem Satz von Green
+   in ein RANDINTEGRAL verwandelt. Gerechnet wird also nur noch entlang
+   der Flaechenraender, die der Leser ohnehin liefert.
+
+   Der Gewinn ist nicht Schoenheit, sondern Genauigkeit: die Flaeche
+   selbst wird NICHT in Dreiecke zerlegt, also entsteht dort auch kein
+   Zerlegungsfehler. Eine Bohrung ist damit exakt ein Zylinder und
+   nicht ein 60-Eck. Uebrig bleibt nur der Fehler der Randkurven, und
+   der ist ueber die Bogenfeinheit steuerbar.
+
+   Moeglich ist das, weil der Integrand fuer ALLE fuenf Flaechenarten
+   dieselbe Gestalt hat:
+       f(u,v) = A(v) + B(v)*cos(u/s) + C(v)*sin(u/s)
+   Die Stammfunktion in u ist damit geschlossen hinschreibbar (fM), und
+   das Randintegral laeuft mit einer Vier-Punkt-Gauss-Formel je
+   Kantenstueck.
+
+   WAS NICHT EXAKT IST, und das steht auch im Blatt: Freiformflaechen
+   (B-Spline, Rotations- und Extrusionsflaechen) haben keine solche
+   Parameterform. Sie werden ueber ihren Rand genaehert. Gemessen an
+   127 echten Dateien sind 85 davon zu 100 Prozent frei von solchen
+   Flaechen. Der genaeherte Anteil wird ausgewiesen — ein Preis soll
+   nie auf einer stillen Schaetzung stehen.
+   ===================================================================== */
+
+/* ---- Vektorwerkzeug ---- */
+const fV = {
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  mul: (a, k) => [a[0] * k, a[1] * k, a[2] * k],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  kreuz: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  laenge: (a) => Math.hypot(a[0], a[1], a[2]),
+  norm: (a) => { const L = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / L, a[1] / L, a[2] / L]; }
+};
+
+/* Vier-Punkt-Gauss auf [0,1]: exakt bis Grad 7. Die Stammfunktion M
+   traegt Sinus und Kosinus, die ueber ein kurzes Kantenstueck fast
+   linear verlaufen — vier Punkte sind dafuer reichlich. */
+const F_GAUSS_T = [0.06943184420297371, 0.33000947820757187, 0.6699905217924281, 0.9305681557970263];
+const F_GAUSS_W = [0.1739274225687269, 0.3260725774312731, 0.3260725774312731, 0.1739274225687269];
+
+/* Massstab der Winkelachse. Frei waehlbar — die Kennwerte tragen ihn
+   mit, und u = s*Winkel haelt beide Achsen in derselben Groessenordnung. */
+function fSkala(f){
+  if(f.art === 'zylinder' || f.art === 'kugel') return f.r > 1e-9 ? f.r : 1;
+  if(f.art === 'kegel' || f.art === 'torus')    return f.r > 1e-9 ? f.r : 1;
+  return 1;
+}
+/* Periode der Winkelachse (0 = nicht periodisch) */
+function fPeriode(f){
+  return (f.art === 'zylinder' || f.art === 'kegel' || f.art === 'torus' || f.art === 'kugel')
+    ? 2 * Math.PI * fSkala(f) : 0;
+}
+function fPeriodeV(f){ return f.art === 'torus' ? 2 * Math.PI * (f.r2 || 1) : 0; }
+
+/* Einmal je Flaeche: die Lage des Rahmenursprungs in seinen eigenen
+   Achsen. Diese drei Zahlen tragen im Fluss den Abstand zum Nullpunkt. */
+function fVor(f){
+  if(f._vor) return f._vor;
+  const R = f.rahmen;
+  f._vor = R ? {px:fV.dot(R.p, R.x), py:fV.dot(R.p, R.y), pz:fV.dot(R.p, R.z), s:fSkala(f)}
+             : {px:0, py:0, pz:0, s:1};
+  return f._vor;
+}
+
+/* Weltpunkt -> Parameterebene (u,v) */
+function fUV(f, p){
+  const R = f.rahmen, d = fV.sub(p, R.p);
+  const a = fV.dot(d, R.x), b = fV.dot(d, R.y), c = fV.dot(d, R.z);
+  const s = fSkala(f);
+  switch(f.art){
+    case 'ebene':    return [a, b];
+    case 'zylinder': return [s * Math.atan2(b, a), c];
+    case 'kegel':    return [s * Math.atan2(b, a), c];
+    case 'torus':    return [s * Math.atan2(b, a), (f.r2 || 1) * Math.atan2(c, Math.hypot(a, b) - f.r)];
+    case 'kugel':    return [s * Math.atan2(b, a), f.r * Math.atan2(c, Math.hypot(a, b))];
+  }
+  return [a, b];
+}
+/* Parameterebene -> Weltpunkt (fuer die Vorschau und zum Nachmessen) */
+function fXYZ(f, u, v){
+  const R = f.rahmen, s = fSkala(f), th = u / s;
+  const co = Math.cos(th), si = Math.sin(th);
+  const er = [R.x[0] * co + R.y[0] * si, R.x[1] * co + R.y[1] * si, R.x[2] * co + R.y[2] * si];
+  switch(f.art){
+    case 'ebene':    return fV.add(R.p, fV.add(fV.mul(R.x, u), fV.mul(R.y, v)));
+    case 'zylinder': return fV.add(R.p, fV.add(fV.mul(er, f.r), fV.mul(R.z, v)));
+    case 'kegel':    return fV.add(R.p, fV.add(fV.mul(er, f.r + v * Math.tan(f.r2)), fV.mul(R.z, v)));
+    case 'torus': {
+      const ph = v / (f.r2 || 1);
+      return fV.add(R.p, fV.add(fV.mul(er, f.r + f.r2 * Math.cos(ph)), fV.mul(R.z, f.r2 * Math.sin(ph))));
+    }
+    case 'kugel': {
+      const ph = v / f.r;
+      return fV.add(R.p, fV.add(fV.mul(er, f.r * Math.cos(ph)), fV.mul(R.z, f.r * Math.sin(ph))));
+    }
+  }
+  return R.p;
+}
+
+/* Die Kennwerte A, B, C des Integranden bei der Hoehe v.
+   was = 0: Mass der Flaeche   was = 1: Fluss des Ortsvektors
+   Hergeleitet je Flaechenart aus der Normparametrisierung
+   (ISO 10303-42); nachgerechnet ist jede in Pruefabschnitt 4. */
+function fABC(f, v, was){
+  const V = fVor(f), s = V.s;
+  switch(f.art){
+    case 'ebene':
+      return was ? [V.pz, 0, 0] : [1, 0, 0];
+    case 'zylinder':
+      return was ? [f.r, V.px, V.py] : [1, 0, 0];
+    case 'kegel': {
+      const ta = Math.tan(f.r2), Rv = f.r + v * ta, k = Rv / s;
+      if(!was) return [Math.abs(k) / Math.cos(f.r2), 0, 0];
+      return [k * (f.r - ta * V.pz), k * V.px, k * V.py];
+    }
+    case 'torus': {
+      const r2 = f.r2 || 1, ph = v / r2, co = Math.cos(ph), si = Math.sin(ph);
+      const k = (f.r + r2 * co) / s;
+      if(!was) return [Math.abs(k), 0, 0];
+      return [k * (V.pz * si + (f.r + r2 * co) * co + r2 * si * si), k * co * V.px, k * co * V.py];
+    }
+    case 'kugel': {
+      const ph = v / f.r, co = Math.cos(ph), si = Math.sin(ph);
+      if(!was) return [Math.abs(co), 0, 0];
+      return [co * (f.r + V.pz * si), co * co * V.px, co * co * V.py];
+    }
+  }
+  return [0, 0, 0];
+}
+
+/* Stammfunktion in u:  M(u,v) = Integral von 0 bis u ueber A + B*cos(t/s) + C*sin(t/s) */
+function fM(f, u, v, was){
+  const abc = fABC(f, v, was), s = fVor(f).s;
+  if(!abc[1] && !abc[2]) return abc[0] * u;
+  const th = u / s;
+  return abc[0] * u + abc[1] * s * Math.sin(th) - abc[2] * s * (Math.cos(th) - 1);
+}
+
+/* Randintegral ueber einen Streckenzug in der Parameterebene.
+   Green: Flaechenintegral = Umlaufintegral von M dv. */
+function fRandIntegral(f, pts, was){
+  let summe = 0;
+  for(let i = 0; i < pts.length; i++){
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    const du = b[0] - a[0], dv = b[1] - a[1];
+    if(!dv) continue;                       /* waagerechte Kante traegt nichts bei */
+    let t = 0;
+    for(let q = 0; q < 4; q++){
+      const x = F_GAUSS_T[q];
+      t += F_GAUSS_W[q] * fM(f, a[0] + du * x, a[1] + dv * x, was);
+    }
+    summe += t * dv;
+  }
+  return summe;
+}
+
+/* Eine Randschleife in die Parameterebene legen und dabei ENTWICKELN.
+   Der Winkel springt bei Pi; ohne das Entwickeln wuerde aus einer
+   Bohrung, deren Naht dort liegt, ein zerrissenes Gebilde. Zugleich
+   ist das Entwickeln der Grund, warum eine ganze Bohrung ohne
+   Sonderfall funktioniert: sie wird in der Parameterebene schlicht
+   zum Rechteck. */
+function fSchleifeUV(f, kanten){
+  const per = fPeriode(f), perV = fPeriodeV(f);
+  const pts = [];
+  kanten.forEach(k => {
+    for(let i = 0; i < k.p.length - 1; i++) pts.push(fUV(f, k.p[i]));
+  });
+  const letzte = kanten.length ? kanten[kanten.length - 1].p : null;
+  if(letzte && letzte.length) pts.push(fUV(f, letzte[letzte.length - 1]));
+  if(pts.length < 3) return null;
+  const dicht = (w, vor, p) => {
+    if(!p) return w;
+    while(w - vor >  p / 2) w -= p;
+    while(w - vor < -p / 2) w += p;
+    return w;
+  };
+  for(let i = 1; i < pts.length; i++){
+    pts[i][0] = dicht(pts[i][0], pts[i - 1][0], per);
+    pts[i][1] = dicht(pts[i][1], pts[i - 1][1], perV);
+  }
+  /* Der Schlusspunkt ist derselbe RAUMpunkt wie der Anfangspunkt, sein
+     entwickelter WINKEL aber nicht: an ihm steht, ob die Schleife einmal
+     ganz um die Flaeche herumlaeuft. Das entscheidet weiter unten, ob
+     sie fuer sich einen Bereich einschliesst oder erst zusammen mit
+     einer zweiten.
+     Er bleibt stehen. Ihn wegzulassen war ein stiller Fehler von 1,4
+     Prozent auf jeder Mantelflaeche: der Kreis endete ein Segment vor
+     sich selbst, und die Naht zur zweiten Schleife stand schraeg statt
+     senkrecht. Bei einer geschlossenen Schleife ist er ein Punkt ohne
+     Laenge und damit ohne Wirkung. */
+  pts.umlauf = per ? Math.round((pts[pts.length - 1][0] - pts[0][0]) / per) : 0;
+  return pts;
+}
+
+/* Eine Flaeche, die einmal GANZ um ihre Achse laeuft, hat in der
+   Parameterebene keinen geschlossenen Rand: der Mantel einer Bohrung
+   ist oben und unten von je einer Schleife begrenzt, und jede fuer sich
+   schliesst nichts ein. Erst zusammen tun sie es.
+
+   Das ist der haeufigste Fall ueberhaupt und war der erste grobe Fehler
+   dieses Moduls: ohne diese Naht fehlten an einer Lehre zwei Drittel der
+   Oberflaeche, weil jede Mantelflaeche nur den schmalen Saum ihrer
+   eigenen Randschleife beisteuerte.
+
+   Zusammengesetzt wird, indem die zweite Schleife um ganze Perioden
+   verschoben wird, bis sie dort beginnt, wo die erste endet. Die beiden
+   senkrechten Verbindungsstuecke sind die Schnittkante, an der man den
+   Zylinder aufrollt. Loecher in derselben Flaeche wandern in dasselbe
+   Fenster — der Integrand ist periodisch, seine Stammfunktion nicht. */
+function fSchleifenVereinen(f, schleifen, per){
+  const offen = [];
+  schleifen.forEach((p, i) => { if(p.umlauf) offen.push(i); });
+  if(!offen.length) return schleifen;
+
+  let A = null, B = null, rest;
+  if(offen.length === 2 && schleifen[offen[0]].umlauf + schleifen[offen[1]].umlauf === 0){
+    A = schleifen[offen[0]]; B = schleifen[offen[1]];
+    rest = schleifen.filter((_, i) => i !== offen[0] && i !== offen[1]);
+  } else if(offen.length === 1){
+    /* Nur EINE umlaufende Schleife: der Gegenpart ist eine entartete
+       Linie — der Pol einer Kugel oder die Spitze eines Kegels. Die
+       Flaeche liegt links vom Umlauf, also bei wachsendem Winkel oben. */
+    A = schleifen[offen[0]];
+    let vz = null;
+    if(f.art === 'kugel') vz = A.umlauf > 0 ? f.r * Math.PI / 2 : -f.r * Math.PI / 2;
+    else if(f.art === 'kegel' && Math.abs(Math.tan(f.r2)) > 1e-9) vz = -f.r / Math.tan(f.r2);
+    if(vz == null) return null;
+    const u0 = A[A.length - 1][0];
+    B = [[u0, vz], [u0 - A.umlauf * per, vz]];
+    B.umlauf = -A.umlauf;
+    rest = schleifen.filter((_, i) => i !== offen[0]);
+  } else return null;
+
+  const k = Math.round((A[A.length - 1][0] - B[0][0]) / per);
+  /* Beim Torus ist auch die ZWEITE Achse periodisch. Die beiden
+     Schleifen werden getrennt entwickelt, und dabei kann dieselbe
+     Stelle einmal als -180 und einmal als +180 Grad herauskommen. Aus
+     einer Viertelkehle wird dann eine Dreiviertelkehle. Gewaehlt wird
+     der Vertreter, der naeher an der ersten Schleife liegt — an einer
+     Pruefvorrichtung lag das Volumen sonst um 2,9 Prozent daneben. */
+  const perV = fPeriodeV(f);
+  let kv = 0;
+  if(perV > 0){
+    const mv = (p) => { let s = 0; p.forEach(q => s += q[1]); return s / p.length; };
+    kv = Math.round((mv(A) - mv(B)) / perV);
+  }
+  const Bv = (k || kv) ? B.map(p => [p[0] + k * per, p[1] + kv * perV]) : B;
+  const vereint = A.concat(Bv);
+  let umin = Infinity, umax = -Infinity, vmin = Infinity, vmax = -Infinity;
+  vereint.forEach(p => {
+    if(p[0] < umin) umin = p[0]; if(p[0] > umax) umax = p[0];
+    if(p[1] < vmin) vmin = p[1]; if(p[1] > vmax) vmax = p[1];
+  });
+  const mu = (umin + umax) / 2, mvv = (vmin + vmax) / 2;
+  const geschoben = rest.map(p => {
+    let cu = 0, cv = 0; p.forEach(q => { cu += q[0]; cv += q[1]; });
+    cu /= p.length; cv /= p.length;
+    const ku = Math.round((mu - cu) / per);
+    const kw = perV > 0 ? Math.round((mvv - cv) / perV) : 0;
+    return (ku || kw) ? p.map(q => [q[0] + ku * per, q[1] + kw * perV]) : p;
+  });
+  return [vereint].concat(geschoben);
+}
+
+/* Flaecheninhalt und Flussbeitrag EINER Flaeche. */
+function fFlaecheWerte(f){
+  if(f.art === 'frei' || !f.rahmen) return fFreiWerte(f);
+  const per = fPeriode(f);
+  let schleifen = [];
+  for(const lo of f.rand){
+    const pts = fSchleifeUV(f, lo.kanten);
+    if(pts) schleifen.push(pts);
+  }
+  if(!schleifen.length) return {flaeche:0, fluss:0, genaehert:false, sinnOk:true, offen:false};
+  let offen = false;
+  if(per > 0){
+    const vereint = fSchleifenVereinen(f, schleifen, per);
+    if(vereint) schleifen = vereint;
+    else offen = true;          /* Randlage, die die App nicht deuten kann */
+  }
+  let mass = 0, fluss = 0;
+  schleifen.forEach(pts => {
+    mass  += fRandIntegral(f, pts, 0);
+    fluss += fRandIntegral(f, pts, 1);
+  });
+  return {flaeche:Math.abs(mass), fluss:fluss, genaehert:false,
+    sinnOk:(mass >= 0) === !!f.sinn, offen:offen};
+}
+
+/* Freiformflaechen: es gibt keine Parameterform, also wird der Rand
+   vom Schwerpunkt aus in Dreiecke gelegt. Das ist eine NAEHERUNG —
+   sie stimmt genau dann, wenn die Flaeche eben ist, und wird mit
+   zunehmender Woelbung schlechter. Der Anteil solcher Flaechen steht
+   im Bericht. Die Schleifenrichtung ist nach der Norm gegen den
+   Uhrzeigersinn um die AUSSENnormale; Loecher laufen andersherum und
+   ziehen sich dadurch von selbst ab. */
+function fFreiWerte(f){
+  let flaeche = 0, fluss = 0;
+  for(const lo of f.rand){
+    const p = [];
+    lo.kanten.forEach(k => { for(let i = 0; i < k.p.length - 1; i++) p.push(k.p[i]); });
+    if(p.length < 3) continue;
+    const c = [0, 0, 0];
+    p.forEach(q => { c[0] += q[0]; c[1] += q[1]; c[2] += q[2]; });
+    c[0] /= p.length; c[1] /= p.length; c[2] /= p.length;
+    for(let i = 0; i < p.length; i++){
+      const a = p[i], b = p[(i + 1) % p.length];
+      const n = fV.kreuz(fV.sub(a, c), fV.sub(b, c));     /* 2 * Flaechenvektor */
+      flaeche += 0.5 * fV.laenge(n);
+      fluss   += 0.5 * fV.dot(c, n);
+    }
+  }
+  return {flaeche:flaeche, fluss:fluss, genaehert:true, sinnOk:true};
+}
+
+/* ---- Volumen und Oberflaeche des ganzen Modells ---- */
+function fKoerperWerte(modell){
+  let vol = 0, flaeche = 0, freiFlaeche = 0, sinnSchief = 0, offen = 0;
+  const ohneKoerper = !modell.koerper.length;
+  modell.flaechen.forEach(f => {
+    const w = fFlaecheWerte(f);
+    f._w = w;
+    flaeche += w.flaeche;
+    if(w.genaehert) freiFlaeche += w.flaeche;
+    if(!w.sinnOk) sinnSchief++;
+    if(w.offen) offen++;
+    /* Nur Flaechen an einer geschlossenen Schale umschliessen Volumen. */
+    if(f.koerper >= 0) vol += w.fluss;
+  });
+  vol /= 3;
+  return {
+    volumen_mm3: ohneKoerper ? null : vol,
+    flaeche_mm2: flaeche,
+    genaehert_anteil: flaeche > 0 ? freiFlaeche / flaeche : 0,
+    sinnSchief: sinnSchief,
+    offen: offen
+  };
+}
+
+/* ---- Rotationssymmetrie ----------------------------------------------
+   Gesucht ist EINE Achse, um die sich (fast) alles dreht. Kandidaten
+   sind die Achsen aller Zylinder, Kegel, Tori und Kugeln, gewichtet
+   mit ihrem Flaecheninhalt; dazu die Normalen der Ebenen (eine Plan-
+   flaeche steht senkrecht zur Drehachse). Eine Flaeche gilt als
+   drehsymmetrisch, wenn sie koaxial zur Achse liegt (Zylinder, Kegel,
+   Torus, Kugel) oder als Ebene senkrecht dazu steht.
+
+   Nicht die Richtung allein zaehlt, sondern die ACHSLINIE: zwei
+   parallele Bohrungen nebeneinander machen kein Drehteil. */
+function fRotation(modell){
+  const F = modell.flaechen.filter(f => f._w && f._w.flaeche > 1e-9);
+  if(!F.length) return {ja:false, achse:'Z', dmax:0, laenge:0, innen:false, anteil:0, gerade:null};
+
+  const kand = [];
+  F.forEach(f => {
+    if(f.art === 'zylinder' || f.art === 'kegel' || f.art === 'torus'){
+      kand.push({r:fV.norm(f.rahmen.z), p:f.rahmen.p.slice(), g:f._w.flaeche});
+    }
+  });
+  if(!kand.length) return {ja:false, achse:'Z', dmax:0, laenge:0, innen:false, anteil:0, gerade:null};
+
+  /* Kandidaten buendeln: gleiche Richtung UND gleiche Achslinie */
+  const gruppen = [];
+  kand.forEach(k => {
+    for(const g of gruppen){
+      if(Math.abs(fV.dot(g.r, k.r)) > 0.9999){
+        const d = fV.sub(k.p, g.p);
+        const quer = fV.sub(d, fV.mul(g.r, fV.dot(d, g.r)));
+        if(fV.laenge(quer) < 0.02){ g.g += k.g; return; }
+      }
+    }
+    gruppen.push({r:k.r, p:k.p, g:k.g});
+  });
+  gruppen.sort((a, b) => b.g - a.g);
+  const A = gruppen[0];
+
+  /* Wie viel Flaeche dreht sich wirklich um diese Achse? */
+  let dreh = 0, ganz = 0, innen = false, dmax = 0, zmin = Infinity, zmax = -Infinity;
+  F.forEach(f => {
+    ganz += f._w.flaeche;
+    let ok = false;
+    if(f.art === 'ebene'){
+      ok = Math.abs(fV.dot(fV.norm(f.rahmen.z), A.r)) > 0.9995;
+    } else if(f.rahmen){
+      if(Math.abs(fV.dot(fV.norm(f.rahmen.z), A.r)) > 0.9995){
+        const d = fV.sub(f.rahmen.p, A.p);
+        const quer = fV.sub(d, fV.mul(A.r, fV.dot(d, A.r)));
+        ok = fV.laenge(quer) < 0.02;
+      }
+    }
+    if(ok) dreh += f._w.flaeche;
+    /* Groesster Durchmesser und Laenge ueber ALLE Randpunkte */
+    f.rand.forEach(lo => lo.kanten.forEach(k => k.p.forEach(p => {
+      const d = fV.sub(p, A.p), l = fV.dot(d, A.r);
+      const q = fV.laenge(fV.sub(d, fV.mul(A.r, l)));
+      if(q > dmax) dmax = q;
+      if(l < zmin) zmin = l;
+      if(l > zmax) zmax = l;
+    })));
+    /* Innenbearbeitung: ein koaxialer Zylinder, dessen Flaeche zur
+       Achse hin zeigt (Bohrung statt Zapfen). */
+    if(f.art === 'zylinder' && !f.sinn && f.rahmen &&
+       Math.abs(fV.dot(fV.norm(f.rahmen.z), A.r)) > 0.9995) innen = true;
+  });
+  const anteil = ganz > 0 ? dreh / ganz : 0;
+  const nam = ['X', 'Y', 'Z'];
+  let bi = 0; for(let i = 1; i < 3; i++) if(Math.abs(A.r[i]) > Math.abs(A.r[bi])) bi = i;
+  return {ja:anteil >= 0.9, achse:nam[bi], dmax:2 * dmax, laenge:zmax - zmin,
+    innen:innen, anteil:anteil, gerade:{r:A.r, p:A.p}};
+}
+
+/* ---- Bohrungen -------------------------------------------------------
+   Eine Bohrung ist eine Zylinderflaeche, deren Material AUSSEN liegt —
+   der Sinn der Flaeche zeigt zur Achse hin. Mehrere Teilflaechen
+   derselben Bohrung (etwa durch eine Quernut getrennt) werden ueber
+   Achslinie und Radius zusammengefasst.
+   DURCHGEHEND oder nicht: gesucht wird ein Boden, also eine koaxiale
+   Ebene oder ein koaxialer Kegel (Bohrerspitze) mit hoechstens dem
+   Bohrungsradius, an einem der beiden Enden. Findet sich keiner, gilt
+   die Bohrung als durchgehend. */
+function fBohrungen(modell){
+  const roh = [];
+  modell.flaechen.forEach(f => {
+    if(f.art !== 'zylinder' || !f.rahmen || f.sinn) return;   /* sinn=false: Normale nach innen */
+    if(!(f.r > 1e-6)) return;
+    let lo = Infinity, hi = -Infinity;
+    f.rand.forEach(l => l.kanten.forEach(k => k.p.forEach(p => {
+      const t = fV.dot(fV.sub(p, f.rahmen.p), f.rahmen.z);
+      if(t < lo) lo = t; if(t > hi) hi = t;
+    })));
+    if(!isFinite(lo)) return;
+    roh.push({r:f.r, achse:fV.norm(f.rahmen.z), p:f.rahmen.p, lo:lo, hi:hi});
+  });
+  const grp = [];
+  roh.forEach(b => {
+    for(const g of grp){
+      if(Math.abs(b.r - g.r) < 0.01 && Math.abs(fV.dot(g.achse, b.achse)) > 0.9995){
+        const d = fV.sub(b.p, g.p);
+        const quer = fV.sub(d, fV.mul(g.achse, fV.dot(d, g.achse)));
+        if(fV.laenge(quer) < 0.02){
+          const s = fV.dot(d, g.achse);
+          g.lo = Math.min(g.lo, b.lo + s); g.hi = Math.max(g.hi, b.hi + s);
+          return;
+        }
+      }
+    }
+    grp.push({r:b.r, achse:b.achse, p:b.p, lo:b.lo, hi:b.hi});
+  });
+  /* Boden suchen.
+     TEMPOHINWEIS: an einer Grundplatte mit 182 Bohrungen und 277
+     Flaechen war das anfangs der langsamste Teil der ganzen App
+     (2,1 von 3,2 Sekunden), weil jede Bohrung jede Flaeche Punkt fuer
+     Punkt abtastete. Jetzt liegen Achse, Schwerpunkt und Umkreis je
+     Flaeche EINMAL bereit, und ein Boden muss mittig in der Bohrung
+     sitzen — damit fallen fast alle Paarungen mit einer einzigen
+     Abstandsrechnung weg. */
+  const kand = [];
+  modell.flaechen.forEach(f => {
+    if(!f.rahmen || (f.art !== 'ebene' && f.art !== 'kegel')) return;
+    const P = [];
+    f.rand.forEach(l => l.kanten.forEach(k => k.p.forEach(p => P.push(p))));
+    if(!P.length) return;
+    const c = [0, 0, 0];
+    P.forEach(p => { c[0] += p[0]; c[1] += p[1]; c[2] += p[2]; });
+    c[0] /= P.length; c[1] /= P.length; c[2] /= P.length;
+    let um = 0;
+    P.forEach(p => { const q = fV.laenge(fV.sub(p, c)); if(q > um) um = q; });
+    kand.push({z:fV.norm(f.rahmen.z), c:c, um:um, P:P});
+  });
+  grp.forEach(g => {
+    let boden = false;
+    for(const f of kand){
+      if(boden) break;
+      if(Math.abs(fV.dot(f.z, g.achse)) < 0.9995) continue;
+      /* Ein Boden sitzt mittig in der Bohrung. Liegt schon sein
+         Schwerpunkt weiter als Bohrungsradius plus Umkreis daneben,
+         kann keiner seiner Punkte hineinreichen. */
+      const dc = fV.sub(f.c, g.p), tc = fV.dot(dc, g.achse);
+      if(fV.laenge(fV.sub(dc, fV.mul(g.achse, tc))) > g.r + f.um + 0.02) continue;
+      if(tc + f.um < g.lo - 0.05 || tc - f.um > g.hi + 0.05) continue;
+      let rmax = 0, tmin = Infinity, tmax = -Infinity;
+      for(const p of f.P){
+        const dx = p[0] - g.p[0], dy = p[1] - g.p[1], dz = p[2] - g.p[2];
+        const t = dx * g.achse[0] + dy * g.achse[1] + dz * g.achse[2];
+        const qx = dx - g.achse[0] * t, qy = dy - g.achse[1] * t, qz = dz - g.achse[2] * t;
+        const q = Math.sqrt(qx * qx + qy * qy + qz * qz);
+        if(q > rmax){ rmax = q; if(rmax > g.r + 0.02) break; }
+        if(t < tmin) tmin = t; if(t > tmax) tmax = t;
+      }
+      if(rmax > g.r + 0.02) continue;               /* breiter als die Bohrung: kein Boden */
+      if(tmax < g.lo - 0.05 || tmin > g.hi + 0.05) continue;
+      boden = true;
+    }
+    g.durch = !boden;
+  });
+  return grp.map(g => ({d:fRund(2 * g.r, 3), tiefe:fRund(g.hi - g.lo, 3), durch:!!g.durch}))
+            .sort((a, b) => b.d - a.d);
+}
+
+/* ---- Sechskant erkennen ---------------------------------------------
+   Sechs ebene Flaechen, deren Normalen quer zur Achse stehen, alle im
+   selben Abstand von ihr, und zwar AUSSEN: bei einem Sechskant ist die
+   Schluesselweite das Mass ueber die Flaechen, der groesste Durchmesser
+   das Mass ueber die Ecken, und beide haengen fest zusammen
+   (SW = dmax * Wurzel(3) / 2).
+
+   Die letzte Bedingung ist der Grund fuer diesen Kommentar: ohne sie
+   hat die Erkennung an einer Lehre mit sechs Schlitzen angeschlagen.
+   Deren Schlitzflanken stehen auch quer zur Achse und auch im selben
+   Abstand — nur eben INNEN. Das Rohteil wurde dadurch kleiner als das
+   Fertigteil vorgeschlagen, im Bild als Sechskant mitten im Werkstueck
+   zu sehen. */
+function fSechskant(modell, achse, dmax){
+  if(!achse || !(dmax > 0)) return null;
+  const n = [];
+  modell.flaechen.forEach(f => {
+    if(f.art !== 'ebene' || !f.rahmen || !f._w || f._w.flaeche < 1e-6) return;
+    const z = fV.norm(f.rahmen.z);
+    if(Math.abs(fV.dot(z, achse.r)) > 0.01) return;   /* Normale muss quer zur Achse stehen */
+    n.push(Math.abs(fV.dot(fV.sub(f.rahmen.p, achse.p), z)));
+  });
+  if(n.length < 6) return null;
+  const soll = dmax * Math.sqrt(3) / 2;               /* Schluesselweite eines Sechskants */
+  const passend = n.filter(a => Math.abs(2 * a - soll) < 0.03 * soll).length;
+  return passend >= 6 ? fRund(soll, 3) : null;
+}
+
+/* ---- Rohteilvorschlag ------------------------------------------------ */
+function fRohteil(teil, rot, form, auf, sechskant){
+  const aD = auf && auf.aufmass_durchmesser != null ? auf.aufmass_durchmesser : 3;
+  const aL = auf && auf.aufmass_laenge != null ? auf.aufmass_laenge : 2;
+  const aF = auf && auf.aufmass_flach != null ? auf.aufmass_flach : 3;
+  const b = teil.bbox;
+  if(form === 'rund'){
+    const d = fRund(rot.dmax + aD, 2), l = fRund(rot.laenge + aL, 2);
+    return {form:'rund', masse:{d:d, l:l}, volumen_cm3:fRund(Math.PI / 4 * d * d * l / 1000, 3)};
+  }
+  if(form === 'rohr'){
+    const d = fRund(rot.dmax + aD, 2), l = fRund(rot.laenge + aL, 2);
+    const di = fRund(Math.max(0, (rot.di || 0) - aD), 2);
+    return {form:'rohr', masse:{d:d, di:di, l:l},
+      volumen_cm3:fRund(Math.PI / 4 * (d * d - di * di) * l / 1000, 3)};
+  }
+  if(form === 'sechskant'){
+    const sw = fRund((sechskant || rot.dmax) + aD, 2), l = fRund(rot.laenge + aL, 2);
+    return {form:'sechskant', masse:{sw:sw, l:l},
+      volumen_cm3:fRund(Math.sqrt(3) / 2 * sw * sw * l / 1000, 3)};
+  }
+  const x = fRund(b.x + aF, 2), y = fRund(b.y + aF, 2), z = fRund(b.z + aF, 2);
+  return {form:'flach', masse:{x:x, y:y, z:z}, volumen_cm3:fRund(x * y * z / 1000, 3)};
+}
+
+/* ---- Klasse ----------------------------------------------------------
+   Drehteil einfach: dreht sich um eine Achse, ohne Nebenformen.
+   Drehteil mit Fraesanteil: dreht sich, hat aber Querbohrungen oder
+     Flaechen, die nicht um die Achse laufen.
+   Fraesteil 3-Achs: prismatisch, ohne Hinterschnitt aus der besten
+     Aufspannrichtung — gemessen als Flaechenanteil, dessen Normale
+     nach unten zeigt, obwohl die Flaeche nicht der Boden ist.
+   Fraesteil komplex: der Rest. */
+const F_RICHTUNGEN = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+function fHinterschnitt(modell){
+  let best = 1, bestR = [0, 0, 1];
+  F_RICHTUNGEN.forEach(R => {
+    let ganz = 0, schlecht = 0;
+    modell.flaechen.forEach(f => {
+      if(!f._w || f._w.flaeche < 1e-9) return;
+      /* mittlere Normale der Flaeche ueber ihren Flussvektor annaehern:
+         bei Ebenen exakt, sonst die Achsrichtung als grobe Auskunft */
+      let n = null;
+      if(f.art === 'ebene' && f.rahmen) n = fV.mul(fV.norm(f.rahmen.z), f.sinn ? 1 : -1);
+      if(!n) return;                        /* gekruemmte Flaechen zaehlen nicht mit */
+      ganz += f._w.flaeche;
+      if(fV.dot(n, R) < -0.02) schlecht += f._w.flaeche;   /* zeigt von der Spindel weg */
+    });
+    const q = ganz > 0 ? schlecht / ganz : 1;
+    if(q < best){ best = q; bestR = R; }
+  });
+  return {anteil:best, richtung:bestR};
+}
+function fKlasse(rot, bohrungen, hinter, modell){
+  if(rot.ja){
+    const quer = bohrungen.some(b => b.d > 0) && modell.flaechen.some(f =>
+      f.art === 'zylinder' && f.rahmen && rot.gerade &&
+      Math.abs(fV.dot(fV.norm(f.rahmen.z), rot.gerade.r)) < 0.9995);
+    const flach = modell.flaechen.some(f => f.art === 'ebene' && f.rahmen && rot.gerade &&
+      Math.abs(fV.dot(fV.norm(f.rahmen.z), rot.gerade.r)) < 0.9995 && f._w && f._w.flaeche > 1);
+    return (quer || flach || rot.anteil < 0.995) ? 'drehteil_fraes' : 'drehteil_einfach';
+  }
+  return hinter.anteil <= 0.001 ? 'fraesteil_3ax' : 'fraesteil_komplex';
+}
+
+/* ---- Alles zusammen: STEP-Text -> Datensatz nach dem Austauschformat ---- */
+function fGeometrie(text, dateiname, vorgaben){
+  const t0 = Date.now();
+  const m = fStepModell(text);
+  const w = fKoerperWerte(m);
+  const rot = fRotation(m);
+  const bo = fBohrungen(m);
+  const hinter = fHinterschnitt(m);
+  const d = neuerDatensatz();
+  const B = m.box;
+  const gross = isFinite(B.x0);
+  d.teil.name = String(dateiname || '').replace(/\.[^.]+$/, '');
+  d.teil.bbox = {x:gross ? fRund(B.x1 - B.x0, 3) : 0, y:gross ? fRund(B.y1 - B.y0, 3) : 0,
+                 z:gross ? fRund(B.z1 - B.z0, 3) : 0};
+  d.teil.volumen_cm3 = w.volumen_mm3 == null ? 0 : fRund(w.volumen_mm3 / 1000, 4);
+  d.teil.oberflaeche_cm2 = fRund(w.flaeche_mm2 / 100, 3);
+  d.teil.rotation = {ja:rot.ja, achse:rot.achse, dmax:fRund(rot.dmax, 3),
+                     laenge:fRund(rot.laenge, 3), innen:rot.innen};
+  d.teil.bohrungen = bo;
+  d.teil.flaechen = m.bericht.flaechen;
+  d.teil.kanten = m.bericht.linien + m.bericht.bogen + m.bericht.freieKanten;
+  /* Innendurchmesser fuer den Rohrvorschlag: die groesste durchgehende
+     Bohrung auf der Drehachse */
+  rot.di = 0;
+  if(rot.ja){
+    bo.forEach(b => { if(b.durch && b.tiefe >= rot.laenge - 0.5 && b.d > rot.di) rot.di = b.d; });
+  }
+  const sw = rot.ja ? fSechskant(m, rot.gerade, rot.dmax) : null;
+  const form = rot.ja ? (rot.di > 0 ? 'rohr' : (sw ? 'sechskant' : 'rund')) : 'flach';
+  d.rohteil = fRohteil(d.teil, rot, form, (vorgaben && vorgaben.rohteil) || null, sw);
+  d.teil.klasse = fKlasse(rot, bo, hinter, m);
+  d.quelle.step = String(dateiname || '');
+
+  /* Alles, was kein Schemafeld ist, aber im Blatt stehen soll. */
+  d._befund = {
+    koerper: m.koerper.length,
+    volumenBekannt: w.volumen_mm3 != null,
+    genaehertAnteil: fRund(w.genaehert_anteil, 4),
+    sinnSchief: w.sinnSchief,
+    rotAnteil: fRund(rot.anteil, 3),
+    hinterschnittAnteil: fRund(hinter.anteil, 4),
+    sechskantSW: sw,
+    bericht: m.bericht,
+    warnungen: m.warnungen.slice(),
+    ms: Date.now() - t0,
+    modell: m
+  };
+  if(w.volumen_mm3 != null && gross){
+    const bv = d.teil.bbox.x * d.teil.bbox.y * d.teil.bbox.z;
+    if(w.volumen_mm3 <= 0)
+      d._befund.warnungen.push('Das gerechnete Volumen ist nicht positiv — die Flaechen der Datei bilden keinen sauber geschlossenen Koerper.');
+    else if(bv > 0 && w.volumen_mm3 > bv * 1.001)
+      d._befund.warnungen.push('Das gerechnete Volumen ist groesser als der Huellquader. Die Datei ist vermutlich fehlerhaft.');
+  }
+  if(w.genaehert_anteil > 0.02)
+    d._befund.warnungen.push('Auf ' + Math.round(w.genaehert_anteil * 100) + ' % der Oberflaeche stehen Freiformflaechen. Volumen und Oberflaeche sind dort genaehert.');
+  if(w.sinnSchief)
+    d._befund.warnungen.push(w.sinnSchief + ' Flaeche(n) mit uneinheitlicher Orientierung — das Volumen kann daneben liegen.');
+  const p = schemaPruefen(d);
+  if(p.length) d._befund.warnungen.push('Austauschformat: ' + p.join(' '));
+  return d;
+}
+/* =====================================================================
+   import/32-dxf.js — DXF als ZWEITE Quelle (2D)
+   ---------------------------------------------------------------------
+   Das Lastenheft verlangt hier wenig: Huellrechteck und Flaecheninhalt
+   genuegen. Aus einer 2D-Zeichnung laesst sich ohne Dickenangabe kein
+   Volumen ableiten — die Dicke gibt der Bediener ein, und daraus wird
+   ein Blechteil oder eine Platte.
+
+   Gelesen werden LINE, ARC, CIRCLE, LWPOLYLINE und POLYLINE; Bloecke
+   werden EINGESETZT (in echten Zeichnungen steckt oft der halbe Inhalt
+   in Bloecken). Bemassung, Text und Schraffur werden GEZAEHLT und
+   genannt, nicht gelesen — eine Massangabe ist keine Kontur.
+   ===================================================================== */
+
+function fDxfPaare(text){
+  const z = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  const aus = [];
+  for(let i = 0; i + 1 < z.length; i += 2){
+    const c = parseInt(z[i].trim(), 10);
+    if(isNaN(c)) continue;
+    aus.push([c, z[i + 1].trim()]);
+  }
+  return aus;
+}
+
+/* Die Zeichnungseinheit steht in $INSUNITS: 1 = Zoll, 4 = Millimeter. */
+function fDxfEinheit(paare){
+  for(let i = 0; i < paare.length - 2; i++)
+    if(paare[i][0] === 9 && paare[i][1] === '$INSUNITS')
+      return (+paare[i + 1][1] === 1) ? 25.4 : 1;
+  return 1;
+}
+
+/* Entitaeten in Zuege aus Punkten verwandeln. Jeder Zug ist
+   {p:[[x,y],...], zu:true|false}. */
+function fDxfZuege(text){
+  const paare = fDxfPaare(text);
+  const e = fDxfEinheit(paare);
+  const zuege = [];
+  const ignoriert = {};
+  const bloecke = {};
+  let inBlock = null, abschnitt = '';
+
+  let i = 0;
+  const naechsteEntitaet = () => {
+    while(i < paare.length && !(paare[i][0] === 0)) i++;
+    return i < paare.length ? paare[i][1] : null;
+  };
+
+  while(i < paare.length){
+    if(paare[i][0] === 2 && (paare[i - 1] && paare[i - 1][0] === 0) ) { /* nichts */ }
+    if(paare[i][0] === 0){
+      const typ = paare[i][1];
+      /* Abschnittswechsel merken */
+      if(typ === 'SECTION'){ const n = paare[i + 2]; abschnitt = (paare[i + 1] && paare[i + 1][0] === 2) ? paare[i + 1][1] : ''; i++; continue; }
+      if(typ === 'BLOCK'){
+        const w = {}; let j = i + 1;
+        while(j < paare.length && paare[j][0] !== 0){ if(!(paare[j][0] in w)) w[paare[j][0]] = paare[j][1]; j++; }
+        inBlock = w[2] || ('B' + j); bloecke[inBlock] = [];
+        i = j; continue;
+      }
+      if(typ === 'ENDBLK'){ inBlock = null; i++; continue; }
+      /* Werte dieser Entitaet einsammeln */
+      const w = {}, mehr = {};
+      let j = i + 1;
+      while(j < paare.length && paare[j][0] !== 0){
+        const c = paare[j][0], v = paare[j][1];
+        if(!(c in w)) w[c] = v;
+        (mehr[c] = mehr[c] || []).push(v);
+        j++;
+      }
+      const ziel = inBlock ? bloecke[inBlock] : zuege;
+      const zahl = (c, vor) => { const v = parseFloat(w[c]); return isFinite(v) ? v * e : (vor || 0); };
+      if(typ === 'LINE'){
+        ziel.push({p:[[zahl(10), zahl(20)], [zahl(11), zahl(21)]], zu:false});
+      } else if(typ === 'CIRCLE'){
+        const cx = zahl(10), cy = zahl(20), r = zahl(40);
+        const p = []; const n = Math.max(24, Math.min(180, Math.ceil(2 * Math.PI * r / 0.3)));
+        for(let q = 0; q <= n; q++) p.push([cx + r * Math.cos(2 * Math.PI * q / n), cy + r * Math.sin(2 * Math.PI * q / n)]);
+        ziel.push({p:p, zu:true});
+      } else if(typ === 'ARC'){
+        const cx = zahl(10), cy = zahl(20), r = zahl(40);
+        let a0 = parseFloat(w[50]) || 0, a1 = parseFloat(w[51]) || 0;
+        a0 = a0 * Math.PI / 180; a1 = a1 * Math.PI / 180;
+        while(a1 <= a0) a1 += 2 * Math.PI;
+        const p = []; const n = Math.max(4, Math.min(180, Math.ceil((a1 - a0) * r / 0.3)));
+        for(let q = 0; q <= n; q++){ const a = a0 + (a1 - a0) * q / n; p.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); }
+        ziel.push({p:p, zu:false});
+      } else if(typ === 'LWPOLYLINE'){
+        const xs = (mehr[10] || []).map(v => parseFloat(v) * e);
+        const ys = (mehr[20] || []).map(v => parseFloat(v) * e);
+        const p = [];
+        for(let q = 0; q < Math.min(xs.length, ys.length); q++) p.push([xs[q], ys[q]]);
+        if(p.length >= 2) ziel.push({p:p, zu:(parseInt(w[70], 10) & 1) === 1});
+      } else if(typ === 'VERTEX' || typ === 'SEQEND' || typ === 'POLYLINE'){
+        /* alte Polylinie: die VERTEX-Saetze sammeln sich als eigene
+           Entitaeten an; sie werden unten zusammengefasst */
+        if(typ === 'POLYLINE') ziel.push({p:[], zu:(parseInt(w[70], 10) & 1) === 1, offen:true});
+        else if(typ === 'VERTEX'){
+          const z = ziel[ziel.length - 1];
+          if(z && z.offen) z.p.push([zahl(10), zahl(20)]);
+        } else { const z = ziel[ziel.length - 1]; if(z) delete z.offen; }
+      } else if(typ === 'INSERT'){
+        const nm = w[2], bx = zahl(10), by = zahl(20);
+        const sx = parseFloat(w[41]), sy = parseFloat(w[42]);
+        const dr = (parseFloat(w[50]) || 0) * Math.PI / 180;
+        const b = bloecke[nm];
+        if(b){
+          const fx = isFinite(sx) ? sx : 1, fy = isFinite(sy) ? sy : 1;
+          const co = Math.cos(dr), si = Math.sin(dr);
+          b.forEach(z => ziel.push({zu:z.zu, p:z.p.map(q => {
+            const x = q[0] * fx, y = q[1] * fy;
+            return [bx + x * co - y * si, by + x * si + y * co];
+          })}));
+        } else ignoriert['INSERT (Block fehlt)'] = (ignoriert['INSERT (Block fehlt)'] || 0) + 1;
+      } else if(typ !== 'ENDSEC' && typ !== 'EOF' && typ !== 'SECTION' && typ !== 'TABLE' &&
+                typ !== 'ENDTAB' && typ !== 'CLASS' && typ !== 'LAYER' && typ !== 'STYLE' &&
+                typ !== 'VPORT' && typ !== 'LTYPE' && typ !== 'APPID' && typ !== 'DIMSTYLE' &&
+                typ !== 'BLOCK_RECORD' && typ !== 'UCS' && typ !== 'VIEW'){
+        ignoriert[typ] = (ignoriert[typ] || 0) + 1;
+      }
+      i = j; continue;
+    }
+    i++;
+  }
+  zuege.forEach(z => delete z.offen);
+  return {zuege:zuege.filter(z => z.p.length >= 2), ignoriert:ignoriert, einheit:e};
+}
+
+/* Huellrechteck und Flaecheninhalt der geschlossenen Zuege.
+   Der Inhalt wird mit Vorzeichen summiert: ein Loch laeuft andersherum
+   und zieht sich damit von selbst ab. */
+function fDxfGeometrie(text, dateiname, dicke){
+  const r = fDxfZuege(text);
+  const b = {x0:Infinity, y0:Infinity, x1:-Infinity, y1:-Infinity};
+  let flaeche = 0, zu = 0, offen = 0, laenge = 0;
+  r.zuege.forEach(z => {
+    z.p.forEach(p => {
+      if(p[0] < b.x0) b.x0 = p[0]; if(p[0] > b.x1) b.x1 = p[0];
+      if(p[1] < b.y0) b.y0 = p[1]; if(p[1] > b.y1) b.y1 = p[1];
+    });
+    for(let i = 0; i + 1 < z.p.length; i++)
+      laenge += Math.hypot(z.p[i + 1][0] - z.p[i][0], z.p[i + 1][1] - z.p[i][1]);
+    if(!z.zu){ offen++; return; }
+    zu++;
+    let s = 0;
+    for(let i = 0; i < z.p.length; i++){
+      const a = z.p[i], c = z.p[(i + 1) % z.p.length];
+      s += a[0] * c[1] - c[0] * a[1];
+    }
+    flaeche += s / 2;
+  });
+  const gross = isFinite(b.x0);
+  const d = neuerDatensatz();
+  const t = isFinite(dicke) && dicke > 0 ? dicke : 10;
+  d.teil.name = String(dateiname || '').replace(/\.[^.]+$/, '');
+  d.teil.bbox = {x:gross ? fRund(b.x1 - b.x0, 3) : 0, y:gross ? fRund(b.y1 - b.y0, 3) : 0, z:fRund(t, 3)};
+  d.teil.volumen_cm3 = fRund(Math.abs(flaeche) * t / 1000, 4);
+  d.teil.oberflaeche_cm2 = fRund((2 * Math.abs(flaeche) + laenge * t) / 100, 3);
+  d.teil.klasse = 'fraesteil_3ax';
+  d.teil.flaechen = 0;
+  d.teil.kanten = r.zuege.length;
+  d.quelle.step = String(dateiname || '');
+  d.rohteil = {form:'flach', masse:{x:fRund(d.teil.bbox.x + 3, 2), y:fRund(d.teil.bbox.y + 3, 2), z:fRund(t + 3, 2)},
+    volumen_cm3:fRund((d.teil.bbox.x + 3) * (d.teil.bbox.y + 3) * (t + 3) / 1000, 3)};
+  const w = [];
+  w.push('DXF ist eine ZWEIDIMENSIONALE Zeichnung. Die Dicke ' + fZahl(t, 1) + ' mm ist eine Annahme und im Feld zu aendern.');
+  if(!zu) w.push('Kein geschlossener Zug gefunden — ohne geschlossene Kontur gibt es keinen Flaecheninhalt und damit kein Volumen.');
+  if(offen) w.push(offen + ' offene(r) Zug/Zuege wurden fuer den Flaecheninhalt nicht gewertet (nur fuer das Huellrechteck).');
+  const ign = Object.keys(r.ignoriert);
+  if(ign.length) w.push('Nicht gelesen: ' + ign.map(k => k + ' (' + r.ignoriert[k] + ')').join(', ') +
+    '. Bemassung und Text sind keine Kontur; eine ganze Zeichnung mit Rahmen und Schriftfeld liefert auch deren Linien.');
+  if(r.einheit !== 1) w.push('Zeichnungseinheit Zoll erkannt und umgerechnet.');
+  d._befund = {koerper:zu ? 1 : 0, volumenBekannt:zu > 0, genaehertAnteil:0, sinnSchief:0,
+    rotAnteil:0, hinterschnittAnteil:0, sechskantSW:null, dxf:true, dicke:t, zuege:r.zuege,
+    bericht:{flaechen:0, zuege:r.zuege.length, geschlossen:zu, offen:offen},
+    warnungen:w, ms:0, modell:null};
+  return d;
+}
+/* =====================================================================
+   kalkulation/40-kalk.js — vom Teil zum Preis
+   ---------------------------------------------------------------------
+   Die Formeln stehen Wort fuer Wort im Lastenheft (Abschnitt 4); dieses
+   Modul rechnet sie nach und sonst nichts. Es ist DOM-frei, damit der
+   Pruefstand ein Handbeispiel gegenrechnen kann.
+
+   JEDER POSTEN IST EINZELN SICHTBAR UND EINZELN UEBERSCHREIBBAR. Das
+   ist keine Bequemlichkeit: eine Kalkulation, deren Zwischenschritte
+   man nicht sieht, ist ein Orakel. Ein ueberschriebener Wert wird
+   weitergerechnet und im Blatt hervorgehoben.
+
+   ZWEI STELLEN, an denen das Lastenheft offen ist, und wie sie hier
+   entschieden sind:
+   1. Der BEARBEITBARKEITSFAKTOR der Werkstoffliste und die
+      ZERSPANLEISTUNG der Gruppe wuerden einander doppelt zaehlen.
+      Deshalb: die Zerspanleistung gilt fuer die GRUPPE, der Faktor nur
+      noch fuer den Unterschied INNERHALB der Gruppe — bezogen auf den
+      guenstigsten Werkstoff darin. Bei Stahl ist das S235; C45 braucht
+      dann das 1,15-fache, 42CrMo4 das 1,4-fache.
+   2. Die MASCHINE folgt der Klasse: Drehteile auf der Drehmaschine,
+      Fraesteile auf der Fraese. Beim Drehteil mit Fraesanteil schlaegt
+      der Mehraufwand ueber die hoehere Ruestzeit und die Nebenzeit je
+      Bohrung zu Buche, nicht ueber einen zweiten Stundensatz.
+   ===================================================================== */
+
+const KALK_POSTEN = [
+  'spanvolumen', 'hauptzeit', 'nebenzeit', 'pruefen', 'entgraten', 'stueckzeit',
+  'gewicht', 'material', 'bearbeitung', 'ruesten', 'verpackung', 'versand',
+  'zwischensumme', 'gewinn', 'einzelpreis'
+];
+
+function kalkWerkstoff(vorgaben, name){
+  const L = (vorgaben && vorgaben.werkstoffe) || [];
+  return L.filter(w => w.name === name)[0] || L[0] || null;
+}
+/* Der guenstigste Werkstoff seiner Gruppe ist der Bezug des Faktors. */
+function kalkGruppenBasis(vorgaben, gruppe){
+  const L = ((vorgaben && vorgaben.werkstoffe) || []).filter(w => w.gruppe === gruppe);
+  if(!L.length) return 1;
+  let m = L[0].faktor;
+  L.forEach(w => { if(w.faktor < m) m = w.faktor; });
+  return m > 0 ? m : 1;
+}
+function kalkMaschine(klasse){
+  return (klasse === 'drehteil_einfach' || klasse === 'drehteil_fraes') ? 'drehen' : 'fraesen';
+}
+
+/* ein = {teil, rohteil, vorgaben, werkstoff, toleranz, oberflaeche,
+          seiten, stueck, versandArt, ueber} */
+function kalkRechnen(ein){
+  const V = ein.vorgaben || KALK_VORGABEN;
+  const t = ein.teil || {}, ro = ein.rohteil || {};
+  const ueber = ein.ueber || {};
+  const hinweise = [];
+  const nimm = (schl, wert) => {
+    const u = ueber[schl];
+    return (u != null && isFinite(u)) ? {w:+u, ueberschrieben:true} : {w:wert, ueberschrieben:false};
+  };
+
+  const W = kalkWerkstoff(V, ein.werkstoff);
+  if(!W) hinweise.push('Kein Werkstoff gewaehlt — Material bleibt unberuecksichtigt.');
+  const gruppe = W ? W.gruppe : 'stahl';
+  const maschine = kalkMaschine(t.klasse);
+  const satz = (V.saetze && V.saetze[maschine]) || 60;
+  const ruestSatz = (V.saetze && V.saetze.ruesten_wie_maschine) ? satz : ((V.saetze && V.saetze.ruesten) || satz);
+
+  /* ---- Zeiten ---- */
+  const rohV = +ro.volumen_cm3 || 0;
+  const teilV = +t.volumen_cm3 || 0;
+  const span0 = Math.max(0, rohV - teilV);
+  const span = nimm('spanvolumen', span0);
+  if(rohV > 0 && teilV <= 0)
+    hinweise.push('Das Teilvolumen ist nicht bekannt. Als Spanvolumen gilt das ganze Rohteil — das ueberschaetzt die Zeit deutlich.');
+
+  const Q0 = ((V.zerspanleistung && V.zerspanleistung[gruppe]) || {})[maschine] || 50;
+  const basis = kalkGruppenBasis(V, gruppe);
+  const faktor = W ? (W.faktor / basis) : 1;
+  const haupt = nimm('hauptzeit', span.w / Q0 * faktor);
+
+  const bohr = Array.isArray(t.bohrungen) ? t.bohrungen.length : 0;
+  const seiten = Math.max(1, Math.round(+ein.seiten || 1));
+  const Z = V.zeiten || {};
+  const neben = nimm('nebenzeit',
+    haupt.w * (Z.nebenzeit_anteil != null ? Z.nebenzeit_anteil : 0.25) +
+    bohr * (Z.nebenzeit_je_bohrung != null ? Z.nebenzeit_je_bohrung : 0.3) +
+    (seiten - 1) * (Z.nebenzeit_je_seite != null ? Z.nebenzeit_je_seite : 0.2));
+
+  const pruefen = nimm('pruefen', Z.pruefen_je_teil != null ? Z.pruefen_je_teil : 2);
+  const entgraten = nimm('entgraten',
+    Math.max(Z.entgraten_min != null ? Z.entgraten_min : 1,
+             (+t.kanten || 0) * (Z.entgraten_je_kante != null ? Z.entgraten_je_kante : 0.02)));
+
+  const Zu = V.zuschlaege || {};
+  const fTol = ein.toleranz === 'fein' ? (Zu.toleranz_fein || 1.4) : (Zu.toleranz_mittel || 1);
+  const fObf = ein.oberflaeche === 'fein' ? (Zu.oberflaeche_fein || 1.3) : 1;
+  const stueckzeit = nimm('stueckzeit', (haupt.w + neben.w) * fTol * fObf + pruefen.w + entgraten.w);
+
+  const ruestMin = ((V.ruesten || {})[t.klasse] != null) ? V.ruesten[t.klasse] : 45;
+  const stueck = Math.max(1, Math.round(+ein.stueck || 1));
+
+  /* ---- Preise ---- */
+  const dichte = W ? W.dichte : 0;
+  const gewicht = nimm('gewicht', rohV * dichte / 1000);           /* cm3 * g/cm3 -> kg */
+  const verschnitt = Zu.verschnitt != null ? Zu.verschnitt : 0.1;
+  const material = nimm('material', gewicht.w * (W ? W.preis : 0) * (1 + verschnitt));
+  if(W && W.gepflegt === false)
+    hinweise.push('Der Materialpreis fuer ' + W.name + ' ist ein Platzhalter und noch zu pflegen.');
+  /* Dieselbe Wache fuer die BETRIEBSWERTE. Sie stehen als runde Platzhalter in
+     defaults.json, weil dieses Repo oeffentlich ist (Entscheid 13.09.2026) —
+     ohne diesen Hinweis waere das eine Falle: ein Angebot auf 50 Euro die
+     Stunde, ohne dass es jemand merkt. Sobald ein Satz im Blatt gestellt wird,
+     setzt die Oberflaeche gepflegt auf true, und der Hinweis verschwindet. */
+  if(V.saetze && V.saetze.gepflegt === false)
+    hinweise.push('Die Stundensaetze sind Platzhalter (gerechnet mit ' + satz + ' Euro/h) und noch zu pflegen.');
+  if(Zu && Zu.gepflegt === false)
+    hinweise.push('Gewinnaufschlag und Mindestauftragswert sind Platzhalter und noch zu pflegen.');
+
+  const bearbeitung = nimm('bearbeitung', stueckzeit.w / 60 * satz);
+  const ruesten = nimm('ruesten', ruestMin / 60 * ruestSatz / stueck);
+  const N = V.nebenkosten || {};
+  const verpackung = nimm('verpackung',
+    (N.verpackung_teil != null ? N.verpackung_teil : 0.5) +
+    (N.verpackung_auftrag != null ? N.verpackung_auftrag : 8) / stueck);
+  const abholung = ein.versandArt === 'abholung';
+  const versand = nimm('versand', abholung ? 0 : (N.versand != null ? N.versand : 12) / stueck);
+
+  const zwischen = nimm('zwischensumme',
+    material.w + bearbeitung.w + ruesten.w + verpackung.w + versand.w);
+  const gewinnSatz = Zu.gewinn != null ? Zu.gewinn : 0.2;
+  const gewinn = nimm('gewinn', zwischen.w * gewinnSatz);
+  const einzel = nimm('einzelpreis', zwischen.w + gewinn.w);
+
+  const gesamtRoh = einzel.w * stueck;
+  const mindest = Zu.mindestauftrag != null ? Zu.mindestauftrag : 80;
+  const gesamt = Math.max(gesamtRoh, mindest);
+  if(gesamt > gesamtRoh + 1e-9)
+    hinweise.push('Der Mindestauftragswert von ' + fZahl(mindest, 2) + ' Euro greift (gerechnet waeren ' + fZahl(gesamtRoh, 2) + ').');
+
+  return {
+    maschine: maschine, satz: satz, ruestSatz: ruestSatz, werkstoff: W,
+    faktoren: {toleranz:fTol, oberflaeche:fObf, werkstoff:faktor, zerspanleistung:Q0, verschnitt:verschnitt, gewinn:gewinnSatz},
+    zeiten: {
+      spanvolumen_cm3:span.w, hauptzeit:haupt.w, nebenzeit:neben.w, pruefen:pruefen.w,
+      entgraten:entgraten.w, stueckzeit:stueckzeit.w, ruestzeit:ruestMin, stueck:stueck
+    },
+    preise: {
+      gewicht_kg:gewicht.w, material:material.w, bearbeitung:bearbeitung.w, ruesten:ruesten.w,
+      verpackung:verpackung.w, versand:versand.w, zwischensumme:zwischen.w, gewinn:gewinn.w,
+      einzelpreis:einzel.w, gesamt:gesamt, mindestauftrag_greift:gesamt > gesamtRoh + 1e-9
+    },
+    ueberschrieben: {
+      spanvolumen:span.ueberschrieben, hauptzeit:haupt.ueberschrieben, nebenzeit:neben.ueberschrieben,
+      pruefen:pruefen.ueberschrieben, entgraten:entgraten.ueberschrieben, stueckzeit:stueckzeit.ueberschrieben,
+      gewicht:gewicht.ueberschrieben, material:material.ueberschrieben, bearbeitung:bearbeitung.ueberschrieben,
+      ruesten:ruesten.ueberschrieben, verpackung:verpackung.ueberschrieben, versand:versand.ueberschrieben,
+      zwischensumme:zwischen.ueberschrieben, gewinn:gewinn.ueberschrieben, einzelpreis:einzel.ueberschrieben
+    },
+    hinweise: hinweise
+  };
+}
+
+/* Die Staffel: nur die Ruestumlage und die auftragsbezogenen
+   Nebenkosten fallen mit der Stueckzahl, alles andere bleibt. */
+function kalkStaffel(ein){
+  const V = ein.vorgaben || KALK_VORGABEN;
+  const liste = (ein.staffel && ein.staffel.length) ? ein.staffel : (V.staffel || [1, 5, 10, 25, 50, 100]);
+  return liste.map(n => {
+    const r = kalkRechnen(Object.assign({}, ein, {stueck:n}));
+    return {stueck:n, einzelpreis:r.preise.einzelpreis, gesamt:r.preise.gesamt,
+      mindest:r.preise.mindestauftrag_greift};
+  });
+}
+
+/* Gespeicherte Einstellungen ueber die Startwerte legen — Feld fuer
+   Feld, damit ein spaeter dazugekommener Startwert nicht verloren geht
+   (dieselbe Falle wie beim Werkzeuglager der Dreh-App: ein alter
+   gespeicherter Stand verdeckte sonst jeden neuen Vorgabewert). */
+function kalkMerge(vorgabe, gespeichert){
+  const aus = fKopie(vorgabe);
+  if(!gespeichert || typeof gespeichert !== 'object') return aus;
+  const geh = (z, q) => {
+    Object.keys(q).forEach(k => {
+      if(k.charAt(0) === '_') return;
+      const v = q[k];
+      if(Array.isArray(v)) z[k] = fKopie(v);
+      else if(v && typeof v === 'object') { if(!z[k] || typeof z[k] !== 'object') z[k] = {}; geh(z[k], v); }
+      else if(v !== undefined && v !== null && v !== '') z[k] = v;
+      else if(typeof v === 'boolean' || v === 0) z[k] = v;
+    });
+  };
+  geh(aus, gespeichert);
+  return aus;
+}
+/* =====================================================================
+   ui/50-bedienung.js — Dateiannahme, Tabellen, Masken, Speicher
+   ---------------------------------------------------------------------
+   Alles, was die Oberflaeche zusammenhaelt. Die Rechnerei steht in den
+   Modulen darunter und ist DOM-frei; hier wird nur angezeigt und
+   eingesammelt.
+   ===================================================================== */
+
+const el = (id) => document.getElementById(id);
+const htm = (id, s) => { const e = el(id); if(e) e.innerHTML = s; };
+const on = (id, ev, fn) => { const e = el(id); if(e) e.addEventListener(ev, fn); };
+const SLOT_EIN = 'wp_einstellungen';
+
+const S = {
+  d: null,                 /* Datensatz nach dem Austauschformat */
+  ueber: {},               /* ueberschriebene Kalkulationsposten */
+  V: null,                 /* Einstellungen (Startwerte plus Gespeichertes) */
+  angebot: {kunde:'', nummer:'', lieferzeit:'', istzeit:null},
+  staffel: null
+};
+
+/* ---- Einstellungen laden und sichern ---- */
+function einLaden(){
+  let g = null;
+  try{ g = JSON.parse(localStorage.getItem(SLOT_EIN) || 'null'); }catch(e){ g = null; }
+  S.V = kalkMerge(KALK_VORGABEN, g);
+}
+function einSichern(){
+  try{ localStorage.setItem(SLOT_EIN, JSON.stringify(S.V)); }
+  catch(e){ meldung('Die Einstellungen liessen sich nicht speichern: ' + e.message, 'warn'); }
+}
+
+/* ---- Meldungen ---- */
+function meldung(text, art){
+  const e = el('meldungen'); if(!e) return;
+  const d = document.createElement('div');
+  d.className = 'meldung ' + (art || 'info');
+  d.textContent = text;
+  e.appendChild(d);
+}
+function meldungenLeeren(){ htm('meldungen', ''); }
+function meldungListe(titel, liste, art){
+  if(!liste || !liste.length) return;
+  const e = el('meldungen'); if(!e) return;
+  const d = document.createElement('div');
+  d.className = 'meldung ' + (art || 'warn');
+  const b = document.createElement('b'); b.textContent = titel; d.appendChild(b);
+  const ul = document.createElement('ul');
+  liste.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+  d.appendChild(ul); e.appendChild(d);
+}
+
+/* ---- Blaetter ---- */
+function blatt(name){
+  ['Import', 'Kalk', 'Ein'].forEach(n => {
+    const b = el('tab' + n), s = el('blatt' + n);
+    if(b) b.classList.toggle('an', n === name);
+    if(s) s.classList.toggle('an', n === name);
+  });
+  if(name === 'Kalk') kalkMalen();
+  if(name === 'Ein') einMalen();
+}
+
+/* ---- Dateien annehmen ---------------------------------------------- */
+function dateienAnnehmen(liste){
+  const dateien = Array.prototype.slice.call(liste || []);
+  if(!dateien.length) return;
+  meldungenLeeren();
+  const step = dateien.filter(f => /\.(stp|step)$/i.test(f.name));
+  const dxf  = dateien.filter(f => /\.dxf$/i.test(f.name));
+  const pdf  = dateien.filter(f => /\.pdf$/i.test(f.name));
+  const erste = step[0] || dxf[0];
+  if(!erste){
+    if(pdf.length){ quelleMerken(pdf[0].name); meldung('PDF abgelegt. Zeichnungen werden in diesem Paket nicht ausgewertet — das kommt spaeter.', 'info'); }
+    else meldung('Keine STEP- oder DXF-Datei dabei.', 'fehler');
+    return;
+  }
+  ladenAn('Datei wird gelesen …', 0.1);
+  const r = new FileReader();
+  r.onerror = () => { ladenAus(); meldung('Die Datei liess sich nicht lesen.', 'fehler'); };
+  r.onload = () => {
+    ladenAn('Geometrie wird gerechnet …', 0.45);
+    /* Dem Browser Luft geben, damit der Balken erscheint, bevor die
+       Rechnung den Faden blockiert. Bei grossen Baugruppen sind das am
+       iPhone mehrere Sekunden. */
+    setTimeout(() => {
+      try{
+        const text = String(r.result || '');
+        S.d = /\.dxf$/i.test(erste.name)
+          ? fDxfGeometrie(text, erste.name, 10)
+          : fGeometrie(text, erste.name, S.V);
+        S.ueber = {};
+        if(pdf.length) S.d.quelle.pdf = pdf[0].name;
+        ladenAn('fertig', 1);
+        teilMalen();
+        ladenAus();
+      }catch(e){
+        ladenAus();
+        meldung('Beim Lesen der Datei ist ein Fehler aufgetreten: ' + e.message, 'fehler');
+      }
+    }, 30);
+  };
+  r.readAsText(erste);
+}
+function quelleMerken(name){ if(S.d) S.d.quelle.pdf = name; quelleMalen(); }
+function ladenAn(text, anteil){
+  const l = el('laden'); if(l) l.classList.add('an');
+  const b = el('ladenBalken'); if(b) b.style.width = Math.round((anteil || 0) * 100) + '%';
+  const t = el('ladenText'); if(t) t.textContent = text || '';
+}
+function ladenAus(){ const l = el('laden'); if(l) setTimeout(() => l.classList.remove('an'), 400); }
+
+/* ---- Teil anzeigen -------------------------------------------------- */
+function teilMalen(){
+  const b = el('teilBereich');
+  if(!S.d){ if(b) b.style.display = 'none'; return; }
+  if(b) b.style.display = '';
+  const t = S.d.teil, f = S.d._befund || {};
+
+  const setz = (id, v) => { const e = el(id); if(e) e.value = v; };
+  setz('teilName', t.name); setz('teilZnr', t.zeichnungsnr); setz('teilRev', t.revision);
+  setz('teilKlasse', t.klasse);
+  setz('rohForm', S.d.rohteil.form);
+  const R = S.V.rohteil || {};
+  setz('aufD', R.aufmass_durchmesser); setz('aufL', R.aufmass_laenge);
+
+  const km = el('klasseMarke');
+  if(km){ km.className = 'marke gemessen'; km.textContent = 'automatisch erkannt'; }
+
+  rohMasseMalen();
+  geoTabMalen();
+  bohrTabMalen();
+  quelleMalen();
+  meldungListe('Was die App zu dieser Datei anmerkt:', f.warnungen, 'warn');
+  if(f.volumenBekannt === false)
+    meldung('Ohne Volumen laesst sich kein Spanvolumen und damit keine Zerspanzeit rechnen. Die Zeit ist im Blatt von Hand einzutragen.', 'fehler');
+  vorschauNeu();
+}
+
+function rohMasseMalen(){
+  const ro = S.d.rohteil, m = ro.masse || {};
+  const zeile = (id, label, wert, einheit) =>
+    '<div class="feld"><label for="' + id + '">' + label + '</label>' +
+    '<input type="number" step="any" id="' + id + '" value="' + (wert != null ? wert : '') + '">' +
+    '<span class="einheit">' + einheit + '</span></div>';
+  let h = '';
+  if(ro.form === 'rund') h = zeile('rm_d', 'Durchmesser', m.d, 'mm') + zeile('rm_l', 'L&auml;nge', m.l, 'mm');
+  else if(ro.form === 'rohr') h = zeile('rm_d', 'Au&szlig;endurchmesser', m.d, 'mm') + zeile('rm_di', 'Innendurchmesser', m.di, 'mm') + zeile('rm_l', 'L&auml;nge', m.l, 'mm');
+  else if(ro.form === 'sechskant') h = zeile('rm_sw', 'Schl&uuml;sselweite', m.sw, 'mm') + zeile('rm_l', 'L&auml;nge', m.l, 'mm');
+  else h = zeile('rm_x', 'L&auml;nge X', m.x, 'mm') + zeile('rm_y', 'Breite Y', m.y, 'mm') + zeile('rm_z', 'H&ouml;he Z', m.z, 'mm');
+  h += '<div class="feld"><label>Rohteilvolumen</label><input type="text" id="rm_v" readonly value="' +
+       fZahl(ro.volumen_cm3, 2) + '"><span class="einheit">cm&sup3;</span></div>';
+  htm('rohMasse', h);
+  ['rm_d', 'rm_di', 'rm_l', 'rm_sw', 'rm_x', 'rm_y', 'rm_z'].forEach(id => {
+    const e = el(id); if(!e) return;
+    e.addEventListener('input', () => { rohAusFeldern(); });
+  });
+}
+/* Die Masse bestimmen das Volumen — nicht umgekehrt. Wer ein Mass
+   aendert, bekommt sofort das neue Volumen und den neuen Preis. */
+function rohAusFeldern(){
+  const ro = S.d.rohteil, m = {};
+  const z = (id) => { const e = el(id); return e ? fLesen(e.value) : NaN; };
+  if(ro.form === 'rund'){ m.d = z('rm_d'); m.l = z('rm_l'); ro.volumen_cm3 = fRund(Math.PI / 4 * m.d * m.d * m.l / 1000, 3); }
+  else if(ro.form === 'rohr'){ m.d = z('rm_d'); m.di = z('rm_di'); m.l = z('rm_l'); ro.volumen_cm3 = fRund(Math.PI / 4 * (m.d * m.d - m.di * m.di) * m.l / 1000, 3); }
+  else if(ro.form === 'sechskant'){ m.sw = z('rm_sw'); m.l = z('rm_l'); ro.volumen_cm3 = fRund(Math.sqrt(3) / 2 * m.sw * m.sw * m.l / 1000, 3); }
+  else { m.x = z('rm_x'); m.y = z('rm_y'); m.z = z('rm_z'); ro.volumen_cm3 = fRund(m.x * m.y * m.z / 1000, 3); }
+  Object.keys(m).forEach(k => { if(!isFinite(m[k])) m[k] = 0; });
+  ro.masse = m;
+  if(!isFinite(ro.volumen_cm3) || ro.volumen_cm3 < 0) ro.volumen_cm3 = 0;
+  const v = el('rm_v'); if(v) v.value = fZahl(ro.volumen_cm3, 2);
+  geoTabMalen(); vorschauNeu();
+}
+/* Rohteil aus der Geometrie neu vorschlagen (Form oder Aufmass geaendert) */
+function rohNeuVorschlagen(){
+  if(!S.d || !S.d._befund || !S.d._befund.modell) { rohMasseMalen(); return; }
+  const t = S.d.teil;
+  const rot = {dmax:t.rotation.dmax, laenge:t.rotation.laenge, di:0};
+  (t.bohrungen || []).forEach(b => { if(b.durch && b.tiefe >= t.rotation.laenge - 0.5 && b.d > rot.di) rot.di = b.d; });
+  S.d.rohteil = fRohteil(t, rot, el('rohForm').value, S.V.rohteil, S.d._befund.sechskantSW);
+  rohMasseMalen(); geoTabMalen(); vorschauNeu();
+}
+
+function geoTabMalen(){
+  const t = S.d.teil, f = S.d._befund || {}, ro = S.d.rohteil;
+  const span = Math.max(0, ro.volumen_cm3 - t.volumen_cm3);
+  const z = (a, b, c) => '<tr><td>' + a + '</td><td class="z">' + b + '</td><td>' + (c || '') + '</td></tr>';
+  let h = '';
+  h += z('H&uuml;llquader X / Y / Z', fZahl(t.bbox.x, 2) + ' &middot; ' + fZahl(t.bbox.y, 2) + ' &middot; ' + fZahl(t.bbox.z, 2), 'mm');
+  h += z('Fertigteilvolumen', f.volumenBekannt === false ? '&mdash;' : fZahl(t.volumen_cm3, 2), 'cm&sup3;');
+  h += z('Oberfl&auml;che', fZahl(t.oberflaeche_cm2, 1), 'cm&sup2;');
+  h += z('Rohteilvolumen', fZahl(ro.volumen_cm3, 2), 'cm&sup3;');
+  h += z('<b>Spanvolumen</b>', '<b>' + fZahl(span, 2) + '</b>', 'cm&sup3;');
+  h += z('Rotationssymmetrisch', t.rotation.ja ? 'ja, Achse ' + t.rotation.achse : 'nein',
+         t.rotation.ja ? '' : (f.rotAnteil ? Math.round(f.rotAnteil * 100) + ' % der Fl&auml;che' : ''));
+  if(t.rotation.ja){
+    h += z('Gr&ouml;&szlig;ter Durchmesser', fZahl(t.rotation.dmax, 2), 'mm');
+    h += z('L&auml;nge &uuml;ber alles', fZahl(t.rotation.laenge, 2), 'mm');
+    h += z('Innenbearbeitung', t.rotation.innen ? 'ja' : 'nein', '');
+  }
+  h += z('Bohrungen', String((t.bohrungen || []).length), '');
+  h += z('Fl&auml;chen / Kanten', t.flaechen + ' / ' + t.kanten, '');
+  if(f.koerper > 1) h += z('Getrennte K&ouml;rper', String(f.koerper), 'zusammen gerechnet');
+  if(f.genaehertAnteil > 0)
+    h += z('Davon gen&auml;hert', Math.round(f.genaehertAnteil * 1000) / 10 + ' %',
+           '<span class="marke schaetz">Freiform</span>');
+  if(f.ms) h += z('Rechenzeit', String(f.ms), 'ms');
+  htm('geoTab', h);
+}
+
+function bohrTabMalen(){
+  const b = S.d.teil.bohrungen || [];
+  const k = el('bohrKarte');
+  if(!b.length){ if(k) k.style.display = 'none'; return; }
+  if(k) k.style.display = '';
+  let h = '<tr><th>Durchmesser</th><th class="z">Tiefe</th><th>Art</th></tr>';
+  b.forEach(x => h += '<tr><td class="z">&oslash; ' + fZahl(x.d, 2) + ' mm</td><td class="z">' +
+    fZahl(x.tiefe, 2) + ' mm</td><td>' + (x.durch ? 'durchgehend' : 'Sackloch') + '</td></tr>');
+  htm('bohrTab', h);
+}
+
+function quelleMalen(){
+  const k = el('quelleKarte'); if(!k || !S.d) return;
+  const q = S.d.quelle;
+  if(!q.step && !q.pdf){ k.style.display = 'none'; return; }
+  k.style.display = '';
+  let h = '';
+  if(q.step) h += '<div class="feld"><label>Modell</label><span>' + q.step + '</span></div>';
+  if(q.pdf)  h += '<div class="feld"><label>Zeichnung</label><span>' + q.pdf + ' <span class="marke schaetz">nicht ausgewertet</span></span></div>';
+  htm('quelleListe', h);
+}
+
+/* ---- Verdrahtung ---------------------------------------------------- */
+function bedienungVerdrahten(){
+  on('tabImport', 'click', () => blatt('Import'));
+  on('tabKalk', 'click', () => blatt('Kalk'));
+  on('tabEin', 'click', () => blatt('Ein'));
+
+  const ab = el('ablage'), dt = el('datei');
+  if(ab && dt){
+    ab.addEventListener('click', () => dt.click());
+    dt.addEventListener('change', () => dateienAnnehmen(dt.files));
+    ['dragenter', 'dragover'].forEach(e => ab.addEventListener(e, (ev) => { ev.preventDefault(); ab.classList.add('drueber'); }));
+    ['dragleave', 'drop'].forEach(e => ab.addEventListener(e, (ev) => { ev.preventDefault(); ab.classList.remove('drueber'); }));
+    ab.addEventListener('drop', (ev) => dateienAnnehmen(ev.dataTransfer && ev.dataTransfer.files));
+  }
+  /* Die ganze Seite nimmt Dateien an, nicht nur das Feld. */
+  ['dragover', 'drop'].forEach(e => document.addEventListener(e, (ev) => {
+    if(e === 'dragover'){ ev.preventDefault(); return; }
+    ev.preventDefault();
+    if(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files.length) dateienAnnehmen(ev.dataTransfer.files);
+  }));
+
+  ['teilName', 'teilZnr', 'teilRev'].forEach(id => on(id, 'input', () => {
+    if(!S.d) return;
+    S.d.teil.name = el('teilName').value;
+    S.d.teil.zeichnungsnr = el('teilZnr').value;
+    S.d.teil.revision = el('teilRev').value;
+  }));
+  on('teilKlasse', 'change', () => {
+    if(!S.d) return;
+    S.d.teil.klasse = el('teilKlasse').value;
+    const km = el('klasseMarke'); if(km){ km.className = 'marke pflege'; km.textContent = 'von Hand gesetzt'; }
+    kalkMalen();
+  });
+  on('rohForm', 'change', () => { if(S.d){ S.d.rohteil.form = el('rohForm').value; rohNeuVorschlagen(); } });
+  ['aufD', 'aufL'].forEach(id => on(id, 'input', () => {
+    S.V.rohteil = S.V.rohteil || {};
+    S.V.rohteil.aufmass_durchmesser = fLesen(el('aufD').value);
+    S.V.rohteil.aufmass_laenge = fLesen(el('aufL').value);
+    S.V.rohteil.aufmass_flach = S.V.rohteil.aufmass_durchmesser;
+    einSichern();
+    if(S.d) rohNeuVorschlagen();
+  }));
+  ['kWerkstoff', 'kToleranz', 'kOberflaeche', 'kSeiten', 'kStueck', 'kVersandArt'].forEach(id =>
+    on(id, 'input', () => kalkMalen()));
+  ['kWerkstoff', 'kToleranz', 'kOberflaeche', 'kVersandArt'].forEach(id =>
+    on(id, 'change', () => kalkMalen()));
+  on('kStaffel', 'input', () => {
+    const v = String(el('kStaffel').value || '').split(/[^0-9]+/).map(x => parseInt(x, 10)).filter(x => x > 0);
+    S.staffel = v.length ? v : null;
+    staffelMalen();
+  });
+  on('kalkZuruck', 'click', () => { S.ueber = {}; kalkMalen(); });
+  ['aKunde', 'aNummer', 'aLieferzeit'].forEach(id => on(id, 'input', () => {
+    S.angebot.kunde = el('aKunde').value; S.angebot.nummer = el('aNummer').value;
+    S.angebot.lieferzeit = el('aLieferzeit').value;
+  }));
+  on('aIstzeit', 'input', () => { S.angebot.istzeit = fLesen(el('aIstzeit').value); istMalen(); });
+}
+/* =====================================================================
+   ui/51-vorschau3d.js — das Teil ansehen, mit dem Rohteil darum
+   ---------------------------------------------------------------------
+   Bewusst OHNE 3D-Bibliothek und ohne WebGL: eine Leinwand, Vierecke von
+   hinten nach vorn gemalt, dazu die echten Kanten obenauf. Das genuegt,
+   um ein Teil zu beurteilen, laeuft auf jedem iPhone und haelt die
+   Doktrin der Schwester-Apps ein, dass nichts nachgeladen wird.
+
+   WIE DIE FLAECHEN ZU VIERECKEN WERDEN: jede Flaeche hat ihre
+   Parameterebene (siehe 31-geometrie). Darin liegt ein Raster; eine
+   Zelle wird gemalt, wenn ihre Mitte INNERHALB der Randschleifen liegt
+   (Strahlverfahren, gerade Anzahl Schnitte heisst draussen). Loecher
+   fallen damit von selbst weg, ohne dass ein Vieleck zerlegt werden
+   muesste. Die Zellenraender waeren zackig — deshalb liegen die exakten
+   Kanten als Linien darueber, und weil jede Flaeche einfarbig ist,
+   sieht man von der Zackigkeit nichts.
+   ===================================================================== */
+
+const VS = {
+  az: -0.6, el: 0.5, zoom: 1, mx: 0, my: 0,
+  netz: null, kanten: null, mitte: [0, 0, 0], gr: 1,
+  rohteil: true, zieht: false, lx: 0, ly: 0, finger: 0
+};
+
+function vorschauNeu(){
+  VS.netz = null; VS.kanten = null;
+  if(!S.d){ vorschauMalen(); return; }
+  const m = S.d._befund && S.d._befund.modell;
+  const B = S.d.teil.bbox;
+  VS.gr = Math.max(B.x, B.y, B.z, 1);
+  if(m) netzBauen(m); else if(S.d._befund && S.d._befund.zuege) netzAusDxf();
+  vorschauMalen();
+}
+
+/* Liegt (u,v) innerhalb der Randschleifen? Strahl nach +u. */
+function vsInnen(schleifen, u, v){
+  let n = 0;
+  for(const p of schleifen){
+    for(let i = 0; i < p.length; i++){
+      const a = p[i], b = p[(i + 1) % p.length];
+      if((a[1] > v) === (b[1] > v)) continue;
+      const x = a[0] + (v - a[1]) / (b[1] - a[1]) * (b[0] - a[0]);
+      if(x > u) n++;
+    }
+  }
+  return (n & 1) === 1;
+}
+
+function netzBauen(m){
+  const quads = [], linien = [];
+  const B = S.d.teil.bbox;
+  const zelle = Math.max(VS.gr / 55, 0.05);
+  m.flaechen.forEach(f => {
+    /* Kanten immer — sie sind die genaue Form */
+    f.rand.forEach(lo => lo.kanten.forEach(k => {
+      for(let i = 0; i + 1 < k.p.length; i++) linien.push([k.p[i], k.p[i + 1]]);
+    }));
+    if(f.art === 'frei' || !f.rahmen) return;
+    const per = fPeriode(f);
+    let sch = [];
+    f.rand.forEach(lo => { const p = fSchleifeUV(f, lo.kanten); if(p) sch.push(p); });
+    if(!sch.length) return;
+    if(per > 0){ const v = fSchleifenVereinen(f, sch, per); if(!v) return; sch = v; }
+    let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+    sch.forEach(p => p.forEach(q => {
+      if(q[0] < u0) u0 = q[0]; if(q[0] > u1) u1 = q[0];
+      if(q[1] < v0) v0 = q[1]; if(q[1] > v1) v1 = q[1];
+    }));
+    if(!(u1 > u0) || !(v1 > v0)) return;
+    const nu = Math.max(1, Math.min(60, Math.round((u1 - u0) / zelle)));
+    const nv = Math.max(1, Math.min(60, Math.round((v1 - v0) / zelle)));
+    const du = (u1 - u0) / nu, dv = (v1 - v0) / nv;
+    for(let i = 0; i < nu; i++){
+      for(let j = 0; j < nv; j++){
+        const uu = u0 + (i + 0.5) * du, vv = v0 + (j + 0.5) * dv;
+        if(!vsInnen(sch, uu, vv)) continue;
+        const a = fXYZ(f, u0 + i * du, v0 + j * dv);
+        const b = fXYZ(f, u0 + (i + 1) * du, v0 + j * dv);
+        const c = fXYZ(f, u0 + (i + 1) * du, v0 + (j + 1) * dv);
+        const d = fXYZ(f, u0 + i * du, v0 + (j + 1) * dv);
+        /* Die Reihenfolge der Ecken bestimmt, wohin die Normale zeigt.
+           Aus der Parameterebene kommt sie in Richtung der TRAEGER-
+           flaeche; nach aussen zeigt sie nur bei gleichem Sinn. Ohne
+           diese Umkehr wird die Rueckseite nicht weggelassen, und man
+           schaut durch das Teil hindurch — an einer Buchse war die
+           Innenwand ueber der Aussenwand zu sehen. */
+        quads.push(f.sinn ? [a, b, c, d] : [d, c, b, a]);
+      }
+    }
+  });
+  VS.netz = quads;
+  VS.kanten = linien;
+  VS.mitte = [0, 0, 0];
+  const bx = m.box;
+  if(isFinite(bx.x0)) VS.mitte = [(bx.x0 + bx.x1) / 2, (bx.y0 + bx.y1) / 2, (bx.z0 + bx.z1) / 2];
+  VS.box = isFinite(bx.x0) ? bx : null;
+}
+
+function netzAusDxf(){
+  const z = S.d._befund.zuege || [];
+  const t = S.d.teil.bbox.z;
+  const linien = [];
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  z.forEach(g => {
+    for(let i = 0; i + 1 < g.p.length; i++){
+      const a = g.p[i], b = g.p[i + 1];
+      linien.push([[a[0], a[1], 0], [b[0], b[1], 0]]);
+      linien.push([[a[0], a[1], t], [b[0], b[1], t]]);
+    }
+    g.p.forEach(p => {
+      if(p[0] < x0) x0 = p[0]; if(p[0] > x1) x1 = p[0];
+      if(p[1] < y0) y0 = p[1]; if(p[1] > y1) y1 = p[1];
+    });
+  });
+  VS.netz = [];
+  VS.kanten = linien;
+  VS.box = isFinite(x0) ? {x0:x0, x1:x1, y0:y0, y1:y1, z0:0, z1:t} : null;
+  VS.mitte = VS.box ? [(x0 + x1) / 2, (y0 + y1) / 2, t / 2] : [0, 0, 0];
+}
+
+function vsDreh(p){
+  const ca = Math.cos(VS.az), sa = Math.sin(VS.az), ce = Math.cos(VS.el), se = Math.sin(VS.el);
+  const x = p[0] - VS.mitte[0], y = p[1] - VS.mitte[1], z = p[2] - VS.mitte[2];
+  const x1 = x * ca - y * sa, y1 = x * sa + y * ca;
+  const y2 = y1 * ce - z * se, z2 = y1 * se + z * ce;
+  return [x1, z2, y2];                 /* x rechts, y oben, z Tiefe */
+}
+
+function vorschauMalen(){
+  const cv = el('vorschauCv'); if(!cv) return;
+  const dpr = window.devicePixelRatio || 1;
+  const br = cv.clientWidth || 600, ho = cv.clientHeight || 300;
+  if(cv.width !== Math.round(br * dpr) || cv.height !== Math.round(ho * dpr)){
+    cv.width = Math.round(br * dpr); cv.height = Math.round(ho * dpr);
+  }
+  const g = cv.getContext('2d'); if(!g) return;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, br, ho);
+  g.fillStyle = '#fff'; g.fillRect(0, 0, br, ho);
+  if(!S.d || !VS.kanten){
+    g.fillStyle = '#8a97a4'; g.font = '14px sans-serif'; g.textAlign = 'center';
+    g.fillText('Noch kein Teil geladen', br / 2, ho / 2);
+    return;
+  }
+  const sk = Math.min(br, ho) / (VS.gr * 1.9) * VS.zoom;
+  const P = (p) => { const q = vsDreh(p); return [br / 2 + q[0] * sk + VS.mx, ho / 2 - q[1] * sk + VS.my, q[2]]; };
+
+  /* Flaechen von hinten nach vorn */
+  const licht = [0.42, 0.6, 0.68];
+  const liste = [];
+  (VS.netz || []).forEach(q => {
+    const a = P(q[0]), b = P(q[1]), c = P(q[2]), d = P(q[3]);
+    const nx = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    if(nx <= 0) return;                                   /* Rueckseite */
+    const A = [q[1][0] - q[0][0], q[1][1] - q[0][1], q[1][2] - q[0][2]];
+    const Bv = [q[3][0] - q[0][0], q[3][1] - q[0][1], q[3][2] - q[0][2]];
+    let n = [A[1] * Bv[2] - A[2] * Bv[1], A[2] * Bv[0] - A[0] * Bv[2], A[0] * Bv[1] - A[1] * Bv[0]];
+    const L = Math.hypot(n[0], n[1], n[2]) || 1;
+    n = [n[0] / L, n[1] / L, n[2] / L];
+    const nn = vsDreh([VS.mitte[0] + n[0], VS.mitte[1] + n[1], VS.mitte[2] + n[2]]);
+    const hell = Math.max(0.15, Math.min(1, 0.32 + 0.68 * Math.abs(nn[0] * licht[0] + nn[1] * licht[1] + nn[2] * licht[2])));
+    liste.push({t:(a[2] + b[2] + c[2] + d[2]) / 4, p:[a, b, c, d], h:hell});
+  });
+  liste.sort((x, y) => x.t - y.t);
+  g.lineJoin = 'round';
+  liste.forEach(q => {
+    const v = Math.round(120 + 110 * q.h);
+    const farbe = 'rgb(' + Math.round(v * 0.80) + ',' + Math.round(v * 0.88) + ',' + v + ')';
+    g.fillStyle = farbe; g.strokeStyle = farbe; g.lineWidth = 1;
+    g.beginPath();
+    g.moveTo(q.p[0][0], q.p[0][1]); g.lineTo(q.p[1][0], q.p[1][1]);
+    g.lineTo(q.p[2][0], q.p[2][1]); g.lineTo(q.p[3][0], q.p[3][1]); g.closePath();
+    g.fill();
+    /* Der Umriss in derselben Farbe schliesst die Haarfugen zwischen
+       benachbarten Vierecken. Ohne ihn liegt ueber jeder gekruemmten
+       Flaeche ein feines Gitter, das wie ein Netz aussieht. */
+    g.stroke();
+  });
+
+  /* Kanten */
+  g.strokeStyle = 'rgba(24,52,84,.55)'; g.lineWidth = 0.8;
+  g.beginPath();
+  VS.kanten.forEach(k => { const a = P(k[0]), b = P(k[1]); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); });
+  g.stroke();
+
+  /* Rohteil halbdurchsichtig darum */
+  if(VS.rohteil && VS.box){
+    const r = rohteilQuader();
+    if(r){
+      g.strokeStyle = 'rgba(24,88,160,.55)'; g.lineWidth = 1.1;
+      g.setLineDash([5, 4]);
+      g.beginPath();
+      r.kanten.forEach(k => { const a = P(k[0]), b = P(k[1]); g.moveTo(a[0], a[1]); g.lineTo(b[0], b[1]); });
+      g.stroke();
+      g.setLineDash([]);
+    }
+  }
+  g.fillStyle = '#8a97a4'; g.font = '12px sans-serif'; g.textAlign = 'left';
+}
+
+/* Der Rohteilumriss: beim Rundteil ein Zylinder um die Drehachse,
+   sonst der Quader. Gezeichnet als Kantenzug, damit das Fertigteil
+   darin sichtbar bleibt. */
+function rohteilQuader(){
+  const b = VS.box; if(!b) return null;
+  const ro = S.d.rohteil, m = ro.masse || {};
+  const kanten = [];
+  /* Das Rohteil liegt mittig um das Fertigteil — beim Drehteil um seine
+     Achse, sonst als Quader um den Huellquader. */
+  const mitte = [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2, (b.z0 + b.z1) / 2];
+  if((ro.form === 'rund' || ro.form === 'rohr' || ro.form === 'sechskant') && S.d.teil.rotation.ja){
+    const A = S.d.teil.rotation.achse;
+    const ax = A === 'X' ? 0 : (A === 'Y' ? 1 : 2);
+    const i1 = (ax + 1) % 3, i2 = (ax + 2) % 3;
+    const r = (ro.form === 'sechskant' ? (m.sw || 0) / Math.sqrt(3) : (m.d || 0) / 2);
+    const l = m.l || 0;
+    const n = ro.form === 'sechskant' ? 6 : 48;
+    const kreis = (t) => {
+      const p = [];
+      for(let i = 0; i <= n; i++){
+        const w = 2 * Math.PI * i / n + (ro.form === 'sechskant' ? Math.PI / 6 : 0);
+        const q = [0, 0, 0];
+        q[ax] = mitte[ax] + t;
+        q[i1] = mitte[i1] + r * Math.cos(w);
+        q[i2] = mitte[i2] + r * Math.sin(w);
+        p.push(q);
+      }
+      return p;
+    };
+    const k1 = kreis(-l / 2), k2 = kreis(l / 2);
+    for(let i = 0; i < n; i++){ kanten.push([k1[i], k1[i + 1]]); kanten.push([k2[i], k2[i + 1]]); }
+    for(let i = 0; i < n; i += Math.max(1, Math.round(n / 8))) kanten.push([k1[i], k2[i]]);
+    return {kanten:kanten};
+  }
+  const x = (m.x || b.x1 - b.x0), y = (m.y || b.y1 - b.y0), z = (m.z || b.z1 - b.z0);
+  const c = mitte;
+  const E = [];
+  for(let i = 0; i < 8; i++)
+    E.push([c[0] + ((i & 1) ? x / 2 : -x / 2), c[1] + ((i & 2) ? y / 2 : -y / 2), c[2] + ((i & 4) ? z / 2 : -z / 2)]);
+  [[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]]
+    .forEach(p => kanten.push([E[p[0]], E[p[1]]]));
+  return {kanten:kanten};
+}
+
+function vorschauVerdrahten(){
+  const cv = el('vorschauCv'); if(!cv) return;
+  const pos = (e) => {
+    const t = e.touches && e.touches.length ? e.touches[0] : e;
+    return [t.clientX, t.clientY];
+  };
+  const start = (e) => { VS.zieht = true; const p = pos(e); VS.lx = p[0]; VS.ly = p[1]; };
+  const zieh = (e) => {
+    if(!VS.zieht) return;
+    if(e.touches && e.touches.length === 2){
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      if(VS.finger) VS.zoom = Math.max(0.2, Math.min(8, VS.zoom * d / VS.finger));
+      VS.finger = d; vorschauMalen(); e.preventDefault(); return;
+    }
+    const p = pos(e);
+    VS.az += (p[0] - VS.lx) * 0.01;
+    VS.el = Math.max(-1.5, Math.min(1.5, VS.el + (p[1] - VS.ly) * 0.01));
+    VS.lx = p[0]; VS.ly = p[1];
+    vorschauMalen(); e.preventDefault();
+  };
+  const ende = () => { VS.zieht = false; VS.finger = 0; };
+  cv.addEventListener('mousedown', start);
+  window.addEventListener('mousemove', zieh);
+  window.addEventListener('mouseup', ende);
+  cv.addEventListener('touchstart', (e) => { VS.finger = 0; start(e); }, {passive:true});
+  cv.addEventListener('touchmove', zieh, {passive:false});
+  cv.addEventListener('touchend', ende);
+  cv.addEventListener('wheel', (e) => {
+    VS.zoom = Math.max(0.2, Math.min(8, VS.zoom * (e.deltaY < 0 ? 1.12 : 0.89)));
+    vorschauMalen(); e.preventDefault();
+  }, {passive:false});
+  cv.addEventListener('dblclick', () => { VS.az = -0.6; VS.el = 0.5; VS.zoom = 1; VS.mx = 0; VS.my = 0; vorschauMalen(); });
+  on('vsRohteil', 'click', () => { VS.rohteil = !VS.rohteil; vorschauMalen(); });
+  on('vsZuruck', 'click', () => { VS.az = -0.6; VS.el = 0.5; VS.zoom = 1; VS.mx = 0; VS.my = 0; vorschauMalen(); });
+  window.addEventListener('resize', () => vorschauMalen());
+}
+/* =====================================================================
+   ui/52-angebot.js — Kalkulationsblatt, Staffel, Einstellungen, Angebot
+   ---------------------------------------------------------------------
+   Die Aufschluesselung ist die eigentliche Leistung dieses Blatts: jeder
+   Posten steht da, jeder ist anzufassen, und was angefasst wurde, ist
+   zu sehen. Ein Preis, der aus einer schwarzen Kiste faellt, hilft beim
+   Verhandeln nicht.
+   ===================================================================== */
+
+function kalkEingabe(){
+  const t = S.d ? S.d.teil : {};
+  return {
+    teil: t, rohteil: S.d ? S.d.rohteil : {}, vorgaben: S.V,
+    werkstoff: el('kWerkstoff') ? el('kWerkstoff').value : '',
+    toleranz: el('kToleranz') ? el('kToleranz').value : 'mittel',
+    oberflaeche: el('kOberflaeche') ? el('kOberflaeche').value : 'normal',
+    seiten: el('kSeiten') ? fLesen(el('kSeiten').value) : 1,
+    stueck: el('kStueck') ? fLesen(el('kStueck').value) : 1,
+    versandArt: el('kVersandArt') ? el('kVersandArt').value : 'versand',
+    ueber: S.ueber, staffel: S.staffel
+  };
+}
+
+function werkstoffWahlMalen(){
+  const s = el('kWerkstoff'); if(!s) return;
+  const alt = s.value;
+  s.innerHTML = (S.V.werkstoffe || []).map(w =>
+    '<option value="' + w.name + '">' + w.name + '</option>').join('');
+  if(alt) s.value = alt;
+  if(!s.value && S.V.werkstoffe && S.V.werkstoffe.length) s.value = S.V.werkstoffe[0].name;
+  if(S.d) S.d.teil.werkstoff = s.value;
+}
+
+function kalkMalen(){
+  if(!S.V) return;
+  werkstoffWahlMalen();
+  const kk = el('kStueck'); if(kk && !kk.value) kk.value = 1;
+  const ks = el('kSeiten'); if(ks && !ks.value) ks.value = 1;
+  const kst = el('kStaffel');
+  if(kst && !kst.value) kst.value = (S.staffel || S.V.staffel || []).join(' / ');
+  if(!S.d){ htm('kalkTab', '<tr><td>Noch kein Teil geladen.</td></tr>'); htm('staffel', ''); return; }
+  S.d.teil.werkstoff = el('kWerkstoff').value;
+
+  const r = kalkRechnen(kalkEingabe());
+  const mk = el('kPreisMarke');
+  if(mk) mk.textContent = (r.werkstoff && r.werkstoff.gepflegt === false) ? 'Preis zu pflegen' : '';
+
+  const z = (schl, name, wert, einheit, dick) => {
+    const u = r.ueberschrieben[schl];
+    return '<tr' + (dick ? ' class="summe"' : '') + '><td>' + name + '</td>' +
+      '<td class="z"><input type="number" step="any" class="kpost' + (u ? ' geaendert' : '') +
+      '" data-k="' + schl + '" value="' + (Math.round(wert * 1000) / 1000) + '" style="width:110px"></td>' +
+      '<td>' + einheit + '</td></tr>';
+  };
+  const nur = (name, wert, einheit, dick) =>
+    '<tr' + (dick ? ' class="summe"' : '') + '><td>' + name + '</td><td class="z">' + wert + '</td><td>' + einheit + '</td></tr>';
+
+  let h = '<tr><th>Posten</th><th class="z">Wert</th><th></th></tr>';
+  h += nur('Maschine', r.maschine === 'drehen' ? 'Drehen' : 'Fr&auml;sen', fZahl(r.satz, 2) + ' &euro;/h');
+  h += nur('Zerspanleistung', fZahl(r.faktoren.zerspanleistung, 0) + ' <span class="marke schaetz">Sch&auml;tzwert</span>', 'cm&sup3;/min');
+  h += z('spanvolumen', 'Spanvolumen', r.zeiten.spanvolumen_cm3, 'cm&sup3;');
+  h += z('hauptzeit', 'Hauptzeit Zerspanung', r.zeiten.hauptzeit, 'min');
+  h += z('nebenzeit', 'Nebenzeit', r.zeiten.nebenzeit, 'min');
+  h += z('pruefen', 'Pr&uuml;fen', r.zeiten.pruefen, 'min');
+  h += z('entgraten', 'Entgraten', r.zeiten.entgraten, 'min');
+  h += nur('Faktor Toleranz / Oberfl&auml;che', fZahl(r.faktoren.toleranz, 2) + ' &middot; ' + fZahl(r.faktoren.oberflaeche, 2), '');
+  h += z('stueckzeit', '<b>St&uuml;ckzeit</b>', r.zeiten.stueckzeit, 'min', true);
+  h += nur('R&uuml;stzeit je Auftrag', fZahl(r.zeiten.ruestzeit, 0), 'min');
+  h += '<tr><td colspan="3" style="padding-top:10px"><b>Preis je St&uuml;ck bei ' + r.zeiten.stueck + ' St&uuml;ck</b></td></tr>';
+  h += z('gewicht', 'Rohteilgewicht', r.preise.gewicht_kg, 'kg');
+  h += z('material', 'Material (inkl. ' + Math.round(r.faktoren.verschnitt * 100) + ' % Verschnitt)', r.preise.material, '&euro;');
+  h += z('bearbeitung', 'Bearbeitung', r.preise.bearbeitung, '&euro;');
+  h += z('ruesten', 'R&uuml;sten (umgelegt)', r.preise.ruesten, '&euro;');
+  h += z('verpackung', 'Verpackung', r.preise.verpackung, '&euro;');
+  h += z('versand', 'Versand', r.preise.versand, '&euro;');
+  h += z('zwischensumme', 'Zwischensumme', r.preise.zwischensumme, '&euro;', true);
+  h += z('gewinn', 'Gewinn (' + Math.round(r.faktoren.gewinn * 100) + ' %)', r.preise.gewinn, '&euro;');
+  h += z('einzelpreis', '<b>Einzelpreis</b>', r.preise.einzelpreis, '&euro;', true);
+  h += nur('<b>Auftragswert</b>', '<b>' + fZahl(r.preise.gesamt, 2) + '</b>', '&euro;' +
+    (r.preise.mindestauftrag_greift ? ' <span class="marke pflege">Mindestauftrag</span>' : ''), true);
+  htm('kalkTab', h);
+
+  Array.prototype.forEach.call(document.querySelectorAll('.kpost'), (e) => {
+    e.addEventListener('change', () => {
+      const k = e.getAttribute('data-k'), v = fLesen(e.value);
+      if(isFinite(v)) S.ueber[k] = v; else delete S.ueber[k];
+      kalkMalen();
+    });
+  });
+  meldungKalk(r.hinweise);
+  staffelMalen();
+  istMalen();
+}
+
+function meldungKalk(liste){
+  const alt = document.getElementById('kalkHinweis');
+  if(alt) alt.parentNode.removeChild(alt);
+  if(!liste || !liste.length) return;
+  const d = document.createElement('div');
+  d.id = 'kalkHinweis'; d.className = 'meldung warn kein-druck';
+  const ul = document.createElement('ul');
+  liste.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+  d.appendChild(ul);
+  const tab = el('kalkTab');
+  if(tab && tab.parentNode && tab.parentNode.parentNode) tab.parentNode.parentNode.appendChild(d);
+}
+
+function staffelMalen(){
+  if(!S.d){ htm('staffel', ''); return; }
+  const st = kalkStaffel(kalkEingabe());
+  htm('staffel', st.map(x =>
+    '<div class="stueck"><span>' + x.stueck + ' St&uuml;ck</span><b>' + fZahl(x.einzelpreis, 2) + ' &euro;</b>' +
+    '<span>' + fZahl(x.gesamt, 2) + ' &euro; gesamt' + (x.mindest ? ' *' : '') + '</span></div>').join('') +
+    (st.some(x => x.mindest) ? '<div class="klein" style="grid-column:1/-1;color:var(--text-blass);font-size:12px">* Mindestauftragswert greift</div>' : ''));
+}
+
+function istMalen(){
+  const e = el('istVergleich'); if(!e || !S.d) return;
+  const ist = S.angebot.istzeit;
+  if(!isFinite(ist) || ist <= 0){ e.innerHTML = ''; return; }
+  const r = kalkRechnen(kalkEingabe());
+  const soll = r.zeiten.stueckzeit;
+  const ab = soll > 0 ? (ist - soll) / soll : 0;
+  e.innerHTML = '<div class="meldung ' + (Math.abs(ab) > 0.25 ? 'warn' : 'info') + '">Soll ' + fMin(soll) +
+    ', Ist ' + fMin(ist) + ' &mdash; Abweichung ' + (ab >= 0 ? '+' : '') + fZahl(ab * 100, 1) +
+    ' %. Der Wert wird nur angezeigt; die App lernt daraus in diesem Paket noch nicht.</div>';
+}
+
+/* ---- Einstellungen -------------------------------------------------- */
+/* Die Gruppen, deren Startwerte bewusst PLATZHALTER sind: im oeffentlichen
+   Repo stehen runde Zahlen statt Daniels echter Saetze (Entscheid
+   13.09.2026). Solange die Gruppe gepflegt:false traegt, bekommt jedes ihrer
+   Felder die Marke — dieselbe Mechanik wie beim Materialpreis, damit ein
+   Platzhalter nicht stillschweigend in ein Angebot laeuft. */
+const EIN_PLATZHALTER = {'saetze':1, 'zuschlaege.gewinn':1, 'zuschlaege.mindestauftrag':1};
+function einPlatzhalter(pfad){
+  const gr = pfad.split('.')[0];
+  if(!EIN_PLATZHALTER[gr] && !EIN_PLATZHALTER[pfad]) return false;
+  return ((S.V[gr] || {}).gepflegt === false);
+}
+function einFeld(pfad, label, einheit, art){
+  const teile = pfad.split('.');
+  let v = S.V; teile.forEach(t => { v = (v || {})[t]; });
+  const schaetz = (S.V.schaetzwerte || []).indexOf(pfad) >= 0;
+  const platz = einPlatzhalter(pfad);
+  return '<div class="feld"><label for="ein_' + pfad.replace(/\./g, '_') + '">' + label + '</label>' +
+    '<input type="' + (art || 'number') + '" step="any" id="ein_' + pfad.replace(/\./g, '_') +
+    '" data-pfad="' + pfad + '" value="' + (v == null ? '' : v) + '">' +
+    '<span class="einheit">' + (einheit || '') + '</span>' +
+    (schaetz ? '<span class="marke schaetz">Sch&auml;tzwert</span>' : '') +
+    (platz ? '<span class="marke pflege">Platzhalter</span>' : '') + '</div>';
+}
+
+function einMalen(){
+  if(!S.V) return;
+  htm('einSaetze',
+    einFeld('saetze.drehen', 'Drehen', '&euro;/h') +
+    einFeld('saetze.fraesen', 'Fr&auml;sen', '&euro;/h') +
+    einFeld('saetze.handarbeit', 'Handarbeit', '&euro;/h') +
+    einFeld('saetze.ruesten', 'R&uuml;sten (wenn abweichend)', '&euro;/h') +
+    '<div class="klein" style="color:var(--text-blass);font-size:13px">R&uuml;sten wird mit dem Maschinensatz gerechnet, solange kein eigener Wert eingetragen ist.</div>');
+
+  let w = '<tr><th>Werkstoff</th><th>Gruppe</th><th class="z">Dichte</th><th class="z">Preis</th><th class="z">Faktor</th><th></th></tr>';
+  (S.V.werkstoffe || []).forEach((x, i) => {
+    w += '<tr><td><input type="text" data-w="' + i + '" data-f="name" value="' + x.name + '" style="width:110px"></td>' +
+      '<td><select data-w="' + i + '" data-f="gruppe">' +
+        ['stahl', 'edelstahl', 'alu', 'kunststoff'].map(g => '<option value="' + g + '"' + (g === x.gruppe ? ' selected' : '') + '>' + g + '</option>').join('') +
+      '</select></td>' +
+      '<td class="z"><input type="number" step="any" data-w="' + i + '" data-f="dichte" value="' + x.dichte + '" style="width:78px"></td>' +
+      '<td class="z"><input type="number" step="any" data-w="' + i + '" data-f="preis" value="' + x.preis + '" style="width:84px"></td>' +
+      '<td class="z"><input type="number" step="any" data-w="' + i + '" data-f="faktor" value="' + x.faktor + '" style="width:76px"></td>' +
+      '<td>' + (x.gepflegt === false ? '<span class="marke pflege">Preis zu pflegen</span>' : '') + '</td></tr>';
+  });
+  htm('einWerkstoffe', w);
+
+  let L = '<tr><th>Gruppe</th><th class="z">Drehen</th><th class="z">Fr&auml;sen</th></tr>';
+  ['stahl', 'edelstahl', 'alu', 'kunststoff'].forEach(g => {
+    const q = (S.V.zerspanleistung || {})[g] || {};
+    L += '<tr><td>' + g + '</td>' +
+      '<td class="z"><input type="number" step="any" data-pfad="zerspanleistung.' + g + '.drehen" value="' + (q.drehen || '') + '" style="width:86px"></td>' +
+      '<td class="z"><input type="number" step="any" data-pfad="zerspanleistung.' + g + '.fraesen" value="' + (q.fraesen || '') + '" style="width:86px"></td></tr>';
+  });
+  htm('einLeistung', L + '<tr><td colspan="3" style="color:var(--text-blass);font-size:13px">Einheit cm&sup3;/min, wirksam ueber den ganzen Schnitt. Der Werkstofffaktor wirkt zus&auml;tzlich, aber nur INNERHALB der Gruppe &mdash; bezogen auf den g&uuml;nstigsten Werkstoff darin.</td></tr>');
+
+  htm('einRest',
+    '<h3>Zuschl&auml;ge</h3>' +
+    einFeld('zuschlaege.verschnitt', 'Materialverschnitt', 'Anteil') +
+    einFeld('zuschlaege.toleranz_mittel', 'Toleranz mittel (IT8&ndash;IT10)', 'Faktor') +
+    einFeld('zuschlaege.toleranz_fein', 'Toleranz fein (&le; IT7)', 'Faktor') +
+    einFeld('zuschlaege.oberflaeche_fein', 'Oberfl&auml;che Ra &le; 0,8', 'Faktor') +
+    einFeld('zuschlaege.gewinn', 'Gewinnaufschlag', 'Anteil') +
+    einFeld('zuschlaege.mindestauftrag', 'Mindestauftragswert', '&euro;') +
+    '<h3>Zeiten</h3>' +
+    einFeld('zeiten.nebenzeit_anteil', 'Nebenzeit, Anteil der Hauptzeit', '') +
+    einFeld('zeiten.nebenzeit_je_bohrung', 'Nebenzeit je Bohrung', 'min') +
+    einFeld('zeiten.nebenzeit_je_seite', 'Nebenzeit je weitere Seite', 'min') +
+    einFeld('zeiten.entgraten_je_kante', 'Entgraten je Kante', 'min') +
+    einFeld('zeiten.entgraten_min', 'Entgraten mindestens', 'min') +
+    einFeld('zeiten.pruefen_je_teil', 'Pr&uuml;fen je Teil', 'min') +
+    '<h3>R&uuml;stzeit je Klasse</h3>' +
+    einFeld('ruesten.drehteil_einfach', 'Drehteil einfach', 'min') +
+    einFeld('ruesten.drehteil_fraes', 'Drehteil mit Fr&auml;santeil', 'min') +
+    einFeld('ruesten.fraesteil_3ax', 'Fr&auml;steil 3-Achs', 'min') +
+    einFeld('ruesten.fraesteil_komplex', 'Fr&auml;steil komplex', 'min') +
+    '<h3>Nebenkosten</h3>' +
+    einFeld('nebenkosten.verpackung_auftrag', 'Verpackung je Auftrag', '&euro;') +
+    einFeld('nebenkosten.verpackung_teil', 'Verpackung je Teil', '&euro;') +
+    einFeld('nebenkosten.versand', 'Versand pauschal', '&euro;') +
+    '<h3>Rohteilaufma&szlig;</h3>' +
+    einFeld('rohteil.aufmass_durchmesser', 'Durchmesser', 'mm') +
+    einFeld('rohteil.aufmass_laenge', 'L&auml;nge', 'mm') +
+    einFeld('rohteil.aufmass_flach', 'Flach, je Seite', 'mm'));
+
+  htm('einFirma',
+    einFeld('firma.name', 'Firma', '', 'text') +
+    einFeld('firma.strasse', 'Stra&szlig;e', '', 'text') +
+    einFeld('firma.ort', 'PLZ und Ort', '', 'text') +
+    einFeld('firma.telefon', 'Telefon', '', 'text') +
+    einFeld('firma.mail', 'E-Mail', '', 'text') +
+    einFeld('firma.ustid', 'USt-IdNr.', '', 'text') +
+    einFeld('firma.lieferzeit', 'Lieferzeit (Vorgabe)', '', 'text') +
+    einFeld('firma.gueltigkeit_tage', 'Angebot g&uuml;ltig', 'Tage'));
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-pfad]'), (e) => {
+    e.addEventListener('change', () => {
+      const teile = e.getAttribute('data-pfad').split('.');
+      let z = S.V;
+      for(let i = 0; i < teile.length - 1; i++){ if(!z[teile[i]]) z[teile[i]] = {}; z = z[teile[i]]; }
+      const roh = e.value;
+      z[teile[teile.length - 1]] = (e.type === 'number') ? fLesen(roh) : roh;
+      /* Wer einen Platzhalter stellt, hat ihn gepflegt — Marke und Hinweis im
+         Blatt verschwinden dann (Muster: Materialpreis, eine Zeile tiefer). */
+      const gr = teile[0];
+      if(EIN_PLATZHALTER[gr] && S.V[gr] && S.V[gr].gepflegt === false){ S.V[gr].gepflegt = true; einMalen(); }
+      einSichern(); kalkMalen();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-w]'), (e) => {
+    e.addEventListener('change', () => {
+      const i = +e.getAttribute('data-w'), f = e.getAttribute('data-f');
+      const w = S.V.werkstoffe[i]; if(!w) return;
+      w[f] = (e.type === 'number') ? fLesen(e.value) : e.value;
+      if(f === 'preis') w.gepflegt = true;
+      einSichern(); einMalen(); kalkMalen();
+    });
+  });
+}
+
+/* ---- Sichern und Laden ---------------------------------------------- */
+function dateiSichern(name, text, typ){
+  try{
+    const b = new Blob([text], {type:typ || 'application/json'});
+    const u = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = u; a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(u); }, 500);
+  }catch(e){ meldung('Sichern nicht moeglich: ' + e.message, 'fehler'); }
+}
+
+function angebotDatensatz(){
+  const d = fKopie(S.d);
+  delete d._befund;                                  /* das Modell ist zu gross und gehoert nicht ins Angebot */
+  const r = kalkRechnen(kalkEingabe());
+  const e = kalkEingabe();
+  d.kalkulation = {
+    parameter: {werkstoff:e.werkstoff, toleranz:e.toleranz, oberflaeche:e.oberflaeche,
+      seiten:e.seiten, stueck:e.stueck, versandArt:e.versandArt,
+      ueberschrieben:fKopie(S.ueber), einstellungen:fKopie(S.V)},
+    zeiten: r.zeiten,
+    preise: r.preise
+  };
+  d.angebot = {kunde:S.angebot.kunde, nummer:S.angebot.nummer,
+    lieferzeit:S.angebot.lieferzeit || (S.V.firma && S.V.firma.lieferzeit) || '',
+    istzeit:S.angebot.istzeit, datum:new Date().toISOString().slice(0, 10),
+    staffel:kalkStaffel(e)};
+  return d;
+}
+
+function angebotVerdrahten(){
+  on('btnJson', 'click', () => {
+    if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
+    const d = angebotDatensatz();
+    const n = (d.teil.zeichnungsnr || d.teil.name || 'angebot').replace(/[^A-Za-z0-9_.-]+/g, '_');
+    dateiSichern(n + '.json', JSON.stringify(d, null, 1));
+  });
+  on('btnJsonLaden', 'click', () => el('jsonDatei') && el('jsonDatei').click());
+  on('jsonDatei', 'change', () => {
+    const f = el('jsonDatei').files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const d = JSON.parse(String(r.result));
+        const p = schemaPruefen(d);
+        if(p.length) meldungListe('Das Angebot passt nicht ganz zum Austauschformat:', p, 'warn');
+        S.d = d;
+        S.d._befund = S.d._befund || {koerper:1, volumenBekannt:d.teil.volumen_cm3 > 0, genaehertAnteil:0,
+          sinnSchief:0, rotAnteil:0, hinterschnittAnteil:0, sechskantSW:null, warnungen:[], bericht:{}, ms:0, modell:null};
+        const k = d.kalkulation && d.kalkulation.parameter;
+        if(k){
+          S.ueber = k.ueberschrieben || {};
+          if(k.einstellungen) S.V = kalkMerge(KALK_VORGABEN, k.einstellungen);
+          ['kToleranz', 'kOberflaeche', 'kVersandArt'].forEach((id, i) => {
+            const v = [k.toleranz, k.oberflaeche, k.versandArt][i];
+            if(el(id) && v) el(id).value = v;
+          });
+          if(el('kSeiten') && k.seiten) el('kSeiten').value = k.seiten;
+          if(el('kStueck') && k.stueck) el('kStueck').value = k.stueck;
+        }
+        if(d.angebot){
+          S.angebot.kunde = d.angebot.kunde || ''; S.angebot.nummer = d.angebot.nummer || '';
+          S.angebot.lieferzeit = d.angebot.lieferzeit || '';
+          if(el('aKunde')) el('aKunde').value = S.angebot.kunde;
+          if(el('aNummer')) el('aNummer').value = S.angebot.nummer;
+          if(el('aLieferzeit')) el('aLieferzeit').value = S.angebot.lieferzeit;
+        }
+        meldungenLeeren();
+        teilMalen();
+        werkstoffWahlMalen();
+        if(el('kWerkstoff') && d.teil.werkstoff) el('kWerkstoff').value = d.teil.werkstoff;
+        kalkMalen();
+        meldung('Angebot geladen.', 'info');
+      }catch(e){ meldung('Die Datei ist kein gueltiges Angebot: ' + e.message, 'fehler'); }
+    };
+    r.readAsText(f);
+  });
+  on('btnPdf', 'click', () => {
+    if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
+    angebotDrucken();
+  });
+  on('btnEinExport', 'click', () => dateiSichern('werkstatt-einstellungen.json', JSON.stringify(S.V, null, 1)));
+  on('btnEinImport', 'click', () => el('einDatei') && el('einDatei').click());
+  on('einDatei', 'change', () => {
+    const f = el('einDatei').files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{ S.V = kalkMerge(KALK_VORGABEN, JSON.parse(String(r.result))); einSichern(); einMalen(); kalkMalen(); }
+      catch(e){ meldung('Die Einstellungen liessen sich nicht lesen: ' + e.message, 'fehler'); }
+    };
+    r.readAsText(f);
+  });
+  on('btnEinReset', 'click', () => {
+    S.V = fKopie(KALK_VORGABEN); einSichern(); einMalen(); kalkMalen();
+  });
+  on('btnWstNeu', 'click', () => {
+    S.V.werkstoffe = S.V.werkstoffe || [];
+    S.V.werkstoffe.push({name:'neu', gruppe:'stahl', dichte:7.85, preis:0, faktor:1, gepflegt:false});
+    einSichern(); einMalen();
+  });
+}
+
+/* ---- Angebot drucken -------------------------------------------------
+   Kein PDF-Baukasten: das Drucken des Browsers erzeugt das PDF. Damit
+   bleibt die App eine Datei ohne Fremdbibliothek, und der Weg ist auf
+   dem iPhone derselbe wie am Laptop (Teilen, Als PDF sichern). */
+function angebotDrucken(){
+  const d = angebotDatensatz();
+  const F = S.V.firma || {};
+  const r = d.kalkulation;
+  const z = (a, b) => '<tr><td>' + a + '</td><td style="text-align:right">' + b + '</td></tr>';
+  const heute = new Date();
+  const bis = new Date(heute.getTime() + ((F.gueltigkeit_tage || 30) * 86400000));
+  const dt = (x) => String(x.getDate()).padStart(2, '0') + '.' + String(x.getMonth() + 1).padStart(2, '0') + '.' + x.getFullYear();
+  const ro = d.rohteil, m = ro.masse || {};
+  const rohText = ro.form === 'rund' ? 'Rund &oslash; ' + fZahl(m.d, 1) + ' x ' + fZahl(m.l, 1)
+    : ro.form === 'rohr' ? 'Rohr &oslash; ' + fZahl(m.d, 1) + '/' + fZahl(m.di, 1) + ' x ' + fZahl(m.l, 1)
+    : ro.form === 'sechskant' ? 'Sechskant SW ' + fZahl(m.sw, 1) + ' x ' + fZahl(m.l, 1)
+    : 'Flach ' + fZahl(m.x, 1) + ' x ' + fZahl(m.y, 1) + ' x ' + fZahl(m.z, 1);
+
+  const h =
+'<!DOCTYPE html><html lang="de"><head><meta charset="utf-8"><title>Angebot ' + (d.angebot.nummer || '') + '</title>' +
+'<style>body{font:12pt/1.45 -apple-system,Segoe UI,Arial,sans-serif;color:#16202a;margin:24mm 18mm}' +
+'h1{font-size:18pt;margin:0 0 2mm;color:#1858a0}h2{font-size:12pt;margin:7mm 0 2mm;color:#1858a0}' +
+'table{border-collapse:collapse;width:100%;font-size:11pt}td,th{padding:3px 6px;border-bottom:1px solid #dde3ea;text-align:left}' +
+'.kopf{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8mm}' +
+'.klein{font-size:9.5pt;color:#5a6873}.staffel td{text-align:right}.staffel td:first-child{text-align:left}' +
+'</style></head><body>' +
+'<div class="kopf"><div><b>' + (F.name || '') + '</b><br>' + (F.strasse || '') + '<br>' + (F.ort || '') +
+  (F.telefon ? '<br>Telefon ' + F.telefon : '') + (F.mail ? '<br>' + F.mail : '') + '</div>' +
+'<div style="text-align:right" class="klein">Datum ' + dt(heute) + '<br>G&uuml;ltig bis ' + dt(bis) +
+  (d.angebot.nummer ? '<br>Angebot ' + d.angebot.nummer : '') + '</div></div>' +
+'<h1>Angebot</h1>' +
+(d.angebot.kunde ? '<p>' + d.angebot.kunde + '</p>' : '') +
+'<h2>Teil</h2><table>' +
+z('Benennung', d.teil.name || '&mdash;') +
+z('Zeichnungsnummer', (d.teil.zeichnungsnr || '&mdash;') + (d.teil.revision ? ' / Rev. ' + d.teil.revision : '')) +
+z('Werkstoff', d.teil.werkstoff || '&mdash;') +
+z('Rohteil', rohText + ' mm') +
+z('Ma&szlig;e &uuml;ber alles', fZahl(d.teil.bbox.x, 1) + ' x ' + fZahl(d.teil.bbox.y, 1) + ' x ' + fZahl(d.teil.bbox.z, 1) + ' mm') +
+z('Bearbeitung', r.parameter.toleranz === 'fein' ? 'Toleranz fein (&le; IT7)' : 'Toleranz mittel (IT8&ndash;IT10)') +
+'</table>' +
+'<h2>Preise</h2><table class="staffel"><tr><th>St&uuml;ckzahl</th><th style="text-align:right">Einzelpreis</th><th style="text-align:right">Gesamt</th></tr>' +
+d.angebot.staffel.map(x => '<tr><td>' + x.stueck + '</td><td>' + fZahl(x.einzelpreis, 2) + ' &euro;</td><td>' +
+  fZahl(x.gesamt, 2) + ' &euro;</td></tr>').join('') + '</table>' +
+'<p class="klein">Alle Preise netto zuz&uuml;glich der gesetzlichen Umsatzsteuer. Lieferzeit ' +
+(d.angebot.lieferzeit || 'nach Vereinbarung') + '. Das Angebot ist ' + (F.gueltigkeit_tage || 30) +
+' Tage g&uuml;ltig.' + (F.ustid ? ' USt-IdNr. ' + F.ustid + '.' : '') + '</p>' +
+'<p class="klein">Die Kalkulation beruht auf einer rechnerischen Auswertung des &uuml;bermittelten Modells. ' +
+'Ma&szlig;geblich f&uuml;r die Fertigung ist die Zeichnung.</p>' +
+'</body></html>';
+
+  const w = window.open('', '_blank');
+  if(!w){ meldung('Das Druckfenster wurde blockiert. Bitte Pop-ups fuer diese Seite erlauben.', 'warn'); return; }
+  w.document.write(h); w.document.close();
+  setTimeout(() => { try{ w.focus(); w.print(); }catch(e){} }, 350);
+}
+
+/* ---- Start ----------------------------------------------------------
+   Alles ist geladen; jetzt werden die Startwerte geholt, die Knoepfe
+   verdrahtet und die leeren Blaetter gemalt. Ein Fehler hier darf die
+   Seite nicht stumm lassen — er steht dann im Meldungsfeld. */
+function start(){
+  try{
+    einLaden();
+    bedienungVerdrahten();
+    vorschauVerdrahten();
+    angebotVerdrahten();
+    werkstoffWahlMalen();
+    kalkMalen();
+    vorschauMalen();
+  }catch(e){
+    const m = document.getElementById('meldungen');
+    if(m) m.innerHTML = '<div class="meldung fehler">Die App konnte nicht starten: ' +
+      String(e && e.message) + '</div>';
+    if(typeof console !== 'undefined') console.error(e);
+  }
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+else start();
+</script>
+</body>
+</html>

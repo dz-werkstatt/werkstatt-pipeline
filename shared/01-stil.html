@@ -1,0 +1,148 @@
+/* =====================================================================
+   Stylesheet — hell, flach, praezise (Lastenheft Abschnitt 2).
+   Ein Farbregler wie in den Schwester-Apps: --ton haelt den Farbton der
+   ganzen Oberflaeche, jeder Ton steht als hsl(var(--ton), S%, L%) und
+   behaelt seine eigene Saettigung und Helligkeit. Neue Farbe = eine Zahl.
+   212 ist der Ton der geforderten Akzentfarbe #1858a0
+   (= hsl(212, 74%, 36%), nachgerechnet).
+   KEINE Verlaeufe, keine Schlagschatten auf Knoepfen, kein dunkles
+   Dashboard — Werkstatt, nicht Parfuemwerbung.
+   ===================================================================== */
+:root{
+  --ton: 212;
+  --akzent:      hsl(var(--ton), 74%, 36%);   /* #1858a0 */
+  --akzent-hell: hsl(var(--ton), 74%, 46%);
+  --akzent-blass:hsl(var(--ton), 60%, 95%);
+  --rand:        hsl(var(--ton), 18%, 84%);
+  --rand-fein:   hsl(var(--ton), 18%, 90%);
+  --grund:       hsl(var(--ton), 25%, 98%);
+  --flaeche:     #fff;
+  --text:        hsl(var(--ton), 22%, 16%);
+  --text-blass:  hsl(var(--ton), 12%, 42%);
+  --gut:   #17734a;
+  --warn:  #9a6100;
+  --schlecht: #a32020;
+  --geaendert: #9a6100;                        /* ueberschriebene Werte */
+}
+*{ box-sizing: border-box; }
+html,body{ margin:0; padding:0; }
+body{
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  color: var(--text); background: var(--grund);
+  -webkit-text-size-adjust: 100%;
+}
+/* Zahlen immer in Tabellenziffern — sonst tanzen die Spalten */
+.zahl, input[type=number], td.z, .preis{ font-variant-numeric: tabular-nums; }
+
+/* ---- Kopfzeile ---- */
+header{
+  display:flex; align-items:center; gap:10px;
+  padding: 10px 14px; background: var(--akzent); color:#fff;
+  position: sticky; top:0; z-index: 30;
+}
+header .marke{ font-weight:600; letter-spacing:.2px; }
+header .schritt{ margin-left:auto; display:flex; gap:6px; }
+header .schritt button{
+  background: rgba(255,255,255,.14); color:#fff; border:1px solid rgba(255,255,255,.3);
+  border-radius:6px; padding:5px 11px; font-size:14px; cursor:pointer;
+}
+header .schritt button.an{ background:#fff; color:var(--akzent); border-color:#fff; font-weight:600; }
+
+/* ---- Seitenaufbau ---- */
+main{ padding: 14px; max-width: 1400px; margin: 0 auto; }
+.blatt{ display:none; }
+.blatt.an{ display:block; }
+.karte{
+  background: var(--flaeche); border:1px solid var(--rand); border-radius:8px;
+  padding: 14px; margin-bottom: 14px;
+}
+.karte > h2{ margin:0 0 10px; font-size:15px; font-weight:600; color: var(--akzent); }
+.karte > h3{ margin:14px 0 6px; font-size:14px; font-weight:600; }
+.zwei{ display:grid; grid-template-columns: 1fr; gap:14px; }
+@media (min-width: 900px){ .zwei{ grid-template-columns: minmax(0,1fr) minmax(0,1fr); } }
+
+/* ---- Ablagefeld fuer Dateien ---- */
+#ablage{
+  border:2px dashed var(--rand); border-radius:10px; background:var(--akzent-blass);
+  padding: 26px 16px; text-align:center; cursor:pointer;
+}
+#ablage.drueber{ border-color: var(--akzent); background:#fff; }
+#ablage .gross{ font-size:16px; font-weight:600; color:var(--akzent); }
+#ablage .klein{ color:var(--text-blass); font-size:13px; margin-top:4px; }
+
+/* ---- Knoepfe: flach, gedrueckt = dunkler ---- */
+button{ font: inherit; color: var(--akzent); }
+.knopf{
+  background: var(--flaeche); color: var(--akzent);
+  border:1px solid var(--rand); border-radius:6px; padding:8px 14px; cursor:pointer;
+}
+.knopf:active{ background: var(--rand-fein); }
+.knopf.haupt{ background: var(--akzent); color:#fff; border-color: var(--akzent); font-weight:600; }
+.knopf.haupt:active{ background: hsl(var(--ton), 74%, 28%); }
+.knopf[disabled]{ opacity:.45; cursor:default; }
+.knopfzeile{ display:flex; flex-wrap:wrap; gap:8px; }
+
+/* ---- Tabellen ---- */
+table{ border-collapse: collapse; width:100%; font-size:14px; }
+th,td{ text-align:left; padding:5px 8px; border-bottom:1px solid var(--rand-fein); }
+th{ color: var(--text-blass); font-weight:600; font-size:13px; }
+td.z, th.z{ text-align:right; }
+tr.summe td{ border-top:2px solid var(--rand); border-bottom:none; font-weight:600; }
+.tabellenrahmen{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+
+/* ---- Felder ---- */
+.feld{ display:flex; align-items:center; gap:8px; margin:5px 0; }
+.feld label{ flex:0 0 auto; min-width:190px; color:var(--text-blass); font-size:13px; }
+.feld input, .feld select{
+  font: inherit; padding:6px 8px; border:1px solid var(--rand); border-radius:5px;
+  background:#fff; color:var(--text); width:120px; text-align:right;
+}
+.feld input[type=text], .feld select{ text-align:left; width:220px; }
+.feld input:focus, .feld select:focus{ outline:2px solid var(--akzent-hell); outline-offset:0; border-color:var(--akzent); }
+.feld .einheit{ color:var(--text-blass); font-size:13px; min-width:46px; }
+.feld input.geaendert{ border-color: var(--geaendert); background:#fffaf0; }
+
+/* Schaetzwert- und Pflege-Marke */
+.marke{ font-size:11px; padding:1px 6px; border-radius:10px; border:1px solid currentColor; }
+.marke.schaetz{ color: var(--warn); }
+.marke.pflege{ color: var(--schlecht); }
+.marke.gemessen{ color: var(--gut); }
+
+/* ---- Meldungen ---- */
+.meldung{ padding:8px 11px; border-radius:6px; margin:8px 0; font-size:14px; border:1px solid; }
+.meldung.info{ color:var(--akzent); border-color:var(--rand); background:var(--akzent-blass); }
+.meldung.warn{ color:var(--warn); border-color:#e6cf9a; background:#fff8e8; }
+.meldung.fehler{ color:var(--schlecht); border-color:#e6b0b0; background:#fdf1f1; }
+.meldung ul{ margin:5px 0 0 18px; padding:0; }
+
+/* ---- 3D-Vorschau ---- */
+#vorschau{ position:relative; background:#fff; border:1px solid var(--rand); border-radius:8px; overflow:hidden; }
+#vorschauCv{ display:block; width:100%; height:300px; touch-action:none; cursor:grab; }
+@media (min-width: 900px){ #vorschauCv{ height:420px; } }
+#vorschau .hinweis{ position:absolute; left:8px; bottom:6px; font-size:12px; color:var(--text-blass); }
+#vorschau .knopfzeile{ position:absolute; right:8px; top:8px; }
+
+/* ---- Ladebalken (WASM/grosse Dateien brauchen am iPhone Geduld) ---- */
+#laden{ display:none; }
+#laden.an{ display:block; }
+.balken{ height:6px; background:var(--rand-fein); border-radius:3px; overflow:hidden; }
+.balken > i{ display:block; height:100%; width:30%; background:var(--akzent); transition: width .2s; }
+
+/* ---- Staffel ---- */
+.staffel{ display:grid; grid-template-columns: repeat(auto-fit, minmax(110px,1fr)); gap:8px; }
+.staffel .stueck{
+  border:1px solid var(--rand); border-radius:8px; padding:9px; text-align:center; background:#fff;
+}
+.staffel .stueck b{ display:block; font-size:19px; color:var(--akzent); font-variant-numeric:tabular-nums; }
+.staffel .stueck span{ font-size:12px; color:var(--text-blass); }
+
+/* ---- Druck: nur das Angebot ---- */
+@media print{
+  header, .kein-druck{ display:none !important; }
+  body{ background:#fff; }
+  .karte{ border:none; padding:0; }
+  main{ padding:0; max-width:none; }
+}
+</style>
+</head>
+<body>

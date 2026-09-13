@@ -1,0 +1,5 @@
+# Keine Zeilenende-Umwandlung. Der Bau ist eine BYTE-Verkettung, und
+# "node bauen.js --pruefe" vergleicht Byte fuer Byte. Wuerde Git beim
+# Auschecken LF in CRLF wandeln, faende ein frisch geklontes Verzeichnis
+# seine eigene gebaute Datei falsch.
+* -text
