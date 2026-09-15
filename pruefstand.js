@@ -3222,6 +3222,274 @@ console.log('\n26) Wartung je Maschine');
   }
 }
 
+/* --- 27. Fraesanteil und Meldungsdarstellung -------------------------
+   PUNKT 6 DER ENTSCHEIDUNGSLISTE: wieviel Zeit eines Drehteils mit
+   Fraesanteil faellt auf die Fraese? Zur Haelfte muss das NICHT geraten
+   werden - der Ruestaufschlag steht seit dem ersten Tag in der
+   Kalkulation (20 gegen 40 min), und das IST der Anteil. Die
+   Stueckzeit ist eine Annahme und traegt die gepflegt-Marke.
+
+   DIE TRAGENDE PRUEFUNG ist die SUMME: was aufgeteilt wird, wird nicht
+   mehr. Auf dieser Zusage steht der ganze ERP-Ausbau.
+
+   DAZU der Befund an den MELDUNGEN: sie zeigten ihren Auszeichnungstext
+   woertlich ("R&uuml;stzeit <b>20 min</b>"), weil meldung() mit
+   textContent setzte, die Texte aber seit dem ERP-Ausbau mit
+   Auszeichnung geschrieben sind. Im Browser gemessen, hier verankert. */
+console.log('\n27) Fraesanteil und Meldungen');
+{
+  const neuerAuftrag = hole('neuerAuftrag'), fraesAnteil = hole('fraesAnteil');
+  const gaengeVorschlagen = hole('gaengeVorschlagen'), auftragGaenge = hole('auftragGaenge');
+  const gaengeSumme = hole('gaengeSumme'), gangHinweis = hole('gangHinweis');
+  const meldungAuszeichnen = hole('meldungAuszeichnen');
+  const V = hole('KALK_VORGABEN');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+
+  ['fraesAnteil', 'gaengeVorschlagen', 'meldungAuszeichnen'].forEach(nm => {
+    if(typeof hole(nm) === 'function') ok('vorhanden: ' + nm);
+    else bad('fehlt: ' + nm);
+  });
+
+  /* (1) Der Ruestanteil wird GERECHNET, nicht hingeschrieben. */
+  {
+    const an = fraesAnteil(V);
+    gleich('Ruestanteil aus der Kalkulation: (40-20)/40', an.ruest, 0.5);
+    if(/20 gegen 40/.test(an.ruestHerkunft)) ok('  und die Herkunft steht dabei');
+    else bad('  die Herkunft fehlt: ' + an.ruestHerkunft);
+    gleich('Stueckanteil ist der Startwert', an.stueck, 0.3);
+    gleich('  und ist als Annahme ausgewiesen', an.stueckGepflegt, false);
+
+    /* Wer die Ruestzeiten aendert, aendert den Anteil mit - das ist der
+       Sinn der Rechnung. */
+    const eigen = JSON.parse(JSON.stringify(V));
+    eigen.ruesten.drehteil_einfach = 30; eigen.ruesten.drehteil_fraes = 50;
+    gleich('andere Ruestzeiten, anderer Anteil', fraesAnteil(eigen).ruest, 0.4);
+    /* Und Unsinn faellt auf die Vorgabe zurueck statt zu rechnen. */
+    const kaputt = JSON.parse(JSON.stringify(V));
+    kaputt.ruesten.drehteil_fraes = 0;
+    gleich('ohne brauchbare Werte die Vorgabe', fraesAnteil(kaputt).ruest, 0.5);
+    const hoeher = JSON.parse(JSON.stringify(V));
+    hoeher.ruesten.drehteil_einfach = 60;   /* einfach teurer als mit Fraesen */
+    gleich('verdrehte Werte ebenso', fraesAnteil(hoeher).ruest, 0.5);
+  }
+
+  /* (2) DIE SUMME BLEIBT DIE KALKULATION - die tragende Zusage. */
+  {
+    const bau = () => {
+      const a = neuerAuftrag();
+      a.nummer = 'F-1'; a.teil = 'Flansch'; a.stueck = 10; a.status = 'beauftragt';
+      a.klasse = 'drehteil_fraes'; a.gattung = 'drehen'; a.maschine = 'm1000';
+      a.zeiten = {ruestzeit:40, stueckzeit:6.4};
+      a.masse = {dmax:120, laenge:60, x:120, y:120, z:60};
+      return a;
+    };
+    const a = bau();
+    const v = gaengeVorschlagen(a, M0, V);
+    gleich('der Vorschlag laeuft', v.ok, true);
+    const g = auftragGaenge(a);
+    gleich('zwei Gaenge', g.length, 2);
+    gleich('  Gang 1 dreht', g[0].name + ' auf ' + g[0].maschine, 'Drehen auf m1000');
+    gleich('  Gang 2 fraest', g[1].name + ' auf ' + g[1].maschine, 'Fraesen auf fr1');
+    gleich('Ruesten geteilt 20/20', g[0].ruestzeit + '/' + g[1].ruestzeit, '20/20');
+    gleich('Stueckzeit geteilt 4,48/1,92', g[0].stueckzeit + '/' + g[1].stueckzeit, '4.48/1.92');
+    const s = gaengeSumme(a);
+    gleich('DIE SUMME IST DIE KALKULATION (ruesten)', s.ruestzeit, 40);
+    gleich('DIE SUMME IST DIE KALKULATION (stueck)', s.stueckzeit, 6.4);
+
+    /* KRUMME ANTEILE: der erste Gang bekommt den Rest, damit nie eine
+       Minute fehlt oder entsteht. Das ist der Fall, der eine naive
+       Aufteilung auffliegen laesst. */
+    const krumm = JSON.parse(JSON.stringify(V));
+    krumm.fraesanteil = {stueck:0.333, gepflegt:true};
+    const b = bau();
+    b.zeiten = {ruestzeit:37, stueckzeit:7.77};
+    gaengeVorschlagen(b, M0, krumm);
+    const sb = gaengeSumme(b);
+    gleich('krumme Anteile: Ruestsumme stimmt', Math.abs(sb.ruestzeit - 37) < 1e-9, true);
+    gleich('  Stuecksumme stimmt', Math.abs(sb.stueckzeit - 7.77) < 1e-9, true);
+
+    /* Wachen: kein zweiter Lauf, keine falsche Klasse, keine Fraese. */
+    gleich('ein zweiter Lauf wird abgelehnt', gaengeVorschlagen(a, M0, V).ok, false);
+    const einfach = bau(); einfach.klasse = 'drehteil_einfach';
+    gleich('ein einfaches Drehteil wird abgelehnt', gaengeVorschlagen(einfach, M0, V).ok, false);
+    const ohneFr = M0.filter(m => m.art !== 'fraesen');
+    const c = bau();
+    const r = gaengeVorschlagen(c, ohneFr, V);
+    gleich('ohne Fraesmaschine wird NICHT geraten', r.ok, false);
+    if(/keine aktive Fraesmaschine/.test(r.grund)) ok('  und der Grund steht da');
+    else bad('  der Grund fehlt: ' + r.grund);
+    gleich('  und der Auftrag bleibt unveraendert', auftragGaenge(c).length, 1);
+
+    /* Der Hinweis nennt den Knopf, seit es ihn gibt. */
+    const h = gangHinweis(bau());
+    if(/Arbeitsgaenge vorschlagen/.test(h)) ok('der Hinweis nennt den Knopf');
+    else bad('der Hinweis nennt den Knopf nicht: ' + h);
+  }
+
+  /* (3) MELDUNGEN: auszeichnen ja, einschleusen nein. Im Browser
+     gemessen (1366 px): Umlaute und drei fette Stellen kamen an, der
+     Einschleusversuch blieb sichtbarer Text, 0 Bilder, 0 Skripte. */
+  {
+    gleich('Umlaut-Entity wird zum Zeichen',
+           meldungAuszeichnen('R&uuml;sten'), 'R&uuml;sten');
+    gleich('fett bleibt fett', meldungAuszeichnen('<b>20</b>'), '<b>20</b>');
+    gleich('Zeilenumbruch bleibt', meldungAuszeichnen('a<br>b'), 'a<br>b');
+    gleich('ein Bild wird zu Text',
+           meldungAuszeichnen('<img src=x onerror=boese()>'),
+           '&lt;img src=x onerror=boese()&gt;');
+    gleich('ein Skript ebenso',
+           meldungAuszeichnen('<script>1</scr' + 'ipt>'),
+           '&lt;script&gt;1&lt;/scr' + 'ipt&gt;');
+    gleich('ein echtes Kleinerzeichen bleibt lesbar',
+           meldungAuszeichnen('Winkel < 90'), 'Winkel &lt; 90');
+    gleich('ein einzelnes Und bleibt ein Und',
+           meldungAuszeichnen('Fritz & Co'), 'Fritz &amp; Co');
+    if(/d\.innerHTML = meldungAuszeichnen\(text\)/.test(quelltext))
+      ok('meldung() zeichnet aus statt den Text vorzuzeigen');
+    else bad('meldung() setzt weiter Klartext - die Marken stehen im Bild');
+  }
+
+  /* (4) Oberflaeche. */
+  {
+    ['afGangVorschlag', 'einFraesStueck', 'einFraesHinweis'].forEach(id => {
+      if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id);
+      else bad('Bedienelement fehlt: ' + id);
+    });
+    if(typeof hole('wFraesMalen') === 'function') ok('Funktion vorhanden: wFraesMalen');
+    else bad('Funktion fehlt: wFraesMalen');
+    if(/vk\.hidden = !\(a\.klasse === 'drehteil_fraes' && g\.length === 1\)/.test(quelltext))
+      ok('der Knopf steht nur bei genau diesem Fall');
+    else bad('der Knopf steht immer - ein zweiter Klick ueberschriebe von Hand gesetzte Minuten');
+    if(/eine <b>Annahme<\/b>/.test(quelltext))
+      ok('und der Vorschlag sagt, dass der Stueckanteil geraten ist');
+    else bad('der Vorschlag verschweigt, dass der Stueckanteil geraten ist');
+  }
+}
+
+/* --- 28. Stundensatz je Maschine -------------------------------------
+   PUNKT 4 DER ENTSCHEIDUNGSLISTE, und die Architekturfrage dahinter:
+   die Kalkulation rechnet, BEVOR eine Maschine feststeht. Ein
+   maschinenscharfer Satz im Angebotspreis haenge an einer Wahl, die
+   noch niemand getroffen hat.
+
+   DESHALB IST DER TRAGENDE HAKEN EIN NEGATIVER: das Angebot bleibt
+   unberuehrt. Der Satz wirkt beim NACHRECHNEN, wo die Maschine
+   feststeht - Vorkalkulation gegen Nachkalkulation.
+
+   Im Browser gemessen (1366 px): Angebot 393,08 Euro, nach Eintrag von
+   80 Euro/h auf der 1500er rechnet die Nachkalkulation 493,70 - das
+   Angebot unveraendert 393,08.                                        */
+console.log('\n28) Stundensatz je Maschine');
+{
+  const neuerAuftrag = hole('neuerAuftrag'), maschineSatz = hole('maschineSatz');
+  const kalkGrundlage = hole('kalkGrundlage'), auftragNachrechnen = hole('auftragNachrechnen');
+  const kalkRechnen = hole('kalkRechnen');
+  const V = hole('KALK_VORGABEN');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+
+  if(typeof maschineSatz === 'function') ok('vorhanden: maschineSatz');
+  else bad('fehlt: maschineSatz');
+
+  /* (1) Welcher Satz gilt? */
+  {
+    const bau = () => JSON.parse(JSON.stringify(M0));
+    const M = bau(), m = M.filter(x => x.id === 'm1500')[0];
+    const ohne = maschineSatz(m, V);
+    gleich('ohne eigenen Satz gilt die Gattung', ohne.satz, V.saetze.drehen);
+    gleich('  und das steht auch dran', ohne.eigen, false);
+    m.satz = 80;
+    const mit = maschineSatz(m, V);
+    gleich('mit eigenem Satz gilt der', mit.satz, 80);
+    gleich('  und das steht dran', mit.eigen, true);
+    gleich('  die Gattung bleibt daneben sichtbar', mit.gattung, V.saetze.drehen);
+    /* Null Euro ist etwas anderes als "nicht gepflegt" - beides faellt
+       auf die Gattung, aber aus verschiedenen Gruenden, und keines
+       rechnet still umsonst. */
+    m.satz = 0;
+    gleich('null Euro rechnet nicht umsonst', maschineSatz(m, V).satz, V.saetze.drehen);
+    m.satz = 'teuer';
+    gleich('Unsinn ebenso', maschineSatz(m, V).satz, V.saetze.drehen);
+    /* Die Fraese hat ihre eigene Gattung. */
+    gleich('die Fraese fragt den Fraessatz',
+           maschineSatz(M.filter(x => x.id === 'fr1')[0], V).gattung, V.saetze.fraesen);
+  }
+
+  /* (2) DAS ANGEBOT BLEIBT UNBERUEHRT - der tragende Haken. */
+  {
+    const ein = {
+      vorgaben:V,
+      teil:{klasse:'drehteil_einfach', volumen_cm3:300, bohrungen:[], kanten:12},
+      rohteil:{volumen_cm3:900}, werkstoff:'S235', toleranz:'mittel',
+      oberflaeche:'normal', seiten:1, stueck:10, versandArt:'versand', ueber:{}
+    };
+    const k0 = kalkRechnen(ein);
+    const k1 = kalkRechnen(Object.assign({}, ein, {satz:80}));
+    if(k1.preise.gesamt > k0.preise.gesamt) ok('ein hoeherer Satz macht die Rechnung teurer');
+    else bad('ein hoeherer Satz aendert nichts - der Eingang wirkt nicht');
+    const k2 = kalkRechnen(Object.assign({}, ein, {satz:null}));
+    gleich('ohne Satz von aussen bleibt es die Gattungsrechnung',
+           k2.preise.gesamt, k0.preise.gesamt);
+    gleich('  und ein unsinniger Satz ebenso',
+           kalkRechnen(Object.assign({}, ein, {satz:'viel'})).preise.gesamt, k0.preise.gesamt);
+    gleich('  eine Null auch', kalkRechnen(Object.assign({}, ein, {satz:0})).preise.gesamt,
+           k0.preise.gesamt);
+    /* NEGATIV ist der Fall, den die Wache wirklich abfaengt: die Null
+       faengt das Oder daneben ohnehin, eine -5 aber waere truthy und
+       zoege den Preis ins Minus. Gefunden, weil die Gegenprobe zur Null
+       nicht anschlug - eine Gegenprobe, die nicht anschlaegt, ist
+       manchmal ein Codefund. */
+    gleich('  und ein negativer Satz rechnet nicht rueckwaerts',
+           kalkRechnen(Object.assign({}, ein, {satz:-5})).preise.gesamt, k0.preise.gesamt);
+
+    /* Der Auftrag: Angebot steht, Nachrechnung folgt der Maschine. */
+    const a = neuerAuftrag();
+    a.nummer = 'S-1'; a.teil = 'Welle'; a.stueck = 10; a.status = 'beauftragt';
+    a.klasse = 'drehteil_einfach'; a.gattung = 'drehen'; a.maschine = 'm1500';
+    a.masse = {dmax:80, laenge:400, x:0, y:0, z:0};
+    a.kalk = kalkGrundlage(ein, '2026-09-15');
+    a.preis = k0.preise.gesamt;
+    a.zeiten.ruestzeit = k0.zeiten.ruestzeit;
+    a.zeiten.stueckzeit = k0.zeiten.stueckzeit;
+
+    const M = JSON.parse(JSON.stringify(M0));
+    M.filter(x => x.id === 'm1500')[0].satz = 80;
+
+    const ohneListe = auftragNachrechnen(a, kalkRechnen, V);
+    gleich('ohne Maschinenliste rechnet es wie immer',
+           Math.abs(ohneListe.neu.preis - k0.preise.gesamt) < 0.005, true);
+    const mitListe = auftragNachrechnen(a, kalkRechnen, V, M);
+    gleich('mit Liste zaehlt der Satz der Maschine', mitListe.satz, 80);
+    gleich('  und er ist als eigener ausgewiesen', mitListe.satzEigen, true);
+    gleich('  die Maschine steht dabei', mitListe.maschine, 'm1500');
+    if(mitListe.neu.preis > k0.preise.gesamt)
+      ok('die Nachrechnung liegt ueber dem Angebot (teurere Maschine)');
+    else bad('die Nachrechnung folgt der Maschine NICHT');
+    /* UND DAS IST DER PUNKT: das Angebot selbst ruehrt sie nicht an. */
+    gleich('DAS ANGEBOT BLEIBT, WAS ES WAR', a.preis, k0.preise.gesamt);
+
+    /* Eine Maschine OHNE eigenen Satz aendert nichts. */
+    const M2 = JSON.parse(JSON.stringify(M0));
+    const glatt = auftragNachrechnen(a, kalkRechnen, V, M2);
+    gleich('Maschine ohne eigenen Satz: wie die Gattung',
+           Math.abs(glatt.neu.preis - k0.preise.gesamt) < 0.005, true);
+    gleich('  und sie sagt, dass es nicht ihr eigener ist', glatt.satzEigen, false);
+  }
+
+  /* (3) Oberflaeche. */
+  {
+    if(quelltext.indexOf('id="plMaschSaetze"') > 0) ok('Bedienelement vorhanden: plMaschSaetze');
+    else bad('Bedienelement fehlt: plMaschSaetze');
+    if(/data-ms="/.test(quelltext)) ok('die Maschinentabelle hat eine Spalte fuer den Satz');
+    else bad('die Maschinentabelle hat keine Spalte fuer den Satz');
+    if(/auftragNachrechnen\(a, kalkRechnen, S\.V, W\.maschinen\)/.test(quelltext))
+      ok('das Nachrechnen bekommt die Maschinen');
+    else bad('das Nachrechnen bekommt die Maschinen NICHT - der Satz bliebe wirkungslos');
+    if(/Das Angebot bleibt davon unber&uuml;hrt/.test(quelltext))
+      ok('und die Karte sagt, dass das Angebot unberuehrt bleibt');
+    else bad('die Karte verschweigt, dass das Angebot unberuehrt bleibt');
+  }
+}
+
 /* --- Ergebnis -------------------------------------------------------- */
 console.log('\n' + '='.repeat(62));
 console.log('Haken: ' + haken + '   Fehler: ' + fehler + '   Hinweise: ' + warnungen);

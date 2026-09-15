@@ -276,16 +276,99 @@ function gaengeAusgleichen(a){
 }
 
 /* Wo ein zweiter Arbeitsgang wahrscheinlich ist - als HINWEIS, nicht als
-   Automatik. Die Klasse weiss, dass gefraest wird; sie weiss nicht, wie
-   lange. */
+   Automatik. Die Klasse weiss, dass gefraest wird; seit dem Fraesanteil
+   weiss sie auch ungefaehr, wie lange - aber der Klick bleibt beim
+   Bediener. */
 function gangHinweis(a){
   if(auftragGaenge(a).length > 1) return '';
   if((a && a.klasse) === 'drehteil_fraes')
     return 'Dieses Teil hat einen Fraesanteil. Die Kalkulation rechnet ihn auf der ' +
            'Drehmaschine mit (hoehere Ruestzeit, Nebenzeit je Bohrung) - laeuft er ' +
-           'wirklich auf der Fraesmaschine, teile den Auftrag in zwei Arbeitsgaenge ' +
-           'und schiebe die Minuten hinueber.';
+           'wirklich auf der Fraesmaschine, nimm "Arbeitsgaenge vorschlagen": ' +
+           'die App teilt die Minuten, die Summe bleibt dieselbe.';
   return '';
+}
+
+/* ---- Wieviel davon ist Fraesen? --------------------------------------
+   PUNKT 6 DER ENTSCHEIDUNGSLISTE, und die Haelfte davon steht laengst in
+   der Kalkulation: der Ruestaufschlag von drehteil_einfach auf
+   drehteil_fraes (20 -> 40 min) IST der Fraesanteil beim Ruesten. Er
+   wird hier AUSGERECHNET statt hingeschrieben - wer die zwei Werte in
+   den Einstellungen aendert, aendert den Anteil mit, und niemand muss
+   daran denken.
+
+   Bei der STUECKZEIT gibt es keinen solchen Aufschlag; dort wirkt die
+   Klasse ueber die Nebenzeiten. Der Anteil ist deshalb ein Startwert
+   (0,30) mit gepflegt false - eine Annahme, die als solche ausgewiesen
+   wird und die man an einem echten Teil nachmisst.
+
+   Geliefert werden BEIDE Anteile samt Begruendung, damit die Oberflaeche
+   sagen kann, was gerechnet und was geraten ist.                      */
+function fraesAnteil(vorgaben){
+  const V = vorgaben || (typeof KALK_VORGABEN !== 'undefined' ? KALK_VORGABEN : null) || {};
+  const r = V.ruesten || {};
+  const einfach = +r.drehteil_einfach, mitFraes = +r.drehteil_fraes;
+  let ruest = 0.5, ruestHer = 'Vorgabe';
+  if(isFinite(einfach) && isFinite(mitFraes) && mitFraes > 0 && mitFraes >= einfach){
+    ruest = (mitFraes - einfach) / mitFraes;
+    ruestHer = 'R&uuml;sten ' + einfach + ' gegen ' + mitFraes + ' min';
+  }
+  const fa = V.fraesanteil || {};
+  const st = isFinite(+fa.stueck) ? Math.min(0.95, Math.max(0, +fa.stueck)) : 0.30;
+  return {
+    ruest: Math.min(0.95, Math.max(0, ruest)),
+    stueck: st,
+    ruestHerkunft: ruestHer,
+    stueckGepflegt: fa.gepflegt === true
+  };
+}
+
+/* Aus einem Auftrag zwei Gaenge machen. DIE SUMME BLEIBT DIE
+   KALKULATION - das ist die tragende Zusage des ganzen ERP, und sie
+   haelt hier durch Konstruktion: der zweite Gang bekommt den gerundeten
+   Anteil, der ERSTE den Rest. Bei krummen Anteilen fehlt damit nie eine
+   Minute und es entsteht nie eine.
+
+   Ohne Fraesmaschine in der Liste wird NICHT geraten - dann sagt die
+   Funktion, was fehlt, und aendert nichts. */
+function gaengeVorschlagen(a, maschinen, vorgaben){
+  if(!a) return {ok:false, grund:'Kein Auftrag.'};
+  if(a.klasse !== 'drehteil_fraes')
+    return {ok:false, grund:'Das ist kein Drehteil mit Fraesanteil.'};
+  if(auftragGaenge(a).length > 1)
+    return {ok:false, grund:'Dieser Auftrag hat schon mehr als einen Arbeitsgang.'};
+  const M = maschinen || WERKSTATT_MASCHINEN;
+  const fr = M.filter(m => m.art === 'fraesen' && m.aktiv !== false);
+  if(!fr.length)
+    return {ok:false, grund:'Es gibt keine aktive Fraesmaschine. Trag eine in Blatt 4 ein.'};
+
+  const an = fraesAnteil(vorgaben);
+  const g = gaengeMaterialisieren(a);
+  const rGes = g[0].ruestzeit, sGes = g[0].stueckzeit;
+  /* NUR DER ABGEGEBENE TEIL WIRD GERUNDET. Der erste Gang bekommt den
+     Rest, ungerundet - sonst stimmt die Summe bei krummen Anteilen
+     nicht, und genau darauf steht der Preis. Ruesten auf zehntel
+     Minuten, Stueckzeit auf hundertstel (so genau liefert sie die
+     Kalkulation). toFixed raeumt nur den Fliesskommarest weg:
+     7,77 - 2,59 ergibt sonst 5,180000000000001. */
+  const rund1 = v => Math.round(v * 10) / 10;
+  const rund2 = v => Math.round(v * 100) / 100;
+  const glatt = v => +v.toFixed(6);
+  const rFr = rund1(rGes * an.ruest), sFr = rund2(sGes * an.stueck);
+
+  g[0].name = g[0].name || 'Drehen';
+  g[0].maschine = g[0].maschine || maschineVorschlag(a, M, null);
+  g[0].ruestzeit = glatt(rGes - rFr);
+  g[0].stueckzeit = glatt(sGes - sFr);
+  const zwei = gangAnhaengen(a, 'Fraesen', fr[0].id);
+  zwei.ruestzeit = rFr;
+  zwei.stueckzeit = sFr;
+  a.maschine = g[0].maschine;
+  return {
+    ok: true, anteil: an, maschine: fr[0].id, maschineName: fr[0].name,
+    ruestFraes: rFr, stueckFraes: sFr,
+    ruestDrehen: g[0].ruestzeit, stueckDrehen: g[0].stueckzeit
+  };
 }
 
 /* ---- Wache -----------------------------------------------------------
@@ -532,6 +615,21 @@ function kalkGrundlage(ein, heute){
   };
 }
 
+/* ---- Was kostet die Stunde auf DIESER Maschine? ----------------------
+   PUNKT 4 DER ENTSCHEIDUNGSLISTE. Das Feld m.satz steht im
+   Maschinenmodell seit dem ersten Tag - es war nur nie eintragbar und
+   nie gelesen. Jetzt gilt: hat die Maschine einen eigenen Satz, ist er
+   es; sonst der Satz ihrer GATTUNG aus den Einstellungen. Eine Maschine
+   ohne eigenen Satz verhaelt sich damit wie vorher, und niemand muss
+   alle vier pflegen, um eine zu aendern.                              */
+function maschineSatz(m, vorgaben){
+  const V = vorgaben || (typeof KALK_VORGABEN !== 'undefined' ? KALK_VORGABEN : null) || {};
+  const gattung = (V.saetze && V.saetze[(m && m.art) || '']) || null;
+  if(m && m.satz != null && isFinite(+m.satz) && +m.satz > 0)
+    return {satz:+m.satz, eigen:true, gattung};
+  return {satz: gattung || 60, eigen:false, gattung};
+}
+
 /* Dieselbe Rechnung mit den HEUTIGEN Einstellungen.
    Der zweite Parameter ist kalkRechnen - als Parameter, damit dieses Modul nicht
    von der Reihenfolge der Bausteine abhaengt.
@@ -539,14 +637,23 @@ function kalkGrundlage(ein, heute){
    der von damals: der Auftrag ist das, was er heute ist. Ob sie sich
    geaendert hat, steht im Ergebnis - sonst saehe eine geaenderte Menge
    aus wie eine geaenderte Einstellung.                                 */
-function auftragNachrechnen(a, rechner, vorgaben){
+function auftragNachrechnen(a, rechner, vorgaben, maschinen){
   const g = a && a.kalk;
   if(!g || !g.teil || typeof rechner !== 'function') return null;
   const stueck = Math.max(1, Math.round(+a.stueck || g.stueck || 1));
+  /* DIE MASCHINE STEHT HIER FEST - anders als beim Angebot. Hat sie
+     einen eigenen Stundensatz, wird mit ihm gerechnet; das ist der
+     Unterschied zwischen "was haben wir versprochen" und "was kostet
+     es auf der Maschine, die es wirklich faehrt". Ohne Maschinenliste
+     bleibt alles wie vorher. */
+  const mList = maschinen || null;
+  const m = mList ? mList.filter(x => x.id === (a.gaenge && a.gaenge[0] ? a.gaenge[0].maschine : a.maschine))[0] : null;
+  const ms = m ? maschineSatz(m, vorgaben) : null;
   let k;
   try{
     k = rechner({
       vorgaben,
+      satz: (ms && ms.eigen) ? ms.satz : null,
       /* kalkRechnen zaehlt nur die LAENGE der Bohrungsliste - eine Liste
          dieser Laenge genuegt, und sie kostet nichts. */
       teil: { klasse:g.teil.klasse, volumen_cm3:g.teil.volumen_cm3,
@@ -565,6 +672,11 @@ function auftragNachrechnen(a, rechner, vorgaben){
   return {
     gerechnet:g.gerechnet, stueck,
     stueckGeaendert: stueck !== g.stueck,
+    /* Womit gerechnet wurde, gehoert ins Ergebnis - sonst steht eine
+       Zahl da, deren Herkunft niemand sieht. */
+    maschine: m ? m.id : '', maschineName: m ? m.name : '',
+    satz: ms ? ms.satz : null, satzEigen: !!(ms && ms.eigen),
+    satzGattung: ms ? ms.gattung : null,
     alt, neu, ergebnis:k,
     /* Ein Cent und eine tausendstel Minute sind die Schwellen, unter
        denen niemand etwas merkt - und ueber denen jemand etwas merken
@@ -834,9 +946,10 @@ if(typeof module !== 'undefined' && module.exports){
                      auftragAusKalkulation, maschinenFuerAuftrag, maschineVorschlag,
                      gangNeu, auftragGaenge, gaengeSumme, gaengeMaterialisieren,
                      gangAnhaengen, gangEntfernen, gaengeAusgleichen, gangHinweis,
+                     fraesAnteil, gaengeVorschlagen,
                      istZahl, istGaenge, istSumme, istSetzen, lieferschein,
                      WERKSTATT_SORTEN, auftraegeFiltern,
-                     kalkGrundlage, auftragNachrechnen, auftragUebernehmen,
+                     kalkGrundlage, auftragNachrechnen, auftragUebernehmen, maschineSatz,
                      WERKSTATT_MASCHINENWAHL, maschineGroesse,
                      WERKSTATT_ARTEN, maschineNeu, maschineArtSetzen,
                      maschinePruefen, maschineBelegt };

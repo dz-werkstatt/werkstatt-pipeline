@@ -187,6 +187,10 @@
       <div id="afMaschinenHinweis" class="meldung warn" hidden></div>
       <div class="knopfzeile" style="margin-top:8px">
         <button class="knopf" id="afGangPlus">+ Arbeitsgang</button>
+        <!-- Nur bei drehteil_fraes sichtbar: die Klasse weiss, dass
+             gefraest wird, und seit dem Fraesanteil auch ungefaehr,
+             wie lange. -->
+        <button class="knopf" id="afGangVorschlag" hidden>Arbeitsg&auml;nge vorschlagen</button>
       </div>
     </div>
     <div class="feld"><label for="afStatus">Status</label><select id="afStatus"></select></div>
@@ -299,6 +303,7 @@
     <div class="meldung warn" style="margin-top:0" id="plMaschHinweis"></div>
     <div class="meldung warn" id="plMaschFehler" hidden></div>
     <div class="tabellenrahmen"><table id="plMaschinen"></table></div>
+    <div class="klein" id="plMaschSaetze"></div>
     <div class="knopfzeile" style="margin-top:8px">
       <button class="knopf" id="plMaschPlus" data-art="drehen">+ Drehmaschine</button>
       <button class="knopf" id="plMaschPlusF" data-art="fraesen">+ Fr&auml;smaschine</button>
@@ -308,6 +313,13 @@
 </section>
 
 <section class="blatt" id="blattEin">
+  <div class="karte">
+    <h2>Drehteil mit Fr&auml;santeil</h2>
+    <div class="feld"><label for="einFraesStueck">Anteil Fr&auml;sen an der St&uuml;ckzeit</label>
+      <input type="number" id="einFraesStueck" step="5" min="0" max="95"><span class="einheit">%</span></div>
+    <div class="klein" id="einFraesHinweis"></div>
+  </div>
+
   <div class="karte">
     <h2>Stundens&auml;tze</h2>
     <div id="einSaetze"></div>

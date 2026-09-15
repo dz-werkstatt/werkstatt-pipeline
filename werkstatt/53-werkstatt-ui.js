@@ -59,6 +59,25 @@ function wLaden(){
          : JSON.parse(JSON.stringify(WERKSTATT_MASCHINEN)); }
   catch(e){ W.maschinen = JSON.parse(JSON.stringify(WERKSTATT_MASCHINEN)); }
 }
+/* Der Anteil der Fraese an der Stueckzeit - die eine Zahl dieses
+   Pakets, die nicht aus der Kalkulation folgt. Sie liegt in denselben
+   Vorgaben wie die Stundensaetze und traegt dieselbe gepflegt-Marke. */
+function wFraesMalen(){
+  const f = el('einFraesStueck');
+  const an = fraesAnteil(S.V);
+  if(f) f.value = Math.round(an.stueck * 100);
+  htm('einFraesHinweis',
+    'Ein Drehteil mit Fr&auml;santeil l&auml;uft auf zwei Maschinen. Beim <b>R&uuml;sten</b> muss ' +
+    'nichts geraten werden: der Aufschlag in der Kalkulation (' + an.ruestHerkunft +
+    ') <b>ist</b> der Fr&auml;santeil, also <b>' + Math.round(an.ruest * 100) + ' %</b>. ' +
+    'Bei der <b>St&uuml;ckzeit</b> gibt es keinen solchen Aufschlag — der Wert hier ist ' +
+    (an.stueckGepflegt
+      ? 'Deiner.'
+      : '<b>eine Annahme von mir</b>. Miss ihn an einem Teil nach und trag ihn ein; ' +
+        'bis dahin sagt die App bei jedem Vorschlag, dass er geraten ist.') +
+    ' Der Knopf <b>Arbeitsg&auml;nge vorschlagen</b> steht in der Auftragsmaske.');
+}
+
 function wFreiLaden(){
   try{
     const g = JSON.parse(localStorage.getItem(SLOT_FREI) || 'null');
@@ -502,6 +521,12 @@ function wGaengeMalen(a){
       'Die Kalkulation hat <b>' + wZahl(a.zeiten.ruestzeit, 1) + ' min</b> R&uuml;sten und <b>' +
       wZahl(a.zeiten.stueckzeit, 2) + ' min je St&uuml;ck</b> gerechnet — auf dieser Zeit steht der Preis.');
 
+  /* Der Vorschlagsknopf gilt genau einem Fall: ein Drehteil mit
+     Fraesanteil, das noch EINEN Gang hat. Danach verschwindet er - ein
+     zweiter Klick wuerde die von Hand gesetzten Minuten ueberschreiben. */
+  const vk = el('afGangVorschlag');
+  if(vk) vk.hidden = !(a.klasse === 'drehteil_fraes' && g.length === 1);
+
   const neg = g.filter(x => x.ruestzeit < -0.0001 || x.stueckzeit < -0.0001).length;
   const hin = gangHinweis(a);
   const hw = el('afGangHinweis');
@@ -599,7 +624,7 @@ function wGrundlageMalen(a){
         'Preis und Zeiten lassen sich deshalb nicht nachrechnen; sie bleiben, wie sie dastehen.');
     return;
   }
-  const n = auftragNachrechnen(a, kalkRechnen, S.V);
+  const n = auftragNachrechnen(a, kalkRechnen, S.V, W.maschinen);
   W.nachrechnung = n;
   if(!n){
     if(zeile) zeile.hidden = true;
@@ -933,7 +958,8 @@ function wPlanMalen(){
   if(mt){
     const TAGE = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     let h = '<tr><th>Maschine</th><th>Art</th><th>Arbeitsraum (mm)</th>' +
-            '<th class="z">min/Tag</th><th>Arbeitstage</th><th>l&auml;uft</th><th></th></tr>';
+            '<th class="z">min/Tag</th><th class="z">&euro;/h</th>' +
+            '<th>Arbeitstage</th><th>l&auml;uft</th><th></th></tr>';
     W.maschinen.forEach((m, i) => {
       const nz = (feld, wert) => '<input type="number" step="1" min="0" data-mr="' + i +
         '" data-feld="' + feld + '" value="' + (+wert || 0) + '" title="' + feld + '">';
@@ -951,6 +977,13 @@ function wPlanMalen(){
           '</select></td>' +
         '<td>' + raum + '</td>' +
         '<td class="z"><input type="number" data-mz="' + i + '" value="' + (+m.minuten_je_tag || 0) + '" step="10"></td>' +
+        /* LEER heisst "Satz der Gattung" - eine 0 waere etwas anderes
+           (umsonst), und ein vorbelegter Gattungssatz saehe aus wie ein
+           eigener. Der Platzhalter sagt, was ohne Eintrag gilt. */
+        '<td class="z"><input type="number" data-ms="' + i + '" step="1" min="0" ' +
+          'value="' + (m.satz != null && isFinite(+m.satz) && +m.satz > 0 ? +m.satz : '') + '" ' +
+          'placeholder="' + (maschineSatz(m, S.V).gattung || 60) + '" ' +
+          'title="leer = Satz der Gattung aus Blatt 5"></td>' +
         '<td>' + tage + '</td>' +
         '<td><input type="checkbox" data-mk="' + i + '"' + (m.aktiv === false ? '' : ' checked') + '></td>' +
         '<td class="kein-druck"><button class="mini" data-mweg="' + i + '" title="Maschine entfernen">&#x2715;</button>' +
@@ -960,6 +993,7 @@ function wPlanMalen(){
   }
   wFreiMalen();
   wRegelnMalen();
+  wFraesMalen();
   wMaschinenPruefen();
   const un = W.maschinen.filter(m => m.gepflegt === false).length;
   /* Eine Maschine, die nichts zu tun hat, waehrend eine baugleiche
@@ -979,6 +1013,18 @@ function wPlanMalen(){
     'Maschine mit der bis dahin wenigsten Arbeit — nur innerhalb derselben Art, und nur wo das Teil ' +
     'hineinpasst. Das ist ein Knopf und keine Automatik: wenn Du ein Teil aus gutem Grund auf einer ' +
     'bestimmten Maschine f&auml;hrst, stell sie danach in der Auftragsmaske zur&uuml;ck.');
+  /* Was kostet welche Maschine? Eine Tabelle voller Platzhalter ist
+     eine Falle, wenn man nicht sieht, welcher Wert woher kommt. */
+  const eigene = W.maschinen.filter(m => maschineSatz(m, S.V).eigen);
+  htm('plMaschSaetze', eigene.length
+    ? '<b>' + eigene.length + ' von ' + W.maschinen.length + ' Maschinen</b> ' +
+      (eigene.length === 1 ? 'hat' : 'haben') + ' einen eigenen Stundensatz: ' + eigene.map(m => wEsc(m.name) + ' ' + wZahl(maschineSatz(m, S.V).satz, 2) +
+      ' &euro;/h').join(', ') + '. Die &uuml;brigen rechnen mit dem Satz ihrer Gattung aus Blatt 5. ' +
+      '<b>Das Angebot bleibt davon unber&uuml;hrt</b> — es entsteht, bevor die Maschine feststeht. ' +
+      'Der Maschinensatz wirkt beim <b>Nachrechnen</b> eines Auftrags: dort steht sie fest.'
+    : 'Keine Maschine hat einen eigenen Stundensatz — alle rechnen mit dem Satz ihrer Gattung ' +
+      'aus Blatt 5. Trag in der Spalte <b>&euro;/h</b> einen ein, wenn eine Maschine anders ' +
+      'kostet; leer lassen hei&szlig;t &bdquo;wie die Gattung&ldquo;.');
   htm('plMaschHinweis', un
     ? '<b>' + un + ' von ' + W.maschinen.length + ' Maschinen tragen Platzhalter.</b> ' +
       'Arbeitsraum, Minuten je Tag und Stundensatz sind gesch&auml;tzt, nicht gemessen — ' +
@@ -1269,6 +1315,26 @@ function wVerdrahten(){
   /* Arbeitsgaenge: jede Aenderung wird sofort gelesen und die Tabelle neu
      gemalt - sonst stimmt der Rest im ersten Gang nicht mehr mit dem
      ueberein, was dasteht. */
+  on('afGangVorschlag', 'click', () => {
+    const a = W.auftraege[W.gewaehlt]; if(!a) return;
+    wMaskeLesen();
+    const v = gaengeVorschlagen(a, W.maschinen, S.V);
+    if(!v.ok){ meldung(wEsc(v.grund), 'warn'); return; }
+    wSichern(); wGaengeMalen(a); wIstMalen(a); wListeMalen(); wPlanMalen();
+    /* Die Zahlen NENNEN, und dazu, welche gerechnet und welche geraten
+       ist. Ein Vorschlag, der nur Felder fuellt, ist eine Behauptung. */
+    meldung('Aufgeteilt: <b>Drehen</b> ' + wZahl(v.ruestDrehen, 1) + ' min r&uuml;sten und ' +
+      wZahl(v.stueckDrehen, 2) + ' min je St&uuml;ck, <b>' + wEsc(v.maschineName) + '</b> ' +
+      wZahl(v.ruestFraes, 1) + ' min r&uuml;sten und ' + wZahl(v.stueckFraes, 2) +
+      ' min je St&uuml;ck. Die Summe ist unver&auml;ndert die Kalkulation. ' +
+      'Der R&uuml;stanteil von ' + Math.round(v.anteil.ruest * 100) + ' % folgt der Kalkulation (' +
+      v.anteil.ruestHerkunft + '); der St&uuml;ckanteil von ' +
+      Math.round(v.anteil.stueck * 100) + ' % ist ' +
+      (v.anteil.stueckGepflegt ? 'Dein Wert' : 'eine <b>Annahme</b> — pr&uuml;f sie am Teil ' +
+       'und trag sie in Blatt 5 ein') + '. Die Minuten lassen sich hier von Hand nachziehen.',
+      v.anteil.stueckGepflegt ? 'info' : 'warn');
+  });
+
   on('afGangPlus', 'click', () => {
     const a = W.auftraege[W.gewaehlt]; if(!a) return;
     wMaskeLesen();
@@ -1367,6 +1433,7 @@ function wVerdrahten(){
   if(mt) mt.addEventListener('change', (ev) => {
     const t = ev.target, zu = (s) => t.closest && t.closest('[data-' + s + ']');
     const n = zu('mn'), z = zu('mz'), r = zu('mr'), a = zu('ma'), tg = zu('mt'), k = zu('mk');
+    const sa = zu('ms');
     let was = false;
     if(n){ W.maschinen[+n.dataset.mn].name = n.value; was = true; }
     if(z){ W.maschinen[+z.dataset.mz].minuten_je_tag = Math.max(0, Math.round(+z.value || 0)); was = true; }
@@ -1391,6 +1458,15 @@ function wVerdrahten(){
         if(!tg.checked && p >= 0) m.tage.splice(p, 1);
         m.tage.sort((x, y) => x - y);
       }
+      was = true;
+    }
+    if(sa){
+      const m = W.maschinen[+sa.dataset.ms];
+      const v = String(sa.value).trim();
+      /* Leer LOESCHT den eigenen Satz zurueck auf die Gattung. Eine 0
+         waere "umsonst" und ist etwas anderes - deshalb faellt sie auch
+         auf die Gattung zurueck, statt still null Euro zu rechnen. */
+      m.satz = (v === '' || !isFinite(+v) || +v <= 0) ? null : +v;
       was = true;
     }
     if(k){ W.maschinen[+k.dataset.mk].aktiv = !!k.checked; was = true; }
@@ -1428,6 +1504,20 @@ function wVerdrahten(){
   }));
 
   wKartenVerdrahten();
+
+  /* Der Fraesanteil. Wer ihn eintraegt, hat ihn gemessen - mehr kann
+     die App nicht wissen, und die Marke faellt sichtbar weg. */
+  on('einFraesStueck', 'change', () => {
+    const v = +(el('einFraesStueck') || {}).value;
+    if(!isFinite(v)){ wFraesMalen(); return; }
+    if(!S.V.fraesanteil) S.V.fraesanteil = {};
+    S.V.fraesanteil.stueck = Math.min(0.95, Math.max(0, Math.round(v) / 100));
+    S.V.fraesanteil.gepflegt = true;
+    einSichern();
+    wFraesMalen();
+    meldung('Fr&auml;santeil an der St&uuml;ckzeit: <b>' + Math.round(v) + ' %</b>. ' +
+            'Neue Vorschl&auml;ge rechnen damit; bestehende Auftr&auml;ge bleiben, wie sie sind.', 'info');
+  });
 
   /* Planungsregeln. Beide zeichnen den ganzen Plan neu - sie aendern
      ihn ja. */

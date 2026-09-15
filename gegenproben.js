@@ -139,6 +139,65 @@ const faelle = [
     erwartet:['der Grund nennt die Querflaechen nicht']
   },
   {
+    /* Der Satz von aussen muss WIRKEN - sonst ist die ganze Spalte
+       Schein. */
+    name:'Der Satz von aussen wird ignoriert',
+    suche:'  const satz = satzAussen || (V.saetze && V.saetze[maschine]) || 60;',
+    ersatz:'  const satz = (V.saetze && V.saetze[maschine]) || 60;',
+    erwartet:['ein hoeherer Satz aendert nichts - der Eingang wirkt nicht']
+  },
+  {
+    /* Und er darf NICHT ins Angebot rutschen: eine 0 oder ein Unsinn
+       muessen auf die Gattung zurueckfallen, sonst rechnet die App
+       still mit null Euro die Stunde. */
+    name:'Negativer Stundensatz wird durchgereicht',
+    suche:'  const satzAussen = (ein.satz != null && isFinite(+ein.satz) && +ein.satz > 0) ? +ein.satz : null;',
+    ersatz:'  const satzAussen = (ein.satz != null) ? +ein.satz : null;',
+    erwartet:['  und ein negativer Satz rechnet nicht rueckwaerts']
+  },
+  {
+    /* Eine Maschine ohne eigenen Satz muss die Gattung nehmen - nicht
+       einen geratenen Vorgabewert. */
+    name:'Maschine ohne Satz bekommt einen erfundenen',
+    suche:'  return {satz: gattung || 60, eigen:false, gattung};',
+    ersatz:'  return {satz: 99, eigen:false, gattung};',
+    erwartet:['ohne eigenen Satz gilt die Gattung']
+  },
+  {
+    /* DIE TRAGENDE ZUSAGE: Arbeitsgaenge teilen die kalkulierte Zeit,
+       sie erzeugen keine. Bekaeme der zweite Gang seinen Anteil und der
+       erste behielte den ganzen Wert, waere der Preis still falsch. */
+    name:'Der Vorschlag erzeugt Zeit statt sie zu teilen',
+    suche:'  g[0].ruestzeit = glatt(rGes - rFr);\n  g[0].stueckzeit = glatt(sGes - sFr);',
+    ersatz:'  g[0].ruestzeit = rGes;\n  g[0].stueckzeit = sGes;',
+    erwartet:['DIE SUMME IST DIE KALKULATION (ruesten)']
+  },
+  {
+    /* Der Ruestanteil wird aus der Kalkulation GERECHNET. Eine feste
+       Zahl liefe bei geaenderten Ruestzeiten still daneben. */
+    name:'Ruestanteil fest verdrahtet statt gerechnet',
+    suche:'    ruest = (mitFraes - einfach) / mitFraes;',
+    ersatz:'    ruest = 0.5;',
+    erwartet:['andere Ruestzeiten, anderer Anteil']
+  },
+  {
+    /* Ohne Fraesmaschine wird NICHT geraten - sonst laege der zweite
+       Gang auf einer Maschine, die es nicht gibt. */
+    name:'Ohne Fraesmaschine wird trotzdem geteilt',
+    suche:"    return {ok:false, grund:'Es gibt keine aktive Fraesmaschine. Trag eine in Blatt 4 ein.'};",
+    ersatz:"    fr.push(M[0]);",
+    erwartet:['ohne Fraesmaschine wird NICHT geraten']
+  },
+  {
+    /* Die Meldungen zeigten ihren Auszeichnungstext. Der Fix darf aber
+       keine Luecke aufmachen: erst escapen, dann die erlaubten Marken
+       zurueckholen. Wer die Reihenfolge umdreht, laesst alles durch. */
+    name:'Meldungen setzen rohes HTML',
+    suche:'  d.innerHTML = meldungAuszeichnen(text);',
+    ersatz:'  d.innerHTML = String(text == null ? \'\' : text);',
+    erwartet:['meldung() setzt weiter Klartext - die Marken stehen im Bild']
+  },
+  {
     /* Der Kern des Unterschieds: eine Wartung haelt EINE Maschine an.
        Wird sie ignoriert, laeuft die Maschine durch, als waere nichts. */
     name:'Wartungstage werden nicht beachtet',
@@ -649,6 +708,50 @@ const faelle = [
 ];
 
 const roh = fs.readFileSync(QUELLE, 'utf8');
+
+/* ---- Wache gegen den GRUENEN Hakentext -------------------------------
+   `erwartet` ist der Text des ROTEN Hakens. Diese Falle steht seit
+   Wochen im Kopf dieser Datei und hat mich in EINER Nacht viermal
+   erwischt: bei einem gleich()-Haken faellt sie nicht auf, weil beide
+   Seiten dieselbe Beschriftung tragen, bei einem ok()/bad()-Paar mit
+   verschiedenem Wortlaut kostet sie jedes Mal einen vollen Lauf.
+
+   Ein Kommentar hat viermal nicht gereicht. Also wird nachgesehen:
+   welche Texte haengen im Pruefstand an ok(), welche an bad()? Steht
+   ein erwartet-Text NUR bei ok(), ist er der gruene - und die Datei
+   sagt es hier, in einer Sekunde, statt nach dem Lauf.              */
+{
+  const ps = fs.readFileSync(path.join(ORDNER, 'pruefstand.js'), 'utf8');
+  const sammle = (fn) => {
+    const raus = new Set();
+    const re = new RegExp(fn + "\\(\\s*'((?:[^'\\\\]|\\\\.)*)'", 'g');
+    let m;
+    while((m = re.exec(ps)) !== null) raus.add(m[1].replace(/\\'/g, "'"));
+    return raus;
+  };
+  const gruen = sammle('ok'), rot = sammle('bad');
+  const schief = [];
+  faelle.forEach((f, i) => {
+    (f.erwartet || []).forEach(e => {
+      if(gruen.has(e) && !rot.has(e)){
+        /* Das rote Gegenstueck steht meist direkt daneben - der Text,
+           der mit denselben zwei, drei Woertern anfaengt. */
+        const anfang = e.split(' ').slice(0, 3).join(' ');
+        const vorschlag = [...rot].filter(r => r.indexOf(anfang) === 0);
+        schief.push('  ' + (i + 1) + ') ' + f.name + '\n     erwartet: ' + e +
+          '\n     das ist der GRUENE Haken.' +
+          (vorschlag.length ? ' Der rote heisst:\n     ' + vorschlag[0] : ''));
+      }
+    });
+  });
+  if(schief.length){
+    console.log('ABBRUCH - ' + schief.length + ' Gegenprobe(n) zitieren den gruenen Hakentext:');
+    schief.forEach(z => console.log(z));
+    console.log('\nerwartet ist der Text des ROTEN Hakens. Nichts gelaufen.');
+    process.exit(2);
+  }
+}
+
 let gut = 0, schlecht = 0;
 faelle.forEach((f, i) => {
   if(roh.indexOf(f.suche) < 0){

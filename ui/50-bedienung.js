@@ -31,11 +31,26 @@ function einSichern(){
 }
 
 /* ---- Meldungen ---- */
+/* Meldungen duerfen auszeichnen - aber nur, was hier steht.
+   ERST escapen, DANN die erlaubten Marken zurueckholen: so kann auch
+   eine Aufrufstelle, die wEsc() vergisst, nichts einschleusen, und ein
+   Teil, das wirklich "Winkel < 90" heisst, steht auch so da.
+   Erlaubt sind b, i, br und die benannten oder numerischen Zeichen
+   (&uuml;, &mdash;, &#x2715;) - mehr braucht eine Meldung nicht. */
+function meldungAuszeichnen(text){
+  const esc = String(text == null ? '' : text)
+    .split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;');
+  return esc
+    .replace(/&amp;(#[0-9]{1,7}|#x[0-9a-fA-F]{1,6}|[a-zA-Z][a-zA-Z0-9]{1,9});/g,
+             (t, inhalt) => '&' + inhalt + ';')
+    .replace(/&lt;(\/?)(b|i|br)&gt;/g, (t, schraeg, marke) => '<' + schraeg + marke + '>');
+}
+
 function meldung(text, art){
   const e = el('meldungen'); if(!e) return;
   const d = document.createElement('div');
   d.className = 'meldung ' + (art || 'info');
-  d.textContent = text;
+  d.innerHTML = meldungAuszeichnen(text);
   e.appendChild(d);
 }
 function meldungenLeeren(){ htm('meldungen', ''); }

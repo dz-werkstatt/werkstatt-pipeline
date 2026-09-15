@@ -62,7 +62,14 @@ function kalkRechnen(ein){
   if(!W) hinweise.push('Kein Werkstoff gewaehlt — Material bleibt unberuecksichtigt.');
   const gruppe = W ? W.gruppe : 'stahl';
   const maschine = kalkMaschine(t.klasse);
-  const satz = (V.saetze && V.saetze[maschine]) || 60;
+  /* EIN SATZ VON AUSSEN schlaegt den Gattungssatz - so rechnet das
+     Nachrechnen mit dem Satz der Maschine, die wirklich laeuft. Ohne
+     ihn bleibt alles, wie es war: das Angebot entsteht, bevor die
+     Maschine gewaehlt ist, und darf nicht an ihr haengen. Es ist
+     derselbe Rechenweg, nur ein genauerer Eingangswert - kein zweites
+     Zeitmodell. */
+  const satzAussen = (ein.satz != null && isFinite(+ein.satz) && +ein.satz > 0) ? +ein.satz : null;
+  const satz = satzAussen || (V.saetze && V.saetze[maschine]) || 60;
   const ruestSatz = (V.saetze && V.saetze.ruesten_wie_maschine) ? satz : ((V.saetze && V.saetze.ruesten) || satz);
 
   /* ---- Zeiten ---- */

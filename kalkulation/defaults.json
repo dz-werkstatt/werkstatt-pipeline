@@ -62,6 +62,12 @@
     "fraesteil_komplex": 90
   },
 
+  "_fraesanteil_hinweis": "Wieviel Zeit eines Drehteils MIT Fraesanteil faellt auf die Fraesmaschine? Beim RUESTEN muss das nicht geraten werden: der Aufschlag von drehteil_einfach auf drehteil_fraes (20 -> 40 min) IST der Fraesanteil, also die Haelfte. Bei der STUECKZEIT gibt es keinen solchen Aufschlag - dort ist der Wert eine Annahme und traegt deshalb gepflegt false, bis jemand an einem echten Teil nachmisst.",
+  "fraesanteil": {
+    "stueck": 0.30,
+    "gepflegt": false
+  },
+
   "nebenkosten": {
     "verpackung_auftrag": 8,
     "verpackung_teil": 0.5,
