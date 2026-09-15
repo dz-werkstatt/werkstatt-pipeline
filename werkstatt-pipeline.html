@@ -130,6 +130,14 @@ tr.summe td{ border-top:2px solid var(--rand); border-bottom:none; font-weight:6
 /* Die Maschinenwahl traegt ganze Saetze statt Zahlen - in den festen
    220 px stand "die mit der wenigsten Arbei". Am Bild gemessen. */
 #plRegelWahl{ width:300px; }
+/* EINE Feldkante fuer die Regel-Karte. Ihre Labels sind Saetze, nicht
+   Woerter; "Abstand zwischen zwei Arbeitsgaengen" waechst ueber die
+   190 px hinaus und schob sein Feld allein nach rechts - am Bild
+   gemessen drei Kanten bei 239, 267 und 239 px. Unter 700 px stapeln
+   die Felder ohnehin, dort gilt die Regel nicht. */
+@media (min-width: 701px){
+  #plRegelKarte .feld label{ min-width:240px; }
+}
 
 /* Schaetzwert- und Pflege-Marke */
 .marke{ font-size:11px; padding:1px 6px; border-radius:10px; border:1px solid currentColor; }
@@ -252,6 +260,17 @@ td.nw{ white-space:nowrap; }
 .wtage{ display:flex; flex-wrap:wrap; gap:2px 6px; }
 .wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
 .wtage input{ margin:0 2px 0 0; }
+
+/* ---- Lieferbar ab: die Antwort der Planung im Angebot ----------------
+   Eine Zeile, kein Kasten: sie steht unter einem Eingabefeld und soll
+   den Blick nicht von der Kalkulation wegziehen.                     */
+.lieferbar{ display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  margin:6px 0 2px; }
+.lieferbar > b{ color: var(--akzent); }
+.kwmarke{ display:inline-block; padding:1px 7px; border-radius:10px;
+  background: var(--akzent-blass); color: var(--akzent); font-size:12px;
+  font-weight:600; font-variant-numeric: tabular-nums; }
+.knopf.mini{ padding:3px 9px; font-size:12.5px; }
 
 /* ---- Die Auftragsliste -----------------------------------------------
    Der farbige Rand ist die Abkuerzung fuer den Blick; die Auskunft
@@ -600,6 +619,10 @@ table.papier td.leer{ height:26px; }
     <div class="feld"><label for="aKunde">Kunde</label><input type="text" id="aKunde"></div>
     <div class="feld"><label for="aNummer">Angebotsnummer</label><input type="text" id="aNummer"></div>
     <div class="feld"><label for="aLieferzeit">Lieferzeit</label><input type="text" id="aLieferzeit"></div>
+    <!-- Was die Planung dazu sagt. Die Lieferzeit war bis dahin ein
+         freies Textfeld mit der Vorgabe "nach Vereinbarung" - dabei
+         weiss die App, was auf den Maschinen liegt. -->
+    <div id="aLieferVorschlag"></div>
     <div class="feld"><label for="aIstzeit">Ist-Zeit je St&uuml;ck (sp&auml;ter)</label><input type="number" id="aIstzeit" step="any"><span class="einheit">min</span></div>
     <div id="istVergleich"></div>
     <div class="knopfzeile" style="margin-top:10px">
@@ -736,6 +759,8 @@ table.papier td.leer{ height:26px; }
         </select></div>
       <div class="feld"><label for="plUebergabe">Abstand zwischen zwei Arbeitsg&auml;ngen</label>
         <input type="number" id="plUebergabe" step="1" min="0" max="30"><span class="einheit">Tage</span></div>
+      <div class="feld"><label for="plZuschlag">Zuschlag auf den Liefertermin</label>
+        <input type="number" id="plZuschlag" step="1" min="0" max="60"><span class="einheit">Arbeitstage</span></div>
       <div class="klein" id="plRegelHinweis"></div>
     </div>
     <div id="plMeldung"></div>
@@ -4008,6 +4033,19 @@ function planWochentag(t){ const w = new Date(t).getUTCDay(); return w === 0 ? 7
    Jahreswechsel eine Falle. */
 function planWochenanfang(t){ return planPlus(t, -(planWochentag(t) - 1)); }
 
+/* ---- Kalenderwoche fuer die ANZEIGE ----------------------------------
+   Die Notiz ueber planWochenanfang bleibt richtig: als SCHLUESSEL taugt
+   eine KW-Nummer nicht, ueber den Jahreswechsel gibt es die 1 zweimal.
+   Als ANZEIGE ist sie das, worin eine Werkstatt rechnet - "KW 41" sagt
+   jeder, "Montag der Woche" niemand. Deshalb traegt sie hier ihr Jahr
+   mit, und das Jahr entscheidet der Donnerstag (ISO 8601).           */
+function planKw(t){
+  const mo = planWochenanfang(t);
+  const jahr = new Date(planPlus(mo, 3)).getUTCFullYear();
+  const w1 = planWochenanfang(Date.UTC(jahr, 0, 4));
+  return {kw: Math.round((mo - w1) / (7 * 86400000)) + 1, jahr};
+}
+
 /* ---- Freie Tage ------------------------------------------------------
    DER BEFUND: planKapazitaet kennt die Liste der freien Tage seit dem
    ersten Tag, und der ganze Kern reicht sie durch - 26 Stellen. Die
@@ -4395,6 +4433,90 @@ function planBelegen(ein){
               eine Terminkette da, deren Grundlage niemand sieht. */
            mannStunden: mannAn ? mannStunden : null,
            horizont, ab:planText(ab), bis:planText(planPlus(ab, horizont - 1)) };
+}
+
+/* ---- Wann waere es fertig? -------------------------------------------
+   Die zweite Frage jedes Kunden nach dem Preis - und die App konnte sie
+   nicht beantworten. Sie kann es: der Probeauftrag wird HINTEN an die
+   vorhandene Arbeit gestellt (ohne Rang und ohne Liefertermin sortiert
+   planBelegen ihn selbst ans Ende) und die Werkstatt einmal belegt.
+   Herauskommt derselbe Plan wie auf der Tafel, nur mit einem Auftrag
+   mehr - keine zweite Rechnung, keine zweite Wahrheit.
+
+   ZWEI DINGE, DIE ES AUSDRUECKLICH NICHT IST, und beide gehoeren in die
+   Anzeige:
+     KEINE ZUSAGE. Es ist der Stand von heute mit den heute offenen
+       Auftraegen. Ein Eilauftrag von morgen schiebt es nach hinten.
+     KEIN VERSANDTAG. Zwischen "Maschine fertig" und "beim Kunden"
+       liegen Pruefen, Verpacken und der Weg. Dafuer ist der Zuschlag da,
+       und er zaehlt in ARBEITSTAGEN - zwei freie Tage am Stueck sind
+       keine zwei Tage Arbeit.                                        */
+function planLieferbar(ein){
+  const e = ein || {};
+  if(!e.probe) return null;
+  const maschinen = e.maschinen || [];
+  const frei = e.frei || [];
+  const ab = planTag(e.ab) || planTag(planText(Date.now()));
+  /* Weiter Horizont als die Tafel: wer eine Lieferzeit nennt, fragt
+     nach Wochen, nicht nach den naechsten zehn Tagen. */
+  const tage = Math.max(7, Math.round(+e.tage || 180));
+  const zuschlag = Math.max(0, Math.round(+e.zuschlag || 0));
+
+  /* Die Probe ist eine KOPIE - die Kalkulation soll von der Frage nichts
+     merken. Der Status muss ein PLANENDER sein: ein Angebot bindet keine
+     Kapazitaet, und die Antwort waere "sofort fertig". */
+  const probe = JSON.parse(JSON.stringify(e.probe));
+  probe.status = 'beauftragt';
+  probe.rang = 0;
+  probe.liefertermin = '';
+
+  /* Jedes Feld ausgeschrieben, auch wo die Kurzform ginge: die Wache
+     in Pruefabschnitt 28 sucht frei: in JEDEM Planungsaufruf, und sie
+     soll streng bleiben. Sie hat diesen Aufruf beim ersten Lauf
+     angezeigt - genau ihre Aufgabe. */
+  const b = planBelegen({auftraege:(e.auftraege || []).concat([probe]),
+                         maschinen:maschinen, ab:planText(ab), tage:tage,
+                         frei:frei, uebergabe:e.uebergabe,
+                         mannStunden:e.mannStunden});
+  const z = b.auftraege.filter(x => x.auftrag === probe)[0];
+  if(!z){
+    /* Kein Termin ist auch eine Auskunft - aber nur mit dem Grund. */
+    const un = (b.unplanbar || []).filter(u => (u.auftrag === probe) ||
+                                               (u.nummer === probe.nummer && u.teil === probe.teil))[0];
+    return {termin:null, fertig:null, belegung:b, horizont:b.bis,
+            grund: un ? (un.grund || 'unplanbar') : 'horizont'};
+  }
+
+  /* Der Zuschlag laeuft ueber ARBEITSTAGE: ein Tag, an dem keine
+     Maschine laeuft, ist keiner. Die Grenze von 60 Versuchen ist eine
+     Notbremse fuer den Fall, dass gar keine Maschine aktiv ist - sonst
+     liefe die Schleife ewig. */
+  let t = planTag(z.ende), gezaehlt = 0, versuche = 0;
+  while(gezaehlt < zuschlag && versuche < 60){
+    t = planPlus(t, 1); versuche++;
+    if(maschinen.some(m => planKapazitaet(m, t, frei) > 0)) gezaehlt++;
+  }
+  const w = planKw(t);
+  return {
+    /* Der Vorschlag - Maschine fertig PLUS Zuschlag. */
+    termin: planText(t),
+    /* Und was davon die Maschine ist: wer den Zuschlag aendert, sieht
+       sofort, worauf er sich legt. */
+    fertig: z.ende,
+    start: z.start,
+    zuschlag,
+    kw: w.kw, kwJahr: w.jahr,
+    /* Kalendertage ab dem Planungsbeginn - das ist die Zahl, die im
+       Angebot als "rund X Wochen" steht. */
+    tage: Math.round((planTag(planText(t)) - ab) / 86400000) + 1,
+    maschine: z.maschineName,
+    minuten: z.minuten ? z.minuten.gesamt : 0,
+    /* WORAUF ES BERUHT - ohne diese Zahlen ist der Termin eine
+       Behauptung. */
+    davor: b.auftraege.length - 1,
+    mannStunden: b.mannStunden,
+    belegung: b
+  };
 }
 
 /* ---- Reihenfolge von Hand -------------------------------------------
@@ -5756,6 +5878,11 @@ function kalkMalen(){
   meldungKalk(r.hinweise);
   staffelMalen();
   istMalen();
+  /* Und was die PLANUNG zu dem Teil sagt. Die Funktion steht im
+     Werkstatt-Modul, das nach diesem geladen wird - gerufen wird sie
+     erst bei Bedienung, da ist sie da. Die Wache steht trotzdem: ein
+     Modul weniger im Bau darf nicht die Kalkulation lahmlegen. */
+  if(typeof wLieferMalen === 'function') wLieferMalen();
 }
 
 function meldungKalk(liste){
@@ -6178,7 +6305,12 @@ function wRegelnLaden(){
   try{ g = JSON.parse(localStorage.getItem(SLOT_REGELN) || 'null'); }catch(e){}
   const w = g && WERKSTATT_MASCHINENWAHL.indexOf(g.wahl) >= 0 ? g.wahl : 'last';
   const u = g && isFinite(+g.uebergabe) ? Math.min(30, Math.max(0, Math.round(+g.uebergabe))) : 1;
-  W.regeln = {wahl:w, uebergabe:u};
+  /* ZWEI ARBEITSTAGE als Vorgabe zwischen "Maschine fertig" und dem
+     Termin, den man zusagt: pruefen, verpacken, Weg. Das ist ein
+     branchenueblicher Platzhalter und ausdruecklich einstellbar - wer
+     selbst ausliefert, setzt ihn auf 1, wer haerten laesst, hoeher. */
+  const zu = g && isFinite(+g.zuschlag) ? Math.min(60, Math.max(0, Math.round(+g.zuschlag))) : 2;
+  W.regeln = {wahl:w, uebergabe:u, zuschlag:zu};
   /* Die eigene Zeit liegt im selben Slot - sie ist dieselbe Art von
      Einstellung: eine Regel, nach der geplant wird. */
   W.mannStunden = (g && isFinite(+g.mannStunden)) ? Math.min(168, Math.max(0, +g.mannStunden)) : 30;
@@ -6186,7 +6318,7 @@ function wRegelnLaden(){
 function wRegelnSichern(){
   try{ localStorage.setItem(SLOT_REGELN,
     JSON.stringify({wahl:W.regeln.wahl, uebergabe:W.regeln.uebergabe,
-                    mannStunden:W.mannStunden})); }catch(e){}
+                    zuschlag:W.regeln.zuschlag, mannStunden:W.mannStunden})); }catch(e){}
 }
 
 function wFilterLaden(){
@@ -6655,6 +6787,7 @@ function wMannMalen(){
 function wRegelnMalen(){
   const s = el('plRegelWahl'); if(s) s.value = W.regeln.wahl;
   const u = el('plUebergabe'); if(u) u.value = W.regeln.uebergabe;
+  const zu = el('plZuschlag'); if(zu) zu.value = W.regeln.zuschlag;
   const h = el('plRegelHinweis'); if(!h) return;
 
   /* WAS DIE REGEL WIRKLICH TUT, laesst sich ausrechnen, ohne etwas zu
@@ -6724,8 +6857,14 @@ function wRegelnMalen(){
     wahlText + wirkung,
     ueText + ueWirkung +
     '<br>Die Regeln gelten f&uuml;r den <b>Vorschlag</b> beim Anlegen und f&uuml;r <b>Arbeit ' +
-    'verteilen</b>; eine von Hand gesetzte Maschine r&uuml;hren sie nicht an.',
-    'Abstand zwischen zwei G&auml;ngen, und wof&uuml;r die Regeln gelten'));
+    'verteilen</b>; eine von Hand gesetzte Maschine r&uuml;hren sie nicht an.' +
+    '<br>Der <b>Zuschlag</b> liegt zwischen dem Tag, an dem die Maschine fertig w&auml;re, und ' +
+    'dem Termin, den die App vorschl&auml;gt &mdash; Zeit f&uuml;r Pr&uuml;fen, Verpacken und den Weg. ' +
+    'Er z&auml;hlt in <b>Arbeitstagen</b>: zwei freie Tage am St&uuml;ck sind keine zwei Tage Arbeit. ' +
+    (W.regeln.zuschlag === 0
+      ? 'Er steht auf <b>0</b> &mdash; dann ist der Vorschlag der Tag, an dem die Maschine fertig wird.'
+      : 'Er steht auf <b>' + W.regeln.zuschlag + '</b>.'),
+    'Abstand zwischen zwei G&auml;ngen, Zuschlag, und wof&uuml;r die Regeln gelten'));
 }
 
 /* ---- Karten zuklappen ------------------------------------------------
@@ -6798,6 +6937,18 @@ function wFeldWert(id, exakt, n){
   if(!e) return exakt;
   const neu = wNum(e.value);
   return (neu === wRund(exakt, n)) ? exakt : neu;
+}
+/* Ein Termin ohne Wochentag ist eine halbe Auskunft: ob der 24. ein
+   Donnerstag oder ein Sonntag ist, entscheidet, ob man ihn zusagt.
+   Gerechnet wird in UTC wie im ganzen Planungskern - eine Ortszeit
+   verschoebe das Datum ueber die Zeitzone (derselbe Fehler ist mir
+   heute schon im Pruefstand unterlaufen). */
+const W_WOCHENTAGE = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+function wDatum(s){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || ''));
+  if(!m) return wEsc(s || '—');
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return W_WOCHENTAGE[d.getUTCDay()] + ', ' + m[3] + '.' + m[2] + '.' + m[1];
 }
 function wZahl(v, n){ const x = +v || 0; return x.toLocaleString('de-DE',
   {minimumFractionDigits:n == null ? 0 : n, maximumFractionDigits:n == null ? 0 : n}); }
@@ -7224,8 +7375,13 @@ function wMaskeLesen(){
 }
 
 /* ---- Aus dem Angebot ------------------------------------------------- */
-function wAusAngebot(){
-  if(!S.d){ meldung('Erst ein Teil laden und rechnen — dann steht die Zeit fest.', 'warn'); return; }
+/* ---- Der Auftrag aus dem offenen Angebot ------------------------------
+   EINE Quelle fuer zwei Leser: den Terminvorschlag im Angebotsblatt und
+   den Knopf "Aus dem Angebot anlegen". Getrennt gebaut waeren es zwei
+   Wahrheiten - der Vorschlag rechnete mit anderen Zeiten als der
+   Auftrag, den er ankuendigt, und niemand saehe es.                  */
+function wAngebotAuftrag(){
+  if(!S.d) return null;
   const ein = {
     vorgaben:S.V, teil:S.d.teil, rohteil:S.d.rohteil,
     werkstoff:(el('kWerkstoff') || {}).value || '',
@@ -7251,6 +7407,76 @@ function wAusAngebot(){
      Durchstich ueber 36 echte Teile hat gezeigt, wohin das fuehrt
      (alles auf der 1000er, die 1500er leer, zwoelf Termine gerissen). */
   a.maschine = maschineVorschlag(a, W.maschinen, W.auftraege, W.regeln.wahl);
+  return {auftrag:a, kalk:k, ein:ein};
+}
+
+/* ---- Wann waere es fertig? Die Antwort im Angebotsblatt --------------
+   Der Vorschlag laeuft ueber DIESELBE Belegung wie die Tafel in Blatt 4
+   (planLieferbar stellt den Probeauftrag hinten an und belegt einmal).
+   Er sagt dazu, worauf er beruht - ohne diese Zahlen waere er eine
+   Behauptung.                                                        */
+function wLieferMalen(){
+  const ziel = el('aLieferVorschlag'); if(!ziel) return;
+  const g = wAngebotAuftrag();
+  if(!g){ ziel.innerHTML = ''; return; }
+  const r = wLieferRechnen(g.auftrag);
+  if(!r || !r.termin){
+    htm('aLieferVorschlag', '<div class="klein">Die Planung kann dazu nichts sagen' +
+      (r && r.grund === 'horizont'
+        ? ' &mdash; das Teil liegt jenseits des Planungsfensters.'
+        : ' (' + wEsc((r && r.grund) || 'kein Ergebnis') + ').') + '</div>');
+    return;
+  }
+  const wochen = Math.max(1, Math.round(r.tage / 7));
+  htm('aLieferVorschlag',
+    '<div class="lieferbar"><b>Lieferbar ab ' + wDatum(r.termin) + '</b>' +
+      '<span class="kwmarke">KW ' + r.kw + '</span>' +
+      '<button class="knopf mini" id="aLieferUeber" type="button">In die Lieferzeit</button>' +
+    '</div>' +
+    '<div class="klein">Die Maschine w&auml;re am <b>' + wDatum(r.fertig) + '</b> fertig, dazu ' +
+      r.zuschlag + ' Arbeitstag' + (r.zuschlag === 1 ? '' : 'e') +
+      ' f&uuml;r Pr&uuml;fen, Verpacken und den Weg (Blatt 4, Planungsregeln). ' +
+      /* Der Numerus haengt am Verb mit: "Das sind rund 1 Woche" stand
+         in der ersten Aufnahme und ist genau der Satz, der bei jedem
+         kleinen Teil im Angebot steht. */
+      (wochen === 1 ? 'Das ist rund <b>eine Woche</b>.'
+                    : 'Das sind rund <b>' + wochen + ' Wochen</b>.') +
+      '<br>Stand heute: <b>' + r.davor + '</b> Auftr&auml;ge liegen davor, ' +
+      (r.mannStunden ? '<b>' + r.mannStunden + ' h</b> eigene Zeit die Woche, ' : '') +
+      'Start auf <b>' + wEsc(r.maschine) + '</b> am ' + wDatum(r.start) + '. ' +
+      '<b>Keine Zusage</b> &mdash; ein Eilauftrag von morgen schiebt es nach hinten.</div>');
+  on('aLieferUeber', 'click', () => {
+    const f = el('aLieferzeit'); if(!f) return;
+    f.value = 'KW ' + r.kw + ' (' + wDatum(r.termin) + ')';
+    if(typeof S !== 'undefined' && S.angebot) S.angebot.lieferzeit = f.value;
+    meldung('Lieferzeit &uuml;bernommen: KW ' + r.kw + '. Sie gilt f&uuml;r den Stand ' +
+            'von heute &mdash; kommt ein Eilauftrag dazwischen, rechne neu.', 'info');
+  });
+}
+
+/* Die Rechnung selbst steht an EINER Stelle: Anzeige und Anlegen sollen
+   nicht auseinanderlaufen. */
+function wLieferRechnen(a){
+  try{
+    return planLieferbar({
+      auftraege:W.auftraege, maschinen:W.maschinen,
+      ab:(el('plAb') || {}).value || wHeute(),
+      frei:W.frei, uebergabe:W.regeln.uebergabe, mannStunden:W.mannStunden,
+      zuschlag:W.regeln.zuschlag, probe:a});
+  }catch(e){ return null; }
+}
+
+function wAusAngebot(){
+  const g = wAngebotAuftrag();
+  if(!g){ meldung('Erst ein Teil laden und rechnen — dann steht die Zeit fest.', 'warn'); return; }
+  const a = g.auftrag;
+  /* DER TERMIN AUS DER PLANUNG, nicht aus dem Nichts. Vorher blieb das
+     Feld leer - an drei Musterteilen gemessen - und der Auftrag war in
+     der Tafel einer ohne Termin: kein Puffer, keine Ampel, keine
+     Aussage, ob er haelt. Der Vorschlag ist aenderbar; wer einen
+     Kundentermin hat, traegt ihn in der Maske ein. */
+  const r = wLieferRechnen(a);
+  if(r && r.termin) a.liefertermin = r.termin;
   W.auftraege.push(a);
   wSichern();
   blatt('Auf');
@@ -8251,6 +8477,20 @@ function wVerdrahten(){
     const v = +(el('plUebergabe') || {}).value;
     W.regeln.uebergabe = isFinite(v) ? Math.min(30, Math.max(0, Math.round(v))) : 1;
     wRegelnSichern(); wPlanMalen();
+  });
+
+  on('plZuschlag', 'change', () => {
+    const v = +(el('plZuschlag') || {}).value;
+    W.regeln.zuschlag = isFinite(v) ? Math.min(60, Math.max(0, Math.round(v))) : 2;
+    wRegelnSichern(); wRegelnMalen();
+    /* Der Vorschlag im Angebotsblatt haengt daran - er wird beim
+       naechsten Rechnen neu gezeichnet, aber wer hier schraubt, will
+       die Wirkung sofort sehen. */
+    if(typeof wLieferMalen === 'function') wLieferMalen();
+    meldung(W.regeln.zuschlag === 0
+      ? '<b>Kein Zuschlag mehr.</b> Der vorgeschlagene Liefertermin ist dann der Tag, an dem ' +
+        'die Maschine fertig wird &mdash; ohne Zeit fuer Pruefen, Verpacken und den Weg.'
+      : 'Auf den Liefertermin kommen <b>' + W.regeln.zuschlag + ' Arbeitstage</b> Zuschlag.', 'info');
   });
 
   /* Freie Tage: ein Tag oder ein Zeitraum. */

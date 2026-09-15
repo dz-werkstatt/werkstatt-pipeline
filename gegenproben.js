@@ -166,6 +166,33 @@ const faelle = [
     erwartet:['krumme Rueckmeldungen im Beispiel']
   },
   {
+    /* DER PROBEAUFTRAG GEHOERT ANS ENDE. Vorn eingereiht verspraeche
+       die App einen Termin auf Kosten der Auftraege, die schon
+       zugesagt sind - und das faellt niemandem auf, weil der
+       Vorschlag selbst dann sogar besser aussieht. */
+    name:'Der Probeauftrag draengelt sich vor',
+    suche:'  probe.rang = 0;',
+    ersatz:'  probe.rang = -1;',
+    erwartet:['die Frage verschiebt zugesagte Termine']
+  },
+  {
+    /* Der Zuschlag zaehlt ARBEITSTAGE. Ueber Kalendertage gerechnet
+       landet ein Freitag plus zwei Tage auf dem Sonntag - und der
+       zugesagte Termin waere ein Tag zu frueh. */
+    name:'Der Zuschlag zaehlt Kalendertage statt Arbeitstage',
+    suche:'    if(maschinen.some(m => planKapazitaet(m, t, frei) > 0)) gezaehlt++;',
+    ersatz:'    gezaehlt++;',
+    erwartet:['  Freitag + 2 Arbeitstage = Dienstag']
+  },
+  {
+    /* Genau die Luecke, die das Paket geschlossen hat: der Auftrag
+       kam ohne Liefertermin in die Liste. */
+    name:'Der angelegte Auftrag bekommt keinen Termin',
+    suche:'  if(r && r.termin) a.liefertermin = r.termin;',
+    ersatz:'  if(false) a.liefertermin = r.termin;',
+    erwartet:['der angelegte Auftrag hat KEINEN Liefertermin']
+  },
+  {
     /* Der lange Text darf nicht verschwinden - geloescht wird nichts,
        er wandert nur unter den Aufklapper. */
     name:'Der Aufklapper wirft den langen Text weg',
@@ -420,7 +447,7 @@ const faelle = [
        eindeutig - in wUebersichtMalen steht dieselbe Folge mit vier. */
     suche:'                             frei:W.frei, uebergabe:W.regeln.uebergabe,',
     ersatz:'                             uebergabe:W.regeln.uebergabe,',
-    erwartet:['1 von 2 Planungsaufrufen bekommen die freien Tage NICHT']
+    erwartet:['Planungsaufrufe ohne die freien Tage']
   },
   {
     /* Ein Zeitraum ueber ein Jahr ist ein Vertipper und wuerde die Liste

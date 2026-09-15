@@ -90,6 +90,11 @@ function kalkMalen(){
   meldungKalk(r.hinweise);
   staffelMalen();
   istMalen();
+  /* Und was die PLANUNG zu dem Teil sagt. Die Funktion steht im
+     Werkstatt-Modul, das nach diesem geladen wird - gerufen wird sie
+     erst bei Bedienung, da ist sie da. Die Wache steht trotzdem: ein
+     Modul weniger im Bau darf nicht die Kalkulation lahmlegen. */
+  if(typeof wLieferMalen === 'function') wLieferMalen();
 }
 
 function meldungKalk(liste){

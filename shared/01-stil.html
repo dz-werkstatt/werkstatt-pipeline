@@ -112,6 +112,14 @@ tr.summe td{ border-top:2px solid var(--rand); border-bottom:none; font-weight:6
 /* Die Maschinenwahl traegt ganze Saetze statt Zahlen - in den festen
    220 px stand "die mit der wenigsten Arbei". Am Bild gemessen. */
 #plRegelWahl{ width:300px; }
+/* EINE Feldkante fuer die Regel-Karte. Ihre Labels sind Saetze, nicht
+   Woerter; "Abstand zwischen zwei Arbeitsgaengen" waechst ueber die
+   190 px hinaus und schob sein Feld allein nach rechts - am Bild
+   gemessen drei Kanten bei 239, 267 und 239 px. Unter 700 px stapeln
+   die Felder ohnehin, dort gilt die Regel nicht. */
+@media (min-width: 701px){
+  #plRegelKarte .feld label{ min-width:240px; }
+}
 
 /* Schaetzwert- und Pflege-Marke */
 .marke{ font-size:11px; padding:1px 6px; border-radius:10px; border:1px solid currentColor; }
@@ -234,6 +242,17 @@ td.nw{ white-space:nowrap; }
 .wtage{ display:flex; flex-wrap:wrap; gap:2px 6px; }
 .wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
 .wtage input{ margin:0 2px 0 0; }
+
+/* ---- Lieferbar ab: die Antwort der Planung im Angebot ----------------
+   Eine Zeile, kein Kasten: sie steht unter einem Eingabefeld und soll
+   den Blick nicht von der Kalkulation wegziehen.                     */
+.lieferbar{ display:flex; align-items:center; flex-wrap:wrap; gap:8px;
+  margin:6px 0 2px; }
+.lieferbar > b{ color: var(--akzent); }
+.kwmarke{ display:inline-block; padding:1px 7px; border-radius:10px;
+  background: var(--akzent-blass); color: var(--akzent); font-size:12px;
+  font-weight:600; font-variant-numeric: tabular-nums; }
+.knopf.mini{ padding:3px 9px; font-size:12.5px; }
 
 /* ---- Die Auftragsliste -----------------------------------------------
    Der farbige Rand ist die Abkuerzung fuer den Blick; die Auskunft

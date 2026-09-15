@@ -2913,14 +2913,20 @@ console.log('\n24) Freie Tage');
     /* JEDER Aufruf, nicht irgendeiner. Die alte Fassung suchte das
        Muster irgendwo im Quelltext - seit es das Dashboard gibt, ruft
        die Oberflaeche die Planung an zwei Stellen, und die Wache fand
-       die zweite, auch wenn an der ersten das Durchreichen fehlte. */
+       die zweite, auch wenn an der ersten das Durchreichen fehlte.
+       SIE KENNT NUR frei: - die Kurzschreibweise {frei} laesst sie
+       ROT werden, obwohl sie richtig ist. Das ist der harmlose
+       Ausfall und bleibt so: ein falscher Alarm kostet eine Minute,
+       ein uebersehener Feiertag einen Liefertermin. (Beim Bau von
+       planLieferbar hat sie genau darauf gezeigt.) */
     {
       const rufe = quelltext.match(/plan(?:Belegen|Uebersicht)\(\{[\s\S]{0,400}?\}\)/g) || [];
       const ohne = rufe.filter(r => r.indexOf('frei:W.frei') < 0 && r.indexOf('frei:') < 0);
       if(rufe.length >= 2 && !ohne.length)
         ok('alle ' + rufe.length + ' Planungsaufrufe bekommen die freien Tage');
       else if(!rufe.length) bad('kein einziger Planungsaufruf gefunden - die Wache misst nichts');
-      else bad(ohne.length + ' von ' + rufe.length + ' Planungsaufrufen bekommen die freien Tage NICHT');
+      else bad('Planungsaufrufe ohne die freien Tage: ' + ohne.length + ' von ' + rufe.length +
+               ' — ein Feiertag wuerde dort ueberplant');
     }
     [['planAuslastung', /planAuslastung\(b, W\.maschinen, W\.frei\)/],
      ['planZettel', /planZettel\(b, W\.maschinen, mid, tage, W\.frei\)/]].forEach(([nm, re]) => {
@@ -4604,6 +4610,205 @@ console.log('\n35) Die Auftragsliste');
 
     /* Wer den Zustand aendert, raeumt ihn auf. */
     Object.assign(W, alt);
+  }
+}
+
+/* --- 36. Wann waere es fertig? ---------------------------------------
+   DER BEFUND, der das Paket ausgeloest hat: die App konnte den PREIS,
+   aber nicht den TERMIN. Die Lieferzeit im Angebot war ein freies
+   Textfeld (Vorgabe "nach Vereinbarung"), und ein aus dem Angebot
+   angelegter Auftrag hatte gar keinen Liefertermin - an drei
+   Musterteilen gemessen. In der Tafel war er damit einer ohne Termin:
+   kein Puffer, keine Ampel, keine Aussage, ob er haelt.
+
+   planLieferbar stellt den Probeauftrag HINTEN an die vorhandene
+   Arbeit und belegt die Werkstatt einmal - derselbe planBelegen, der
+   die Tafel malt. Keine zweite Rechnung, keine zweite Wahrheit.    */
+console.log('\n36) Wann waere es fertig');
+{
+  const planLieferbar = hole('planLieferbar'), planKw = hole('planKw');
+  const planTag = hole('planTag'), planFreiNorm = hole('planFreiNorm');
+  const demoWerkstatt = hole('demoWerkstatt'), neuerAuftrag = hole('neuerAuftrag');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+
+  ['planLieferbar', 'planKw', 'wLieferMalen', 'wLieferRechnen', 'wAngebotAuftrag',
+   'wDatum'].forEach(nm => {
+    if(typeof hole(nm) === 'function') ok('vorhanden: ' + nm);
+    else bad('fehlt: ' + nm);
+  });
+
+  /* (1) DIE KALENDERWOCHE gegen bekannte Daten - beide Jahreswechsel
+     sind dabei, denn genau dort faellt eine selbstgebaute KW um. */
+  {
+    [['2026-01-01', 1, 2026], ['2026-09-15', 38, 2026], ['2026-12-31', 53, 2026],
+     ['2027-01-04', 1, 2027], ['2024-12-30', 1, 2025]].forEach(([d, kw, jahr]) => {
+      const w = planKw(planTag(d));
+      if(w.kw === kw && w.jahr === jahr) ok('KW ' + d + ' = ' + kw + '/' + jahr);
+      else bad('KW ' + d + ' ist ' + w.kw + '/' + w.jahr + ', soll ' + kw + '/' + jahr);
+    });
+  }
+
+  /* (2) DER VORSCHLAG: dieselbe Arbeit, zwei Werkstaetten. Eine leere
+     Werkstatt muss frueher liefern als eine volle - sonst rechnet er
+     die Belegung nicht mit, und das waere die gefaehrlichste Art,
+     falsch zu liegen. */
+  {
+    const M = JSON.parse(JSON.stringify(M0));
+    const d = demoWerkstatt('2026-09-15', M);
+    const bau = () => {
+      const a = neuerAuftrag();
+      a.nummer = 'P-1'; a.kunde = 'Musterbau GmbH'; a.teil = 'Probe';
+      a.stueck = 10; a.status = 'angeboten'; a.maschine = M[0].id;
+      a.zeiten = {ruestzeit:20, stueckzeit:7};
+      return a;
+    };
+    const ruf = (liste, zuschlag) => planLieferbar({
+      auftraege:liste, maschinen:M, ab:'2026-09-15', frei:planFreiNorm(d.frei),
+      uebergabe:1, mannStunden:30, zuschlag:zuschlag, probe:bau()});
+
+    const leer = ruf([], 0), voll = ruf(d.auftraege, 0);
+    if(leer && leer.termin) ok('leere Werkstatt: fertig am ' + leer.fertig);
+    else bad('leere Werkstatt: kein Termin');
+    if(voll && voll.termin) ok('volle Werkstatt: fertig am ' + voll.fertig +
+                               ' (' + voll.davor + ' Auftraege davor)');
+    else bad('volle Werkstatt: kein Termin');
+    if(leer && voll && planTag(voll.fertig) > planTag(leer.fertig))
+      ok('  und die volle Werkstatt liefert spaeter - die Belegung zaehlt');
+    else bad('  beide Werkstaetten liefern gleich schnell - die Belegung zaehlt nicht');
+
+    /* DER PROBEAUFTRAG DARF NICHTS VERSCHIEBEN. Er wird hinten
+       angestellt; laege er vorn, verspraeche die App einen Termin auf
+       Kosten der Auftraege, die schon zugesagt sind. */
+    {
+      const ohne = hole('planBelegen')({auftraege:d.auftraege, maschinen:M,
+        ab:'2026-09-15', tage:180, frei:planFreiNorm(d.frei), uebergabe:1, mannStunden:30});
+      const mit = voll.belegung;
+      const schief = [];
+      /* START UND ENDE. Die erste Fassung verglich nur das Ende - ein
+         vordraengelnder Probeauftrag schob den START von A-1043 um
+         einen Tag, und die Wache schwieg, weil im Tag noch Luft war.
+         Ein verschobener Start ist genauso eine gebrochene Zusage:
+         Material, Werkzeug und Ruesten haengen daran. */
+      ohne.auftraege.forEach(z => {
+        const g = mit.auftraege.filter(x => x.nummer === z.nummer && x.teil === z.teil)[0];
+        if(!g){ schief.push(z.nummer + ' fehlt'); return; }
+        if(g.start !== z.start) schief.push(z.nummer + ' Start ' + z.start + ' -> ' + g.start);
+        if(g.ende !== z.ende) schief.push(z.nummer + ' Ende ' + z.ende + ' -> ' + g.ende);
+      });
+      if(!schief.length) ok('kein vorhandener Auftrag verschiebt sich durch die Frage');
+      else bad('die Frage verschiebt zugesagte Termine: ' + schief.join(' | '));
+    }
+
+    /* Und die Probe darf die Liste nicht anfassen. */
+    gleich('die Auftragsliste bleibt unberuehrt', d.auftraege.length, 10);
+
+    /* (3) DER ZUSCHLAG zaehlt ARBEITSTAGE. Die Beispiel-Werkstatt
+       arbeitet Mo-Fr; zwei Arbeitstage ab einem Freitag enden am
+       Dienstag, nicht am Sonntag. */
+    {
+      const a = bau();
+      /* Ein Freitag als Fertigtag: die leere Werkstatt am 2026-09-18. */
+      const frei0 = planLieferbar({auftraege:[], maschinen:M, ab:'2026-09-18',
+        frei:[], uebergabe:1, mannStunden:30, zuschlag:0, probe:a});
+      const frei2 = planLieferbar({auftraege:[], maschinen:M, ab:'2026-09-18',
+        frei:[], uebergabe:1, mannStunden:30, zuschlag:2, probe:a});
+      gleich('ohne Zuschlag: der Tag der Maschine', frei0.termin, frei0.fertig);
+      gleich('  Freitag + 2 Arbeitstage = Dienstag', frei2.termin, '2026-09-22');
+      gleich('  und der Tag der Maschine bleibt daneben stehen', frei2.fertig, frei0.fertig);
+      /* Ein freier Montag schiebt ihn um genau einen Tag weiter. */
+      const mitFrei = planLieferbar({auftraege:[], maschinen:M, ab:'2026-09-18',
+        frei:['2026-09-21'], uebergabe:1, mannStunden:30, zuschlag:2, probe:a});
+      gleich('  ein freier Montag schiebt auf Mittwoch', mitFrei.termin, '2026-09-23');
+    }
+  }
+
+  /* (4) DER WEG BIS IN DEN AUFTRAG - gemalt, nicht gelesen. Der Knopf
+     "Aus dem Angebot anlegen" liest Maskenfelder; ein Feld, das es
+     nicht gibt, liefert stumm einen leeren Text. */
+  {
+    const W = hole('W'), S = hole('S');
+    const alt = {auftraege:W.auftraege, maschinen:W.maschinen, frei:W.frei,
+                 belegung:W.belegung, gewaehlt:W.gewaehlt, regeln:W.regeln};
+    const altD = S.d;
+    W.maschinen = JSON.parse(JSON.stringify(M0));
+    W.auftraege = []; W.frei = []; W.belegung = null; W.gewaehlt = -1;
+    W.regeln = {wahl:'last', uebergabe:1, zuschlag:2};
+
+    /* Ein echtes Musterteil - die Dateien liegen im Repo (muster/),
+       selbst erzeugt und ohne Kundengeometrie. */
+    const musterStep = fs.readFileSync(path.join(ORDNER, 'muster', 'welle-gestuft.step'), 'utf8');
+    const g = hole('fGeometrie')(musterStep, 'welle-gestuft.step', hole('KALK_VORGABEN'));
+    S.d = g;
+    const gg = hole('wAngebotAuftrag')();
+    if(gg && gg.auftrag) ok('aus dem offenen Angebot entsteht ein Auftrag');
+    else bad('aus dem offenen Angebot entsteht kein Auftrag');
+    if(gg){
+      const r = hole('wLieferRechnen')(gg.auftrag);
+      if(r && r.termin) ok('  und die Planung nennt einen Termin: ' + r.termin);
+      else bad('  aber die Planung nennt keinen Termin');
+      /* Die Anzeige im Angebotsblatt. */
+      hole('wLieferMalen')();
+      const h = document.getElementById('aLieferVorschlag').innerHTML;
+      if(h.indexOf('Lieferbar ab') >= 0) ok('  die Zeile im Angebot steht (' + h.length + ' Zeichen)');
+      else bad('  die Zeile im Angebot bleibt leer');
+      /* WORAUF ES BERUHT gehoert dazu - sonst ist der Termin eine
+         Behauptung. */
+      const fehlt = ['fertig', 'Arbeitstag', 'liegen davor', 'Keine Zusage']
+        .filter(k => h.indexOf(k) < 0);
+      if(!fehlt.length) ok('  und sie sagt, worauf sie beruht');
+      else bad('  die Zeile nennt ihre Grundlage nicht (' + fehlt.join(', ') + ')');
+
+      /* DER KNOPF, geklickt statt gelesen. Er muss BEIDES setzen: das
+         Feld (das sieht man) und S.angebot (das steht im gedruckten
+         Angebot). Setzte er nur das Feld, fehlte die Lieferzeit im
+         PDF, und die Maske saehe trotzdem richtig aus. */
+      S.angebot = S.angebot || {};
+      S.angebot.lieferzeit = '';
+      document.getElementById('aLieferzeit').value = '';
+      document.getElementById('aLieferUeber').click();
+      const feld = document.getElementById('aLieferzeit').value;
+      if(feld.indexOf('KW ' + r.kw) === 0) ok('der Knopf schreibt die Lieferzeit ins Feld (' + feld + ')');
+      else bad('der Knopf schreibt nichts ins Feld ("' + feld + '")');
+      gleich('  und in den Angebotsdatensatz (sonst fehlt sie im PDF)',
+             S.angebot.lieferzeit, feld);
+
+      /* DER ANGELEGTE AUFTRAG traegt den Termin - das war die Luecke. */
+      hole('wAusAngebot')();
+      const a = W.auftraege[W.auftraege.length - 1] || {};
+      if(a.liefertermin) ok('der angelegte Auftrag traegt einen Liefertermin (' + a.liefertermin + ')');
+      else bad('der angelegte Auftrag hat KEINEN Liefertermin - genau die alte Luecke');
+      gleich('  und zwar den vorgeschlagenen', a.liefertermin, r ? r.termin : null);
+      /* Die Zeiten kommen weiter unveraendert aus der Kalkulation. */
+      nahe('  die Stueckzeit bleibt die der Kalkulation',
+           a.zeiten ? a.zeiten.stueckzeit : 0, gg.kalk.zeiten.stueckzeit, 1e-9);
+    }
+    S.d = altD; Object.assign(W, alt);
+  }
+
+  /* (5) Oberflaeche und Durchreichen. */
+  {
+    ['aLieferVorschlag', 'plZuschlag'].forEach(id => {
+      if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id);
+      else bad('Bedienelement fehlt: ' + id);
+    });
+    /* DAS FELD MUSS WIRKEN - viermal in diesem Projekt gab es eine
+       Mechanik im Kern und ein Feld in der Maske, und dazwischen
+       nichts. */
+    if(/on\('plZuschlag', 'change'/.test(quelltext))
+      ok('das Zuschlagsfeld ist verdrahtet');
+    else bad('das Zuschlagsfeld ist NICHT verdrahtet - eine Einstellung ohne Wirkung');
+    if(/zuschlag:W\.regeln\.zuschlag/.test(quelltext))
+      ok('  und der Wert kommt in der Rechnung an');
+    else bad('  der Wert kommt in der Rechnung NICHT an');
+    if(/zuschlag:W\.regeln\.zuschlag, mannStunden:W\.mannStunden\}\)\);|zuschlag:W\.regeln\.zuschlag/.test(quelltext) &&
+       /JSON\.stringify\(\{wahl:W\.regeln\.wahl, uebergabe:W\.regeln\.uebergabe,\s*\n?\s*zuschlag:W\.regeln\.zuschlag/.test(quelltext))
+      ok('  und er ueberlebt das Neuladen');
+    else bad('  er wird nicht gespeichert - nach dem Neuladen steht wieder die Vorgabe');
+    /* Der Vorschlag haengt am Rechnen, sonst zeigt er den Stand von
+       vorhin. */
+    if(/if\(typeof wLieferMalen === 'function'\) wLieferMalen\(\);/.test(quelltext))
+      ok('die Kalkulation zieht den Vorschlag nach');
+    else bad('der Vorschlag wird beim Rechnen nicht nachgezogen');
   }
 }
 

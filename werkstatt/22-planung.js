@@ -60,6 +60,19 @@ function planWochentag(t){ const w = new Date(t).getUTCDay(); return w === 0 ? 7
    Jahreswechsel eine Falle. */
 function planWochenanfang(t){ return planPlus(t, -(planWochentag(t) - 1)); }
 
+/* ---- Kalenderwoche fuer die ANZEIGE ----------------------------------
+   Die Notiz ueber planWochenanfang bleibt richtig: als SCHLUESSEL taugt
+   eine KW-Nummer nicht, ueber den Jahreswechsel gibt es die 1 zweimal.
+   Als ANZEIGE ist sie das, worin eine Werkstatt rechnet - "KW 41" sagt
+   jeder, "Montag der Woche" niemand. Deshalb traegt sie hier ihr Jahr
+   mit, und das Jahr entscheidet der Donnerstag (ISO 8601).           */
+function planKw(t){
+  const mo = planWochenanfang(t);
+  const jahr = new Date(planPlus(mo, 3)).getUTCFullYear();
+  const w1 = planWochenanfang(Date.UTC(jahr, 0, 4));
+  return {kw: Math.round((mo - w1) / (7 * 86400000)) + 1, jahr};
+}
+
 /* ---- Freie Tage ------------------------------------------------------
    DER BEFUND: planKapazitaet kennt die Liste der freien Tage seit dem
    ersten Tag, und der ganze Kern reicht sie durch - 26 Stellen. Die
@@ -447,6 +460,90 @@ function planBelegen(ein){
               eine Terminkette da, deren Grundlage niemand sieht. */
            mannStunden: mannAn ? mannStunden : null,
            horizont, ab:planText(ab), bis:planText(planPlus(ab, horizont - 1)) };
+}
+
+/* ---- Wann waere es fertig? -------------------------------------------
+   Die zweite Frage jedes Kunden nach dem Preis - und die App konnte sie
+   nicht beantworten. Sie kann es: der Probeauftrag wird HINTEN an die
+   vorhandene Arbeit gestellt (ohne Rang und ohne Liefertermin sortiert
+   planBelegen ihn selbst ans Ende) und die Werkstatt einmal belegt.
+   Herauskommt derselbe Plan wie auf der Tafel, nur mit einem Auftrag
+   mehr - keine zweite Rechnung, keine zweite Wahrheit.
+
+   ZWEI DINGE, DIE ES AUSDRUECKLICH NICHT IST, und beide gehoeren in die
+   Anzeige:
+     KEINE ZUSAGE. Es ist der Stand von heute mit den heute offenen
+       Auftraegen. Ein Eilauftrag von morgen schiebt es nach hinten.
+     KEIN VERSANDTAG. Zwischen "Maschine fertig" und "beim Kunden"
+       liegen Pruefen, Verpacken und der Weg. Dafuer ist der Zuschlag da,
+       und er zaehlt in ARBEITSTAGEN - zwei freie Tage am Stueck sind
+       keine zwei Tage Arbeit.                                        */
+function planLieferbar(ein){
+  const e = ein || {};
+  if(!e.probe) return null;
+  const maschinen = e.maschinen || [];
+  const frei = e.frei || [];
+  const ab = planTag(e.ab) || planTag(planText(Date.now()));
+  /* Weiter Horizont als die Tafel: wer eine Lieferzeit nennt, fragt
+     nach Wochen, nicht nach den naechsten zehn Tagen. */
+  const tage = Math.max(7, Math.round(+e.tage || 180));
+  const zuschlag = Math.max(0, Math.round(+e.zuschlag || 0));
+
+  /* Die Probe ist eine KOPIE - die Kalkulation soll von der Frage nichts
+     merken. Der Status muss ein PLANENDER sein: ein Angebot bindet keine
+     Kapazitaet, und die Antwort waere "sofort fertig". */
+  const probe = JSON.parse(JSON.stringify(e.probe));
+  probe.status = 'beauftragt';
+  probe.rang = 0;
+  probe.liefertermin = '';
+
+  /* Jedes Feld ausgeschrieben, auch wo die Kurzform ginge: die Wache
+     in Pruefabschnitt 28 sucht frei: in JEDEM Planungsaufruf, und sie
+     soll streng bleiben. Sie hat diesen Aufruf beim ersten Lauf
+     angezeigt - genau ihre Aufgabe. */
+  const b = planBelegen({auftraege:(e.auftraege || []).concat([probe]),
+                         maschinen:maschinen, ab:planText(ab), tage:tage,
+                         frei:frei, uebergabe:e.uebergabe,
+                         mannStunden:e.mannStunden});
+  const z = b.auftraege.filter(x => x.auftrag === probe)[0];
+  if(!z){
+    /* Kein Termin ist auch eine Auskunft - aber nur mit dem Grund. */
+    const un = (b.unplanbar || []).filter(u => (u.auftrag === probe) ||
+                                               (u.nummer === probe.nummer && u.teil === probe.teil))[0];
+    return {termin:null, fertig:null, belegung:b, horizont:b.bis,
+            grund: un ? (un.grund || 'unplanbar') : 'horizont'};
+  }
+
+  /* Der Zuschlag laeuft ueber ARBEITSTAGE: ein Tag, an dem keine
+     Maschine laeuft, ist keiner. Die Grenze von 60 Versuchen ist eine
+     Notbremse fuer den Fall, dass gar keine Maschine aktiv ist - sonst
+     liefe die Schleife ewig. */
+  let t = planTag(z.ende), gezaehlt = 0, versuche = 0;
+  while(gezaehlt < zuschlag && versuche < 60){
+    t = planPlus(t, 1); versuche++;
+    if(maschinen.some(m => planKapazitaet(m, t, frei) > 0)) gezaehlt++;
+  }
+  const w = planKw(t);
+  return {
+    /* Der Vorschlag - Maschine fertig PLUS Zuschlag. */
+    termin: planText(t),
+    /* Und was davon die Maschine ist: wer den Zuschlag aendert, sieht
+       sofort, worauf er sich legt. */
+    fertig: z.ende,
+    start: z.start,
+    zuschlag,
+    kw: w.kw, kwJahr: w.jahr,
+    /* Kalendertage ab dem Planungsbeginn - das ist die Zahl, die im
+       Angebot als "rund X Wochen" steht. */
+    tage: Math.round((planTag(planText(t)) - ab) / 86400000) + 1,
+    maschine: z.maschineName,
+    minuten: z.minuten ? z.minuten.gesamt : 0,
+    /* WORAUF ES BERUHT - ohne diese Zahlen ist der Termin eine
+       Behauptung. */
+    davor: b.auftraege.length - 1,
+    mannStunden: b.mannStunden,
+    belegung: b
+  };
 }
 
 /* ---- Reihenfolge von Hand -------------------------------------------
