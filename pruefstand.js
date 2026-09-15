@@ -24,11 +24,36 @@ const ok   = (t) => { haken++; console.log('  + ' + t); };
 const bad  = (t) => { fehler++; console.log('  X ' + t); };
 const warn = (t) => { warnungen++; console.log('  ! ' + t); };
 const gleich = (was, ist, soll) => { if(ist === soll) ok(was); else bad(was + ' — ist ' + JSON.stringify(ist) + ', soll ' + JSON.stringify(soll)); };
+/* WERT ODER NICHTS: ein Zugriff quer durch eine Struktur, die eine
+   Gegenprobe wegfallen lassen kann, braucht seinen Waechter - sonst
+   stirbt der Lauf, statt rot zu werden. tief(o, 'tage.2.posten.0.name')
+   liefert dann undefined, und der Haken faellt um wie vorgesehen. */
+const tief = (o, pfad) => {
+  try{ return String(pfad).split('.').reduce((x, k) => x[k], o); }
+  catch(e){ return undefined; }
+};
 const nahe = (was, ist, soll, tol) => {
   const d = Math.abs(ist - soll);
   if(d <= tol) ok(was + ' (' + ist.toFixed(4) + ', Abweichung ' + d.toExponential(1) + ')');
   else bad(was + ' — ist ' + ist + ', soll ' + soll + ' (Abweichung ' + d + ' > ' + tol + ')');
 };
+
+/* ---- Der Lauf sagt selbst, wenn er abgebrochen ist -------------------
+   Ein gestorbener Pruefcode druckte bisher nur einen Stapelabzug; oben
+   standen hunderte gruene Haken, und die Regel "am Satz festmachen"
+   war gar nicht erfuellbar, weil kein Satz kam. Jetzt kommt einer -
+   und die Gegenproben erkennen daran den wertlosen Lauf.            */
+let fertig = false;
+process.on('exit', (code) => {
+  if(fertig) return;
+  console.log('\n' + '='.repeat(62));
+  console.log('PRUEFSTAND ABGEBROCHEN' + (code === 2
+    ? ' — s. Meldung oben.'
+    : ' — der Pruefcode ist gestorben, statt rot zu werden.'));
+  console.log('Alles hinter der Abbruchstelle ist UNGEMESSEN; die Haken darueber sagen nichts.');
+  console.log('Haken bis dahin: ' + haken + '   Fehler: ' + fehler);
+  console.log('='.repeat(62));
+});
 
 /* --- 0. Quellen gegen die ausgelieferten Dateien --------------------- */
 console.log('\n0) Quellen gegen die ausgelieferten Dateien');
@@ -748,9 +773,9 @@ console.log('\n11) Werkstatt: Auftraege, Belegung, Auslastung');
     const b = planBelegen({auftraege:[bau({termin:'2026-09-18'})], maschinen:M, ab:'2026-09-15', tage:30});
     gleich('960 min auf 480 min/Tag ergeben zwei Bloecke', b.bloecke.length, 2);
     gleich('  erster Tag voll', b.bloecke[0] && b.bloecke[0].minuten, 480);
-    gleich('  Start Dienstag', b.auftraege[0] && b.auftraege[0].start, '2026-09-15');
-    gleich('  fertig Mittwoch', b.auftraege[0] && b.auftraege[0].ende, '2026-09-16');
-    gleich('  Termin am Freitag haelt', b.auftraege[0] && b.auftraege[0].haelt, true);
+    gleich('  Start Dienstag', tief(b, 'auftraege.0.start'), '2026-09-15');
+    gleich('  fertig Mittwoch', tief(b, 'auftraege.0.ende'), '2026-09-16');
+    gleich('  Termin am Freitag haelt', tief(b, 'auftraege.0.haelt'), true);
   }
 
   /* (2) Das Wochenende wird uebersprungen — Start Freitag, drei Tage
@@ -812,7 +837,7 @@ console.log('\n11) Werkstatt: Auftraege, Belegung, Auslastung');
   /* (6) Termin gerissen: fertig am 16., Termin am 15. = ein Tag Verzug */
   {
     const b = planBelegen({auftraege:[bau({termin:'2026-09-15'})], maschinen:M, ab:'2026-09-15', tage:30});
-    const e = b.auftraege[0];
+    const e = b.auftraege[0] || {};
     gleich('Termin vor dem Fertigtag haelt nicht', e && e.haelt, false);
     gleich('  und der Verzug wird gezaehlt', e && e.verzug, 1);
   }
@@ -962,8 +987,8 @@ console.log('\n12) Arbeitsgaenge: die Kette Drehen - Fraesen');
          min.gesamt, 90 + 10.5 * 100, 1e-9);
     const b = planBelegen({auftraege:[a], maschinen:M, ab:'2026-09-15', tage:30});
     gleich('  1140 min auf 480 min/Tag ergeben drei Bloecke', b.bloecke.length, 3);
-    gleich('  Start Dienstag', b.auftraege[0] && b.auftraege[0].start, '2026-09-15');
-    gleich('  fertig Donnerstag', b.auftraege[0] && b.auftraege[0].ende, '2026-09-17');
+    gleich('  Start Dienstag', tief(b, 'auftraege.0.start'), '2026-09-15');
+    gleich('  fertig Donnerstag', tief(b, 'auftraege.0.ende'), '2026-09-17');
   }
 
   /* (2) DIE EINE REGEL: die Gaenge teilen die kalkulierte Zeit auf, sie
@@ -1005,7 +1030,7 @@ console.log('\n12) Arbeitsgaenge: die Kette Drehen - Fraesen');
      Fraesen 30 + 1,5 x 100 = 180 min = ein Tag, fruehestens Do. */
   {
     const b = planBelegen({auftraege:[kette({})], maschinen:M, ab:'2026-09-15', tage:30});
-    const e = b.auftraege[0];
+    const e = b.auftraege[0] || {};
     gleich('zwei Gaenge ergeben drei Bloecke', b.bloecke.length, 3);
     gleich('  der Auftrag ist eingeplant', b.auftraege.length, 1);
     gleich('  er hat zwei Arbeitsgaenge', e && e.gaenge && e.gaenge.length, 2);
@@ -1053,7 +1078,7 @@ console.log('\n12) Arbeitsgaenge: die Kette Drehen - Fraesen');
     ];
     gleich('Summe stimmt', gaengeSumme(a).ruestzeit, 720);
     const b = planBelegen({auftraege:[a], maschinen:M, ab:'2026-09-18', tage:30});
-    const e = b.auftraege[0];
+    const e = b.auftraege[0] || {};
     gleich('Gang 1 am Freitag', e && e.gaenge[0].ende, '2026-09-18');
     gleich('Gang 2 erst am Montag', e && e.gaenge[1].start, '2026-09-21');
   }
@@ -1463,7 +1488,7 @@ console.log('\n14) Rueckwaerts: der spaeteste Start');
      spaetester Start Mittwoch 23. - das sind acht Tage. */
   {
     const b = planBelegen({auftraege:[kette('2026-09-25')], maschinen:M, ab:'2026-09-15', tage:30});
-    const e = b.auftraege[0];
+    const e = b.auftraege[0] || {};
     gleich('Vorwaertsplanung faengt am Dienstag an', e && e.start, '2026-09-15');
     gleich('  spaetester Start steht daneben', e && e.spaetester, '2026-09-23');
     gleich('  Puffer acht Tage', e && e.puffer, 8);
@@ -1477,7 +1502,7 @@ console.log('\n14) Rueckwaerts: der spaeteste Start');
   {
     const eng = kette('2026-09-16');   /* Mittwoch, einen Tag nach dem Start */
     const b = planBelegen({auftraege:[eng], maschinen:M, ab:'2026-09-15', tage:30});
-    const e = b.auftraege[0];
+    const e = b.auftraege[0] || {};
     gleich('enger Termin: Vorwaertsplanung ist zu spaet', e && e.haelt, false);
     gleich('  und der Grund ist die Zeit, nicht die Belegung', e && e.grundVerzug, 'zeit');
     if(e && e.puffer < 0) ok('  und der Puffer ist negativ (' + e.puffer + ')');
@@ -1501,7 +1526,7 @@ console.log('\n14) Rueckwaerts: der spaeteste Start');
     /* Die Gegenprobe im selben Atemzug: allein waere er wirklich
        fertig geworden. */
     const allein = planBelegen({auftraege:[kette('2026-09-19')], maschinen:M, ab:'2026-09-15', tage:30});
-    gleich('  allein haelt derselbe Termin', allein.auftraege[0].haelt, true);
+    gleich('  allein haelt derselbe Termin', tief(allein, 'auftraege.0.haelt'), true);
     /* Und ein Auftrag, der haelt, traegt gar keinen Grund. */
     const v = b.auftraege.filter(x => x.nummer === 'V')[0];
     gleich('  wer haelt, traegt keinen Grund', v && v.grundVerzug, null);
@@ -1511,7 +1536,7 @@ console.log('\n14) Rueckwaerts: der spaeteste Start');
      besser als ein erfundener. */
   {
     const b = planBelegen({auftraege:[kette('')], maschinen:M, ab:'2026-09-15', tage:30});
-    const e = b.auftraege[0];
+    const e = b.auftraege[0] || {};
     gleich('ohne Termin kein Puffer', e && e.puffer, null);
     gleich('  und kein spaetester Start', e && e.spaetester, null);
   }
@@ -1565,9 +1590,13 @@ console.log('\n15) Reihenfolge von Hand');
     gleich('  und ist gueltig', auftragPruefen(A).length, 0);
     const b = lauf([A, Bt]);
     gleich('B liegt vorn (frueherer Termin)',
-           (b.auftraege[0] || {}).nummer || 'NICHT GEPLANT', 'B');
-    gleich('  B am Dienstag', b.auftraege[0].start, '2026-09-15');
-    gleich('  A danach, Mi bis Do', b.auftraege[1].start + '..' + b.auftraege[1].ende,
+           tief(b, 'auftraege.0.nummer') || 'NICHT GEPLANT', 'B');
+    /* MIT WAECHTER: faellt ein Auftrag aus der Planung, muss der Haken
+       rot werden - der ungewaechterte Zugriff hat den ganzen Lauf
+       getoetet (Gegenprobe "Einzelgang-Rueckfall ohne Maschine"). */
+    gleich('  B am Dienstag', tief(b, 'auftraege.0.start'), '2026-09-15');
+    gleich('  A danach, Mi bis Do',
+           tief(b, 'auftraege.1.start') + '..' + tief(b, 'auftraege.1.ende'),
            '2026-09-16..2026-09-17');
   }
 
@@ -1584,14 +1613,14 @@ console.log('\n15) Reihenfolge von Hand');
     gleich('  A hat jetzt den kleineren Rang', A.rang < Bt.rang, true);
     gleich('  und beide tragen einen', (A.rang ? 1 : 0) + (Bt.rang ? 1 : 0), 2);
     const b2 = lauf([A, Bt]);
-    gleich('A liegt jetzt vorn', b2.auftraege[0].nummer, 'A');
-    gleich('  A am Dienstag und Mittwoch', b2.auftraege[0].start + '..' + b2.auftraege[0].ende,
+    gleich('A liegt jetzt vorn', tief(b2, 'auftraege.0.nummer'), 'A');
+    gleich('  A am Dienstag und Mittwoch', tief(b2, 'auftraege.0.start') + '..' + tief(b2, 'auftraege.0.ende'),
            '2026-09-15..2026-09-16');
-    gleich('  B am Donnerstag', b2.auftraege[1].start, '2026-09-17');
+    gleich('  B am Donnerstag', tief(b2, 'auftraege.1.start'), '2026-09-17');
     /* Und die Folge ist als Handentscheidung erkennbar. */
-    gleich('  die Tafel kann es markieren', b2.auftraege[0].rang > 0, true);
+    gleich('  die Tafel kann es markieren', tief(b2, 'auftraege.0.rang') > 0, true);
     /* B ist dadurch zu spaet - das ist der Preis, und er steht da. */
-    gleich('  B reisst jetzt seinen Termin nicht', b2.auftraege[1].haelt, true);
+    gleich('  B reisst jetzt seinen Termin nicht', tief(b2, 'auftraege.1.haelt'), true);
   }
 
   /* (3) Am Rand passiert nichts: der erste laesst sich nicht weiter
@@ -1610,9 +1639,9 @@ console.log('\n15) Reihenfolge von Hand');
   {
     const A = bau('A', 960, '2026-09-25'), Bt = bau('B', 480, '2026-09-18');
     planVerschieben(lauf([A, Bt]).auftraege.map(x => x.auftrag), A, -1);
-    gleich('vor dem Zuruecksetzen liegt A vorn', lauf([A, Bt]).auftraege[0].nummer, 'A');
+    gleich('vor dem Zuruecksetzen liegt A vorn', tief(lauf([A, Bt]), 'auftraege.0.nummer'), 'A');
     planRangLoeschen([A, Bt]);
-    gleich('  danach wieder B', lauf([A, Bt]).auftraege[0].nummer, 'B');
+    gleich('  danach wieder B', tief(lauf([A, Bt]), 'auftraege.0.nummer'), 'B');
     gleich('  und kein Rang bleibt stehen', (A.rang || 0) + (Bt.rang || 0), 0);
   }
 
@@ -1621,7 +1650,7 @@ console.log('\n15) Reihenfolge von Hand');
     const A = bau('A', 960, '2026-09-25'), Bt = bau('B', 480, '2026-09-18');
     const folge = lauf([A, Bt]).auftraege.map(x => x.auftrag);
     gleich('B zurueckstellen gelingt', planVerschieben(folge, Bt, 1), true);
-    gleich('  dann liegt A vorn', lauf([A, Bt]).auftraege[0].nummer, 'A');
+    gleich('  dann liegt A vorn', tief(lauf([A, Bt]), 'auftraege.0.nummer'), 'A');
   }
 
   /* (6) Oberflaeche */
@@ -1715,11 +1744,11 @@ console.log('\n16) Arbeit auf baugleiche Maschinen verteilen');
     const liste = ['A', 'B', 'C', 'D'].map(nr => bau(nr, 480));
     const vor = planBelegen({auftraege:liste, maschinen:M, ab:'2026-09-14', tage:30});
     gleich('vorher: alles auf der 1000er', vor.bloecke.every(k => k.maschine === 'm1000'), true);
-    gleich('  vier Tage hintereinander', vor.auftraege[3].ende, '2026-09-17');
+    gleich('  vier Tage hintereinander', tief(vor, 'auftraege.3.ende'), '2026-09-17');
 
     const v = planVerteilen(liste, M);
     gleich('zwei Arbeitsgaenge werden umgelegt', v.zahl, 2);
-    gleich('  und es steht dabei, wohin', v.bewegt[0].nach, 'm1500');
+    gleich('  und es steht dabei, wohin', tief(v, 'bewegt.0.nach'), 'm1500');
     const nach = planBelegen({auftraege:liste, maschinen:M, ab:'2026-09-14', tage:30});
     gleich('nachher liegen zwei auf der 1500er',
            nach.bloecke.filter(k => k.maschine === 'm1500').length, 2);
@@ -1855,7 +1884,7 @@ console.log('\n17) Sichern, Laden und die Auftraege von gestern');
     const a = voll();
     const text = JSON.stringify({version:WERKSTATT_VERSION, auftraege:[a], maschinen:M}, null, 1);
     const zurueck = JSON.parse(text);
-    const b = zurueck.auftraege[0];
+    const b = zurueck.auftraege[0] || {};
     gleich('der geladene Auftrag ist gueltig', auftragPruefen(b).length, 0);
     gleich('  Version stimmt', zurueck.version, WERKSTATT_VERSION);
     gleich('  Rang ueberlebt', b.rang, 3);
@@ -1881,7 +1910,7 @@ console.log('\n17) Sichern, Laden und die Auftraege von gestern');
     gleich('dieselbe Belegung nach dem Laden',
            JSON.stringify(p1.bloecke.map(k => k.maschine + k.datum + Math.round(k.minuten))),
            JSON.stringify(p2.bloecke.map(k => k.maschine + k.datum + Math.round(k.minuten))));
-    gleich('  derselbe spaeteste Start', p1.auftraege[0].spaetester, p2.auftraege[0].spaetester);
+    gleich('  derselbe spaeteste Start', tief(p1, 'auftraege.0.spaetester'), tief(p2, 'auftraege.0.spaetester'));
   }
 
   /* (3) DAS WICHTIGERE: ein Auftrag im ALTEN Format. So sah
@@ -1910,7 +1939,7 @@ console.log('\n17) Sichern, Laden und die Auftraege von gestern');
     gleich('  und auch nicht angefangen', su.angefangen, false);
     const b = planBelegen({auftraege:[alt], maschinen:M, ab:'2026-09-14', tage:30});
     gleich('  er wird eingeplant', b.auftraege.length, 1);
-    gleich('  und traegt einen spaetesten Start', !!b.auftraege[0].spaetester, true);
+    gleich('  und traegt einen spaetesten Start', !!tief(b, 'auftraege.0.spaetester'), true);
 
     /* Und wenn die Maske ihn anfasst: aus dem gedachten Einzelgang wird
        ein echter, OHNE dass eine Minute wandert. */
@@ -2062,10 +2091,13 @@ console.log('\n18) Der Zettel fuer die Maschine');
     const z = planZettel(b, M, 'fr1', 7);
     gleich('die Fraese hat einen Posten', z && z.posten, 1);
     nahe('  mit 180 Minuten', z && z.minuten, 180, 1e-9);
-    gleich('  am Mittwoch', z && z.tage[2].posten.length, 1);
-    gleich('  und es ist der Fraesgang', z && z.tage[2].posten[0].gangName, 'fraesen');
+    /* MIT WAECHTER bis zum letzten Glied: "z &&" allein reichte nicht -
+       fiel der Posten weg, starb der Lauf an .gangName (Gegenprobe
+       "Uebergabe abgeschafft"). */
+    gleich('  am Mittwoch', tief(z, 'tage.2.posten.length'), 1);
+    gleich('  und es ist der Fraesgang', tief(z, 'tage.2.posten.0.gangName'), 'fraesen');
     gleich('  Montag und Dienstag leer',
-           (z.tage[0].posten.length + z.tage[1].posten.length), 0);
+           (tief(z, 'tage.0.posten.length') || 0) + (tief(z, 'tage.1.posten.length') || 0), 0);
   }
 
   /* (4) DIE TRAGENDE PROBE: der Zettel sagt dasselbe wie die Tafel.
@@ -2847,11 +2879,11 @@ console.log('\n24) Freie Tage');
            planKapazitaet(m, planTag('2026-09-15'), ['2026-09-15']), 0);
 
     const ohne = planBelegen({auftraege:[a], maschinen:M, ab:'2026-09-14', tage:30});
-    gleich('ohne freie Tage: Mo und Di', ohne.auftraege[0].start + '..' + ohne.auftraege[0].ende,
+    gleich('ohne freie Tage: Mo und Di', tief(ohne, 'auftraege.0.start') + '..' + tief(ohne, 'auftraege.0.ende'),
            '2026-09-14..2026-09-15');
     const mit = planBelegen({auftraege:[a], maschinen:M, ab:'2026-09-14', tage:30,
                              frei:['2026-09-15']});
-    gleich('mit freiem Dienstag: Mo und Mi', mit.auftraege[0].start + '..' + mit.auftraege[0].ende,
+    gleich('mit freiem Dienstag: Mo und Mi', tief(mit, 'auftraege.0.start') + '..' + tief(mit, 'auftraege.0.ende'),
            '2026-09-14..2026-09-16');
     /* Auch die Rueckwaertsrechnung muss ihn kennen - sonst waere die
        Frist einen Tag zu spaet und der Puffer zu gross. */
@@ -3042,7 +3074,7 @@ console.log('\n25) Die zwei Planungsregeln');
                  ab:'2026-09-14', tage:40};
       if(ueb !== null) e.uebergabe = ueb;
       const b = planBelegen(e);
-      const z = b.auftraege[0];
+      const z = b.auftraege[0] || {};
       if(!z || !z.gaenge) return 'NICHT GEPLANT: ' +
         ((b.unplanbar[0] || {}).grund || 'ohne Grund');
       return z.gaenge.map(g => g.start + '/' + g.ende).join(' ');
@@ -3059,7 +3091,7 @@ console.log('\n25) Die zwei Planungsregeln');
     const spaet = planBelegen({auftraege:[JSON.parse(JSON.stringify(a))], maschinen:M,
                               ab:'2026-09-17', tage:40, uebergabe:3});
     gleich('der Abstand zaehlt Kalendertage, gearbeitet wird werktags',
-           spaet.auftraege[0] ? spaet.auftraege[0].gaenge.map(g => g.start).join(' ') : 'NICHT GEPLANT',
+           (tief(spaet, 'auftraege.0.gaenge') || []).map(g => g.start).join(' ') || 'NICHT GEPLANT',
            '2026-09-17 2026-09-21');
     /* Unsinn faellt auf die Vorgabe zurueck, negative Werte auf 0. */
     gleich('Unsinn als Abstand: Vorgabe', lauf('bald'), lauf(1));
@@ -3071,11 +3103,12 @@ console.log('\n25) Die zwei Planungsregeln');
     const s1 = planSpaetester(a, M, [], 1), s3 = planSpaetester(a, M, [], 3);
     gleich('Frist bei Abstand 1', s1 && s1.start, '2026-10-01');
     gleich('Frist bei Abstand 3: zwei Tage frueher', s3 && s3.start, '2026-09-29');
-    gleich('  ohne Angabe wie bei 1', (planSpaetester(a, M, []) || {}).start, s1.start);
+    gleich('  ohne Angabe wie bei 1', (planSpaetester(a, M, []) || {}).start,
+           (s1 || {}).start);
     /* Und die Belegung reicht ihn durch: der Puffer haengt an beiden. */
     const puf = (ueb) => {
       const z = planBelegen({auftraege:[JSON.parse(JSON.stringify(a))], maschinen:M,
-                             ab:'2026-09-14', tage:40, uebergabe:ueb}).auftraege[0];
+                             ab:'2026-09-14', tage:40, uebergabe:ueb}).auftraege[0] || {};
       return z ? z.puffer : null;
     };
     const p1 = puf(1), p3 = puf(3);
@@ -3090,8 +3123,8 @@ console.log('\n25) Die zwei Planungsregeln');
     const e0 = planBelegen({auftraege:[eins], maschinen:M, ab:'2026-09-14', tage:40, uebergabe:0});
     const e7 = planBelegen({auftraege:[eins], maschinen:M, ab:'2026-09-14', tage:40, uebergabe:7});
     gleich('ein einziger Gang: der Abstand aendert nichts',
-           e0.auftraege[0].start + '..' + e0.auftraege[0].ende,
-           e7.auftraege[0].start + '..' + e7.auftraege[0].ende);
+           tief(e0, 'auftraege.0.start') + '..' + tief(e0, 'auftraege.0.ende'),
+           tief(e7, 'auftraege.0.start') + '..' + tief(e7, 'auftraege.0.ende'));
   }
 
   /* (4) Oberflaeche - und wieder der Punkt, an dem eine Mechanik im Kern
@@ -3596,8 +3629,8 @@ console.log('\n29) Die Sicherung');
     gleich('  und eine Version', typeof d.version === 'string' && d.version.length > 0, true);
     gleich('  und das Datum', d.gesichert, '2026-09-15');
     gleich('Auftraege sind drin', d.auftraege.length, 1);
-    gleich('  samt Gaengen', d.auftraege[0].gaenge.length, 2);
-    gleich('  samt Rueckmeldung', d.auftraege[0].rueckmeldung.gaenge[0].ruestzeit, 45);
+    gleich('  samt Gaengen', tief(d, 'auftraege.0.gaenge.length'), 2);
+    gleich('  samt Rueckmeldung', tief(d, 'auftraege.0.rueckmeldung.gaenge.0.ruestzeit'), 45);
     gleich('Maschinen sind drin', d.maschinen.length, M.length);
     gleich('  samt Stundensatz', d.maschinen.filter(x => x.id === 'm1500')[0].satz, 80);
     gleich('  samt Wartung', d.maschinen.filter(x => x.id === 'm1000')[0].wartung.join(','), '2026-09-21');
@@ -3612,7 +3645,7 @@ console.log('\n29) Die Sicherung');
     /* Die Datei ist eine KOPIE - wer danach den Auftrag aendert, aendert
        nicht die Sicherung. */
     a.teil = 'geaendert';
-    gleich('die Datei ist eine Kopie, kein Zeiger', d.auftraege[0].teil, 'Welle');
+    gleich('die Datei ist eine Kopie, kein Zeiger', tief(d, 'auftraege.0.teil'), 'Welle');
   }
 
   /* (2) DIE ZAEHLUNG, die falsch war. */
@@ -3665,8 +3698,8 @@ console.log('\n29) Die Sicherung');
     const v = sicherungVereinen(hier, datei);
     gleich('einer kommt dazu', v.dazu, 1);
     gleich('  einer wird uebersprungen', v.uebersprungen.join(','), 'A-1');
-    gleich('  und zwar bleibt der HIESIGE', v.auftraege[0].teil, 'Welle');
-    gleich('  mit seiner Rueckmeldung', v.auftraege[0].rueckmeldung.gefertigt, 7);
+    gleich('  und zwar bleibt der HIESIGE', tief(v, 'auftraege.0.teil'), 'Welle');
+    gleich('  mit seiner Rueckmeldung', tief(v, 'auftraege.0.rueckmeldung.gefertigt'), 7);
     gleich('zusammen drei', v.auftraege.length, 3);
     /* Ein Auftrag OHNE Nummer laesst sich nicht abgleichen - er kommt
        dazu. Lieber einer zuviel, den man sieht. */
@@ -3681,7 +3714,7 @@ console.log('\n29) Die Sicherung');
     const fremd = bauAuftrag('A-8', 'Welle', 'm9999');
     const raus = sicherungFremdeMaschinen([fremd], M0);
     gleich('eine unbekannte Maschine wird gefunden', raus.length, 1);
-    gleich('  mit Auftrag und Gang', raus[0].nummer + '/' + raus[0].gang + '/' + raus[0].maschine,
+    gleich('  mit Auftrag und Gang', tief(raus, '0.nummer') + '/' + tief(raus, '0.gang') + '/' + tief(raus, '0.maschine'),
            'A-8/1/m9999');
     gleich('bekannte Maschinen sind still',
            sicherungFremdeMaschinen([bauAuftrag('A-1', 'Welle')], M0).length, 0);
@@ -4077,7 +4110,7 @@ console.log('\n32) Mannstunden und Uebersicht');
     const viel = planBelegen({auftraege:[bau('M-3', 'm1000', 600)], maschinen:M0,
                               ab:'2026-09-14', tage:30, mannStunden:100});
     gleich('die Maschinengrenze gilt weiter',
-           viel.auftraege[0].start + '..' + viel.auftraege[0].ende, '2026-09-14..2026-09-15');
+           tief(viel, 'auftraege.0.start') + '..' + tief(viel, 'auftraege.0.ende'), '2026-09-14..2026-09-15');
   }
 
   /* (3) Die Uebersicht fasst zusammen, sie rechnet nicht neu. */
@@ -4411,7 +4444,171 @@ console.log('\n34) Blatt 4 ist das Arbeitsblatt');
   }
 }
 
+/* --- 35. Die Auftragsliste -------------------------------------------
+   Sie zeigte Nummer, Kunde, Teil, Stueck, Maschine, Status, Termin als
+   DATUM, Zeit und Preis - alles richtig und alles Text. Wer wissen
+   wollte, welcher Auftrag brennt, musste jedes Datum gegen heute
+   rechnen und fuer die Terminlage auf Blatt 4 wechseln.
+
+   DREI DINGE KAMEN DAZU: die Restzeit im Klartext ("in 3 Tagen"), die
+   Terminlage als farbiger Rand, und ein Fortschrittsbalken dort, wo es
+   eine Rueckmeldung gibt.
+
+   DIE FARBE IST NIE ALLEIN - jede Zeile traegt ihre Restzeit als Text.
+   Und die Lage kommt aus DERSELBEN Belegung wie Blatt 4 und die
+   Uebersicht; zwei Wahrheiten ueber denselben Termin waeren schlimmer
+   als keine Farbe.
+
+   DER BALKEN HAT SOFORT ETWAS GEFUNDEN, und zwar in den Demodaten: ein
+   GELIEFERTER Auftrag stand auf "25 von 120 gefertigt". Beim Anheben
+   der Stueckzahlen waren die Rueckmeldungen stehengeblieben. Genau
+   dafuer ist so ein Balken da - und der Haken unten haelt es fest. */
+console.log('\n35) Die Auftragsliste');
+{
+  const demoWerkstatt = hole('demoWerkstatt');
+  const hatRueckmeldung = hole('hatRueckmeldung');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+
+  /* (1) Die Bausteine stehen im Quelltext. */
+  {
+    [['Restzeit im Klartext', /in ' \+ tage \+ \(tage === 1 \? ' Tag' : ' Tagen'\)/],
+     ['Ueberfaellig mit Zahl', /\+ ' &uuml;ber<\/span>'/],
+     ['Terminlage als Rand', /lage-spaet|lage-eng|lage-gut/],
+     ['Fortschrittsbalken', /class="fortschritt"/],
+     ['Datum bleibt daneben', /class="tdatum"/]].forEach(([was, re]) => {
+      if(re.test(quelltext)) ok('vorhanden: ' + was);
+      else bad('fehlt: ' + was);
+    });
+    /* DIE FARBE NIE ALLEIN: die Klasse steht an der Zeile, der Text in
+       der Zelle. Fiele der Text weg, traege die Farbe die Auskunft
+       allein - und wer sie nicht unterscheidet, sieht nichts. */
+    /* Geprueft wird das ERGEBNIS, nicht die Schreibweise: s. (4). */
+    /* Und sie kommt aus der PLANUNG, nicht aus einer zweiten Rechnung. */
+    if(/const bel = W\.belegung \|\| wPlanRechnen\(\);/.test(quelltext))
+      ok('die Terminlage kommt aus derselben Belegung wie Blatt 4');
+    else bad('die Liste rechnet die Terminlage selbst - das waere eine zweite Wahrheit');
+    /* KEIN LEERER BALKEN ohne Rueckmeldung: das waere die Behauptung,
+       es sei nichts passiert. */
+    if(/if\(hatRueckmeldung\(a\)\)\{/.test(quelltext))
+      ok('ohne Rueckmeldung steht dort nichts statt eines leeren Balkens');
+    else bad('der Balken steht auch ohne Rueckmeldung - das behauptet, es sei nichts passiert');
+  }
+
+  /* (2) DER BEFUND aus den Demodaten: was gefertigt ist, muss zur
+     Stueckzahl passen - erst recht bei "geliefert". */
+  {
+    const d = demoWerkstatt('2026-09-15', M0);
+    const krumm = [];
+    d.auftraege.forEach(a => {
+      if(!hatRueckmeldung(a)) return;
+      const gef = +a.rueckmeldung.gefertigt || 0;
+      const aus = +a.rueckmeldung.ausschuss || 0;
+      const soll = Math.max(1, +a.stueck || 1);
+      if(gef > soll) krumm.push(a.nummer + ': ' + gef + ' gefertigt von ' + soll);
+      if(a.status === 'geliefert' && gef + aus < soll)
+        krumm.push(a.nummer + ': geliefert, aber nur ' + gef + ' von ' + soll + ' gefertigt');
+    });
+    if(!krumm.length) ok('jede Rueckmeldung passt zur Stueckzahl');
+    else bad('krumme Rueckmeldungen im Beispiel: ' + krumm.join(' | '));
+    /* Und mindestens eine mit Ausschuss - sonst zeigt der Balken den
+       Fall nie, fuer den er die zweite Zahl hat. */
+    const mitAus = d.auftraege.filter(a => (+a.rueckmeldung.ausschuss || 0) > 0).length;
+    if(mitAus >= 1) ok('  und eine traegt Ausschuss');
+    else bad('kein Beispielauftrag hat Ausschuss - der Balken zeigt den Fall nie');
+  }
+
+  /* (3) Die Spalte ist da, wo sie hingehoert. */
+  {
+    if(/<th>Fortschritt<\/th>/.test(quelltext)) ok('die Liste hat eine Spalte Fortschritt');
+    else bad('die Spalte Fortschritt fehlt');
+    /* Sie steht NEBEN dem Termin, nicht am Ende: beides zusammen ist
+       die Frage "wird das noch was". */
+    if(/<th>Termin<\/th><th>Fortschritt<\/th>/.test(quelltext))
+      ok('  und zwar neben dem Termin');
+    else warn('die Spalte Fortschritt steht nicht neben dem Termin');
+  }
+
+  /* (4) DIE GEMALTE LISTE - das Ergebnis, nicht die Schreibweise.
+
+     ZWEI EIGENE FEHLGRIFFE haben zu diesem Teil gefuehrt. Die erste
+     Wache suchte irgendwo im Quelltext class="restzeit r- und fand die
+     uebrigen Vorkommen, als die Gegenprobe eines entfernte. Die zweite
+     suchte die Klasse als LITERAL - sie wird aber zusammengesetzt
+     ('r-' + (knapp ? 'eng' : 'gut')), steht so nirgends und war damit
+     immer rot. Beide Male habe ich die SCHREIBWEISE geprueft statt der
+     WIRKUNG; eine Wache, die nach etwas sucht, das es nicht geben kann,
+     ist so wertlos wie eine, die immer gruen ist.
+
+     Der Ersatz-Browser rastert nicht, aber er kann HTML entgegennehmen:
+     die Liste wird wirklich gemalt und ihr Inhalt gelesen. Mit EIGENEN
+     Terminen, damit die Wache nicht davon abhaengt, wie die
+     Beispiel-Auftraege gerade liegen.                                */
+  {
+    const W = hole('W'), wListeMalen = hole('wListeMalen'), wHeute = hole('wHeute');
+    const neuerAuftrag = hole('neuerAuftrag');
+    const alt = {auftraege:W.auftraege, maschinen:W.maschinen, frei:W.frei,
+                 belegung:W.belegung, gewaehlt:W.gewaehlt, filter:W.filter};
+    /* ORTSZEIT, nicht UTC: toISOString schiebt in unserer Zeitzone um
+       einen Tag zurueck, und dann log der Hakentext ueber sein eigenes
+       Beispiel ("-3 Tage" stand als "4 Tage ueber" da). */
+    const tagUm = (v) => {
+      const d = new Date(wHeute() + 'T00:00:00');
+      d.setDate(d.getDate() + v);
+      const z = (n) => (n < 10 ? '0' : '') + n;
+      return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate());
+    };
+    const bau = (nr, termin) => {
+      const a = neuerAuftrag();
+      a.nummer = nr; a.kunde = 'Musterbau GmbH'; a.teil = 'Probe ' + nr;
+      a.stueck = 10; a.status = 'freigegeben'; a.liefertermin = termin;
+      a.maschine = W.maschinen[0].id; a.zeiten = {ruestzeit:20, stueckzeit:5};
+      return a;
+    };
+    W.maschinen = JSON.parse(JSON.stringify(M0));
+    W.auftraege = [bau('A-1', tagUm(-3)), bau('A-2', tagUm(1)), bau('A-3', tagUm(40))];
+    W.auftraege[2].rueckmeldung = {gefertigt:4, ausschuss:1, datum:tagUm(-1), gaenge:[]};
+    W.frei = []; W.belegung = null; W.gewaehlt = -1;
+    W.filter = {status:'alle', text:'', sortieren:'termin'};
+
+    let h = '';
+    try{ wListeMalen(); h = document.getElementById('aufTab').innerHTML; }
+    catch(e){ bad('die Liste laesst sich nicht malen: ' + e.message); }
+    if(h.length > 200) ok('die Liste wird wirklich gemalt (' + h.length + ' Zeichen)');
+    else bad('die Liste bleibt leer - alles Weitere waere ohne Aussage');
+
+    /* DIE FARBE NIE ALLEIN: jede der drei Lagen traegt in ihrer Zeile
+       einen eigenen Text. Fiele einer weg, traege die Farbe die Auskunft
+       allein - und wer sie nicht unterscheidet, sieht nichts. */
+    const texte = {};
+    (h.match(/<span class="restzeit r-[a-z]+">[^<]*/g) || []).forEach(st => {
+      const t = /r-([a-z]+)">([^<]*)/.exec(st);
+      if(t && t[2].trim()) texte[t[1]] = t[2].trim();
+    });
+    const fehlt = ['spaet', 'eng', 'gut'].filter(k => !texte[k]);
+    if(!fehlt.length)
+      ok('die Lage steht in jeder Zeile auch im Klartext (' +
+         ['spaet', 'eng', 'gut'].map(k => texte[k]).join(' | ') + ')');
+    else bad('die Lage steht nur in der Farbe - das ist keine Auskunft (' +
+             fehlt.join(', ') + ')');
+
+    /* Der Rand haengt an der ZEILE, sonst faerbt er nichts. */
+    const raender = ['lage-spaet', 'lage-eng', 'lage-gut']
+      .filter(k => h.indexOf('class="' + k) >= 0);
+    gleich('und jede der drei Zeilen traegt ihren farbigen Rand', raender.length, 3);
+
+    /* Der Balken NUR dort, wo zurueckgemeldet wurde - einer von dreien. */
+    gleich('der Fortschrittsbalken steht nur beim zurueckgemeldeten Auftrag',
+           h.split('class="fortschritt"').length - 1, 1);
+    if(/class="fzahl">4\/10/.test(h)) ok('  und er nennt seine Zahlen (4/10)');
+    else bad('der Balken steht ohne Zahl da - ein Balken ohne Zahl ist ein Gefuehl');
+
+    /* Wer den Zustand aendert, raeumt ihn auf. */
+    Object.assign(W, alt);
+  }
+}
+
 /* --- Ergebnis -------------------------------------------------------- */
+fertig = true;
 console.log('\n' + '='.repeat(62));
 console.log('Haken: ' + haken + '   Fehler: ' + fehler + '   Hinweise: ' + warnungen);
 if(fehler === 0) console.log('PRUEFSTAND BESTANDEN');

@@ -1180,7 +1180,7 @@ function demoWerkstatt(heute, maschinen){
      alles genau aufgeht, zeigt die Soll-Ist-Rechnung als sinnlos. */
   const w1 = raus.filter(a => a.nummer === 'A-1041')[0];
   if(w1){
-    w1.rueckmeldung.gefertigt = 25;
+    w1.rueckmeldung.gefertigt = 120;
     w1.rueckmeldung.ausschuss = 0;
     w1.rueckmeldung.datum = tag(-6);
     istSetzen(w1, 1, 'ruestzeit', 24);
@@ -1188,8 +1188,8 @@ function demoWerkstatt(heute, maschinen){
   }
   const w2 = raus.filter(a => a.nummer === 'A-1042')[0];
   if(w2){
-    w2.rueckmeldung.gefertigt = 48;
-    w2.rueckmeldung.ausschuss = 2;            /* und etwas Ausschuss */
+    w2.rueckmeldung.gefertigt = 197;
+    w2.rueckmeldung.ausschuss = 3;            /* und etwas Ausschuss */
     w2.rueckmeldung.datum = tag(-2);
     istSetzen(w2, 1, 'ruestzeit', 18);
     istSetzen(w2, 1, 'stueckzeit', 2.6);      /* 10 % schneller */

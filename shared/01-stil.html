@@ -235,6 +235,28 @@ td.nw{ white-space:nowrap; }
 .wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
 .wtage input{ margin:0 2px 0 0; }
 
+/* ---- Die Auftragsliste -----------------------------------------------
+   Der farbige Rand ist die Abkuerzung fuer den Blick; die Auskunft
+   steht als Text daneben. Wer Rot und Gruen nicht unterscheidet, liest
+   dieselbe Zeile.                                                     */
+tr.lage-spaet > td:first-child{ box-shadow: inset 3px 0 0 var(--schlecht); }
+tr.lage-eng   > td:first-child{ box-shadow: inset 3px 0 0 var(--warn); }
+tr.lage-gut   > td:first-child{ box-shadow: inset 3px 0 0 var(--gut); }
+.restzeit{ white-space:nowrap; font-size:12.5px; }
+.restzeit.r-spaet{ color:var(--schlecht); font-weight:600; }
+.restzeit.r-eng{ color:var(--warn); }
+.restzeit.r-gut{ color:var(--text-blass); }
+.tdatum{ display:block; font-size:11.5px; color:var(--text-blass);
+  font-variant-numeric: tabular-nums; }
+/* Fortschritt: schmal, damit er die Zeile nicht hoeher macht. */
+.fortschritt{ display:flex; align-items:center; gap:6px; }
+.fortschritt .fbahn{ display:block; width:52px; height:8px; border-radius:4px;
+  background:var(--rand-fein); overflow:hidden; flex:0 0 auto; }
+.fortschritt .ffuell{ display:block; height:100%; border-radius:4px; background:var(--gut); }
+.fortschritt .ffuell.f-teil{ background:var(--akzent); }
+.fortschritt .fzahl{ font-size:12px; color:var(--text-blass);
+  font-variant-numeric: tabular-nums; white-space:nowrap; }
+
 /* ---- Die Erklaerung unter dem Aufklapper -----------------------------
    Nativ, ohne JavaScript. Der Pfeil steht in Textdarstellung (U+FE0E),
    sonst macht iOS daraus ein blaues Play-Symbol - dieselbe Falle wie

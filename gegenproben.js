@@ -27,6 +27,17 @@
       mit und ohne Verfaelschung dasselbe - die Probe kann gar nicht
       anschlagen. Der Testfall braucht dann ungleiche Ausgangswerte,
       nicht die Probe eine andere Stelle.
+
+   3. Ein PRUEFCODE, DER STIRBT, statt rot zu werden, macht die Probe
+      wertlos - und sah bis zum 15.09.2026 wie ein Erfolg aus: der
+      Absturz wurde gefangen, die bis dahin gedruckten roten Haken
+      gezaehlt, "alle erwarteten" gemeldet. Alles hinter der
+      Absturzstelle war ungemessen. Zwei Proben liefen so (81 und 85);
+      bei 85 fielen in Wahrheit 92 Haken um, gesehen hat man drei.
+      Die Wache unten macht daraus einen Fehlschlag mit Zeilenangabe,
+      und der Pruefstand druckt selbst PRUEFSTAND ABGEBROCHEN. Wer die
+      Stelle repariert: ein Zugriff quer durch eine Struktur, die eine
+      Probe wegfallen lassen kann, laeuft ueber tief(o, 'a.0.b').
    ===================================================================== */
 'use strict';
 const fs = require('fs');
@@ -137,6 +148,22 @@ const faelle = [
     /* Erwartet wird der Text des ROTEN Hakens (die bad-Meldung), nicht
        der des gruenen — der erste Anlauf zitierte die ok-Zeile. */
     erwartet:['der Grund nennt die Querflaechen nicht']
+  },
+  {
+    /* Die Farbe darf die Auskunft nicht allein tragen. */
+    name:'Die Terminlage steht nur noch in der Farbe',
+    suche:"        restH = '<span class=\"restzeit r-spaet\">' + Math.abs(tage) +",
+    ersatz:"        restH = '<span class=\"unsichtbar\">' + Math.abs(tage) +",
+    erwartet:['die Lage steht nur in der Farbe - das ist keine Auskunft']
+  },
+  {
+    /* Ein gelieferter Auftrag, der ein Viertel seiner Stueckzahl
+       gefertigt hat, ist Unsinn - der Fortschrittsbalken hat genau das
+       in den Demodaten gefunden. */
+    name:'Rueckmeldung passt nicht zur Stueckzahl',
+    suche:'    w1.rueckmeldung.gefertigt = 120;',
+    ersatz:'    w1.rueckmeldung.gefertigt = 25;',
+    erwartet:['krumme Rueckmeldungen im Beispiel']
   },
   {
     /* Der lange Text darf nicht verschwinden - geloescht wird nichts,
@@ -883,6 +910,20 @@ faelle.forEach((f, i) => {
   try{ aus = execFileSync(process.execPath, [path.join(ORDNER, 'pruefstand.js'), '--datei', TMP], {encoding:'utf8'}); }
   catch(e){ aus = String(e.stdout || '') + String(e.stderr || ''); }
   const rot = (aus.match(/^  X .*/gm) || []).map(z => z.slice(4));
+  /* IST DER LAUF ZU ENDE GEKOMMEN? Ein abgestuerzter Pruefstand druckt
+     seinen Ergebnissatz nicht - und alles hinter der Absturzstelle ist
+     ungemessen. Ohne diese Wache zaehlte der Absturz als Erfolg, sobald
+     der erwartete Haken zufaellig davor lag. Dieselbe Regel wie im Kopf
+     des Pruefstands: am SATZ festmachen, nie an der Hakenzahl. */
+  if(aus.indexOf('PRUEFSTAND BESTANDEN') < 0 && aus.indexOf('PRUEFSTAND NICHT BESTANDEN') < 0){
+    const fehl = (aus.match(/^\s*(?:[A-Za-z]*Error|ABBRUCH):.*$/m) || [])[0] ||
+                 (aus.match(/^[A-Za-z]*Error:.*$/m) || [])[0] || 'ohne Meldung';
+    const wo = (aus.match(/pruefstand\.js:(\d+)/) || [])[0] || 'Stelle unbekannt';
+    console.log('X ' + (i + 1) + ') ' + f.name + ' — der Pruefstand ist ABGESTUERZT (' +
+      wo + ': ' + fehl.trim() + '). Der Pruefcode muss dort rot werden, nicht sterben; ' +
+      'alles dahinter ist ungemessen.');
+    schlecht++; return;
+  }
   if(f.darfGruenBleiben){
     if(!rot.length){ console.log('+ ' + (i + 1) + ') ' + f.name + ' — wie erwartet ohne Wirkung auf die Haken'); gut++; }
     else { console.log('X ' + (i + 1) + ') ' + f.name + ' — unerwartet rot: ' + rot.join(' | ')); schlecht++; }

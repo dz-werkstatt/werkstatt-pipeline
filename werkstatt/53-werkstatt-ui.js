@@ -795,16 +795,31 @@ function wListeMalen(){
       ? '<b>' + F.zahl + ' von ' + F.gesamt + '</b> Auftr&auml;gen — gefiltert'
       : F.gesamt + ' Auftr&auml;ge') +
     ', ' + wEsc(W_SORT_NAMEN[F.sortieren] || F.sortieren) +
-    '. Ein Tipp w&auml;hlt an, der Stift &ouml;ffnet.');
+    '. Ein Tipp w&auml;hlt an, der Stift &ouml;ffnet.' +
+    '<br>Der farbige Rand links ist die <b>Terminlage</b>: rot &uuml;berf&auml;llig, ' +
+    'gelb weniger als drei Tage Luft oder nach der Planung nicht zu halten. ' +
+    'Sie kommt aus <b>derselben Belegung</b> wie die Tafel in Blatt 4 — ' +
+    'und steht in jeder Zeile auch im Klartext.');
   if(!F.zahl){
     t.innerHTML = '';
     htm('aufHinweis', '<b>Kein Auftrag passt zum Filter</b> (' + F.gesamt + ' insgesamt). ' +
         'Mit <b>Filter zur&uuml;cksetzen</b> stehen wieder alle da.');
     return;
   }
+  /* DIE TERMINLAGE KOMMT AUS DER PLANUNG, nicht aus einer zweiten
+     Rechnung. Ohne vorhandene Belegung wird einmal gerechnet - das
+     kostet Millisekunden und ist allemal besser als eine Liste, die
+     etwas anderes sagt als die Tafel. */
+  const bel = W.belegung || wPlanRechnen();
+  const lage = {};
+  (bel.auftraege || []).forEach(z => {
+    lage[z.auftrag.nummer + '|' + z.auftrag.teil] = z;
+  });
+  const heute = planTag(wHeute());
+
   let h = '<tr><th>Nr.</th><th>Kunde</th><th>Teil</th><th class="z">St.</th>' +
-          '<th>Maschine</th><th>Status</th><th>Termin</th><th class="z">Zeit</th>' +
-          '<th class="z">Preis</th><th></th></tr>';
+          '<th>Maschine</th><th>Status</th><th>Termin</th><th>Fortschritt</th>' +
+          '<th class="z">Zeit</th><th class="z">Preis</th><th></th></tr>';
   F.zeilen.forEach(({a, platz}) => {
     /* DER PLATZ IN DER URSPRUENGLICHEN LISTE, nicht die Nummer der
        gefilterten Zeile: sonst traefe der Loeschknopf nach dem Sortieren
@@ -817,14 +832,59 @@ function wListeMalen(){
       return wEsc(m ? m.name : (g.maschine || '—'));
     }).join(' &rarr; ');
     const min = planMinuten(a);
-    h += '<tr data-auf="' + i + '"' + (i === W.gewaehlt ? ' class="markiert"' : '') + '>' +
+
+    /* --- Termin: die Restzeit ist die Zahl, die man liest --- */
+    const soll = planTag(a.liefertermin);
+    const fertig = a.status === 'geliefert';
+    const z = lage[a.nummer + '|' + a.teil];
+    let lageK = '', restH = '<span class="restzeit r-gut">—</span>';
+    if(soll !== null){
+      const tage = Math.round((soll - heute) / 86400000);
+      if(fertig){
+        lageK = '';
+        restH = '<span class="restzeit r-gut">geliefert</span>';
+      } else if(tage < 0){
+        lageK = 'lage-spaet';
+        restH = '<span class="restzeit r-spaet">' + Math.abs(tage) +
+                (Math.abs(tage) === 1 ? ' Tag' : ' Tage') + ' &uuml;ber</span>';
+      } else {
+        /* ENG ist zweierlei: der Termin ist nah, ODER die Planung sagt,
+           es reicht nicht. Das zweite wiegt schwerer und steht dann da. */
+        const puffer = z ? z.puffer : null;
+        const knapp = (puffer !== null && puffer < 0) || tage <= 2;
+        lageK = knapp ? 'lage-eng' : 'lage-gut';
+        restH = '<span class="restzeit r-' + (knapp ? 'eng' : 'gut') + '">' +
+          (tage === 0 ? 'heute' : 'in ' + tage + (tage === 1 ? ' Tag' : ' Tagen')) +
+          ((puffer !== null && puffer < 0) ? ' <b>knapp</b>' : '') + '</span>';
+      }
+    }
+    const terminH = restH + '<span class="tdatum">' + wEsc(a.liefertermin || '—') + '</span>';
+
+    /* --- Fortschritt, aber nur wo es einen gibt --- */
+    let fortH = '';
+    if(hatRueckmeldung(a)){
+      const gef = Math.max(0, +a.rueckmeldung.gefertigt || 0);
+      const ausw = Math.max(0, +a.rueckmeldung.ausschuss || 0);
+      const soll2 = Math.max(1, +a.stueck || 1);
+      const p = Math.min(1, gef / soll2);
+      fortH = '<div class="fortschritt" title="' + wEsc(gef + ' gefertigt von ' + soll2 +
+        (ausw ? ', ' + ausw + ' Ausschuss' : '')) + '">' +
+        '<span class="fbahn"><span class="ffuell' + (p >= 1 ? '' : ' f-teil') +
+          '" style="width:' + Math.round(p * 100) + '%"></span></span>' +
+        '<span class="fzahl">' + wZahl(gef) + '/' + wZahl(soll2) +
+        (ausw ? ' <span class="r-spaet">&minus;' + ausw + '</span>' : '') + '</span></div>';
+    }
+
+    h += '<tr data-auf="' + i + '" class="' + lageK +
+      (i === W.gewaehlt ? ' markiert' : '') + '">' +
       '<td>' + wEsc(a.nummer || '—') + '</td>' +
       '<td>' + wEsc(a.kunde) + '</td>' +
       '<td>' + wEsc(a.teil) + '</td>' +
       '<td class="z">' + wZahl(a.stueck) + '</td>' +
       '<td>' + kette + '</td>' +
       '<td><span class="status st-' + wEsc(a.status) + '">' + wEsc(a.status) + '</span></td>' +
-      '<td>' + wEsc(a.liefertermin || '—') + '</td>' +
+      '<td>' + terminH + '</td>' +
+      '<td>' + fortH + '</td>' +
       '<td class="z">' + wMin(min.gesamt) + '</td>' +
       '<td class="z">' + wZahl(a.preis, 2) + ' &euro;</td>' +
       '<td class="kein-druck"><button class="mini" data-bearb="' + i + '" title="bearbeiten">&#x270E;</button></td></tr>';
