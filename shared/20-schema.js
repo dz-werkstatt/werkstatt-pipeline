@@ -94,7 +94,7 @@ function fMin(v){
   const s = Math.round(v * 60), m = Math.floor(s / 60);
   return m + ':' + String(s - m * 60).padStart(2, '0') + ' min';
 }
-/* Eingaben kommen mit Komma herein (Daniel tippt am iPhone) */
+/* Eingaben kommen mit Komma herein (am iPhone getippt) */
 function fLesen(s){
   if(typeof s === 'number') return s;
   const v = parseFloat(String(s == null ? '' : s).replace(',', '.').trim());

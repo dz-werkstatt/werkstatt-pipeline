@@ -3,7 +3,9 @@
   <span class="schritt">
     <button id="tabImport" class="an">1 Teil</button>
     <button id="tabKalk">2 Angebot</button>
-    <button id="tabEin">3 Einstellungen</button>
+    <button id="tabAuf">3 Auftr&auml;ge</button>
+    <button id="tabPlan">4 Planung</button>
+    <button id="tabEin">5 Einstellungen</button>
   </span>
 </header>
 
@@ -134,6 +136,177 @@
 </section>
 
 <!-- ================= 3 EINSTELLUNGEN ================= -->
+<!-- ================= 4 AUFTRAEGE ================= -->
+<section class="blatt" id="blattAuf">
+
+  <div class="karte kein-druck">
+    <h2>Auftr&auml;ge</h2>
+    <div class="meldung info" style="margin-top:0" id="aufHinweis"></div>
+    <div class="knopfzeile">
+      <button class="knopf haupt" id="aufNeuAusAngebot">Aus dem Angebot anlegen</button>
+      <button class="knopf" id="aufNeuLeer">Leerer Auftrag</button>
+      <button class="knopf" id="aufSichern">Als Datei sichern</button>
+      <button class="knopf" id="aufLaden">Aus Datei laden</button>
+      <input type="file" id="aufDatei" accept=".json,.JSON" hidden>
+    </div>
+    <div class="filterzeile kein-druck">
+      <select id="aufFStatus" title="Status"></select>
+      <input type="search" id="aufFText" placeholder="Nummer, Kunde, Teil &hellip;">
+      <select id="aufFSort" title="Sortierung"></select>
+      <button class="knopf" id="aufFWeg" hidden>Filter zur&uuml;cksetzen</button>
+    </div>
+    <div class="tabellenrahmen"><table id="aufTab"></table></div>
+  </div>
+
+  <div class="karte kein-druck" id="aufMaske" hidden>
+    <h2 id="aufMaskeTitel">Auftrag</h2>
+    <div class="feld"><label for="afNummer">Auftragsnummer</label><input type="text" id="afNummer"></div>
+    <div class="feld"><label for="afKunde">Kunde</label><input type="text" id="afKunde"></div>
+    <div class="feld"><label for="afTeil">Teil</label><input type="text" id="afTeil"></div>
+    <div class="feld"><label for="afZeichnung">Zeichnungsnr.</label><input type="text" id="afZeichnung"></div>
+    <div class="feld"><label for="afWerkstoff">Werkstoff</label><input type="text" id="afWerkstoff"></div>
+    <div class="feld"><label for="afStueck">St&uuml;ckzahl</label><input type="number" id="afStueck" step="1" min="1"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="afRuest">R&uuml;stzeit</label><input type="number" id="afRuest" step="any"><span class="einheit">min</span></div>
+    <div class="feld"><label for="afStueckzeit">St&uuml;ckzeit</label><input type="number" id="afStueckzeit" step="any"><span class="einheit">min</span></div>
+    <div class="feld"><label for="afPreis">Preis gesamt</label><input type="number" id="afPreis" step="any"><span class="einheit">&euro;</span></div>
+    <!-- Woher der Preis kommt, und was dieselbe Rechnung heute ergaebe.
+         Der Auftrag behaelt seinen Preis; das Uebernehmen ist ein Knopf. -->
+    <div class="klein" id="afGrundlage"></div>
+    <div class="knopfzeile" id="afNeuZeile" hidden style="margin:4px 0 8px">
+      <button class="knopf" id="afNeuRechnen">Preis und Zeiten neu &uuml;bernehmen</button>
+    </div>
+    <!-- Arbeitsgaenge: die Maschine wird HIER gewaehlt, je Gang. Ein
+         Drehteil mit Fraesanteil laeuft erst auf der Drehbank und dann auf
+         der Fraese; mit einem Maschinenfeld je Auftrag waere das nicht
+         abzubilden. -->
+    <div class="unterkarte" id="afGaengeKarte">
+      <h3>Arbeitsg&auml;nge</h3>
+      <div class="tabellenrahmen"><table id="afGaenge"></table></div>
+      <div class="klein" id="afGangSumme"></div>
+      <div class="meldung info" id="afGangHinweis" hidden></div>
+      <div id="afMaschinenHinweis" class="meldung warn" hidden></div>
+      <div class="knopfzeile" style="margin-top:8px">
+        <button class="knopf" id="afGangPlus">+ Arbeitsgang</button>
+      </div>
+    </div>
+    <div class="feld"><label for="afStatus">Status</label><select id="afStatus"></select></div>
+    <div class="feld"><label for="afTermin">Liefertermin</label><input type="date" id="afTermin"></div>
+    <div class="feld"><label for="afGefertigt">gefertigt</label><input type="number" id="afGefertigt" step="1" min="0"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="afAusschuss">Ausschuss</label><input type="number" id="afAusschuss" step="1" min="0"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="afGeliefert">geliefert am</label><input type="date" id="afGeliefert"></div>
+    <!-- Was die Werkstatt auf der Laufkarte notiert hat. Die Ist-Zeiten
+         aendern die Kalkulation NIE - sie stehen daneben. -->
+    <div class="unterkarte" id="afIstKarte">
+      <h3>R&uuml;ckmeldung aus der Werkstatt</h3>
+      <div class="tabellenrahmen"><table id="afIst"></table></div>
+      <div class="klein" id="afIstSumme"></div>
+    </div>
+    <div class="feld"><label for="afBemerkung">Bemerkung</label><input type="text" id="afBemerkung"></div>
+    <div class="knopfzeile" style="margin-top:10px">
+      <button class="knopf haupt" id="afOk">&Uuml;bernehmen</button>
+      <button class="knopf" id="afAb">Abbrechen</button>
+      <button class="knopf" id="afPapier">Laufkarte drucken</button>
+      <button class="knopf" id="afLieferschein">Lieferschein</button>
+      <button class="knopf gefahr" id="afWeg">L&ouml;schen</button>
+    </div>
+  </div>
+
+  <!-- Die Laufkarte: im Blatt versteckt, nur beim Drucken sichtbar.
+       Der Maschinenzettel steht im Planungsblatt und teilt sich mit ihr
+       den Druckweg - es darf immer nur EINES gefuellt sein. -->
+  <div class="karte nur-druck" id="laufkarte"></div>
+</section>
+
+<!-- ================= 5 PLANUNG ================= -->
+<section class="blatt" id="blattPlan">
+
+  <div class="karte kein-druck" id="plKarteKap">
+    <h2>Kapazit&auml;t</h2>
+    <div class="feld"><label for="plAb">Planung ab</label><input type="date" id="plAb"></div>
+    <div class="feld"><label for="plTage">Horizont</label><input type="number" id="plTage" step="1" min="7"><span class="einheit">Tage</span></div>
+    <!-- Freie Tage: Feiertage, Betriebsurlaub. Die Belegung kennt sie
+         seit jeher, nur gab es kein Feld dafuer. -->
+    <div class="unterkarte" id="plFreiKarte">
+      <h3>Freie Tage und Wartung</h3>
+      <div class="filterzeile">
+        <select id="plFreiWer" title="Gilt der Tag f&uuml;r alle oder f&uuml;r eine Maschine?"></select>
+        <input type="date" id="plFreiVon" title="Tag oder Beginn">
+        <input type="date" id="plFreiBis" title="Ende (leer = ein Tag)">
+        <button class="knopf" id="plFreiPlus">eintragen</button>
+        <button class="knopf" id="plFreiWeg" hidden>alle entfernen</button>
+      </div>
+      <div id="plFreiListe"></div>
+      <div class="klein" id="plFreiHinweis"></div>
+    </div>
+    <!-- Die zwei Regeln, nach denen geplant wird. Sie standen als Punkt 7
+         und 8 auf der Entscheidungsliste; als Schalter beantwortet man
+         sie durch Ausprobieren. -->
+    <div class="unterkarte" id="plRegelKarte">
+      <h3>Planungsregeln</h3>
+      <div class="feld"><label for="plRegelWahl">Maschinenwahl</label>
+        <select id="plRegelWahl">
+          <option value="last">die Maschine mit der wenigsten Arbeit</option>
+          <option value="klein">die kleinste passende Maschine</option>
+        </select></div>
+      <div class="feld"><label for="plUebergabe">Abstand zwischen zwei Arbeitsg&auml;ngen</label>
+        <input type="number" id="plUebergabe" step="1" min="0" max="30"><span class="einheit">Tage</span></div>
+      <div class="klein" id="plRegelHinweis"></div>
+    </div>
+    <div id="plMeldung"></div>
+  </div>
+
+  <div class="karte" id="plKarteAusl">
+    <h2>Auslastung je Maschine und Woche</h2>
+    <div class="tabellenrahmen"><table id="plTafel"></table></div>
+    <div class="klein" id="plLegende"></div>
+  </div>
+
+  <div class="karte" id="plKarteTermine">
+    <h2>Termine</h2>
+    <div class="tabellenrahmen"><table id="plTermine"></table></div>
+    <div class="klein" id="plRangHinweis"></div>
+    <div class="knopfzeile" style="margin-top:6px">
+      <button class="knopf" id="plVerteilen">Auf die Maschinen verteilen</button>
+      <button class="knopf" id="plRangWeg" hidden>Reihenfolge zur&uuml;cksetzen</button>
+    </div>
+    <div class="klein" id="plVerteilenHinweis"></div>
+  </div>
+
+  <div class="karte" id="plKarteAusw">
+    <h2>Auswertung</h2>
+    <div class="tabellenrahmen"><table id="plAusw"></table></div>
+  </div>
+
+  <div class="karte" id="plKarteSollIst">
+    <h2>Soll und Ist</h2>
+    <div class="tabellenrahmen"><table id="plSollIst"></table></div>
+    <div class="klein" id="plSollIstHinweis"></div>
+  </div>
+
+  <div class="karte kein-druck" id="plKarteZettel">
+    <h2>Zettel f&uuml;r die Maschine</h2>
+    <div class="feld"><label for="plZettelM">Maschine</label><select id="plZettelM"></select></div>
+    <div class="feld"><label for="plZettelTage">Zeitraum</label><input type="number" id="plZettelTage" step="1" min="1" max="60"><span class="einheit">Tage</span></div>
+    <div class="knopfzeile" style="margin-top:6px">
+      <button class="knopf haupt" id="plZettelDruck">Zettel drucken</button>
+    </div>
+    <div class="klein" id="plZettelHinweis"></div>
+  </div>
+  <div class="karte nur-druck" id="zettel"></div>
+
+  <div class="karte kein-druck" id="plKarteMasch">
+    <h2>Maschinen</h2>
+    <div class="meldung warn" style="margin-top:0" id="plMaschHinweis"></div>
+    <div class="meldung warn" id="plMaschFehler" hidden></div>
+    <div class="tabellenrahmen"><table id="plMaschinen"></table></div>
+    <div class="knopfzeile" style="margin-top:8px">
+      <button class="knopf" id="plMaschPlus" data-art="drehen">+ Drehmaschine</button>
+      <button class="knopf" id="plMaschPlusF" data-art="fraesen">+ Fr&auml;smaschine</button>
+      <button class="knopf" id="plMaschPlusH" data-art="handarbeit">+ Arbeitsplatz</button>
+    </div>
+  </div>
+</section>
+
 <section class="blatt" id="blattEin">
   <div class="karte">
     <h2>Stundens&auml;tze</h2>

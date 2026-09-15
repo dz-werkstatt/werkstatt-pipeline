@@ -47,6 +47,14 @@ header .schritt button{
   border-radius:6px; padding:5px 11px; font-size:14px; cursor:pointer;
 }
 header .schritt button.an{ background:#fff; color:var(--akzent); border-color:#fff; font-weight:600; }
+/* Unter 700 px bekommt die Leiste eine eigene Zeile und darf umbrechen.
+   Zwei Reihen sind besser als eine, die scrollt: was man nicht sieht,
+   sucht man nicht. Gemessen bei 390 px: Seitenbreite 499 -> 390. */
+@media (max-width: 700px){
+  header{ flex-wrap:wrap; row-gap:8px; }
+  header .schritt{ margin-left:0; flex:1 0 100%; flex-wrap:wrap; }
+  header .schritt button{ padding:4px 9px; font-size:13px; }
+}
 
 /* ---- Seitenaufbau ---- */
 main{ padding: 14px; max-width: 1400px; margin: 0 auto; }
@@ -101,6 +109,9 @@ tr.summe td{ border-top:2px solid var(--rand); border-bottom:none; font-weight:6
 .feld input:focus, .feld select:focus{ outline:2px solid var(--akzent-hell); outline-offset:0; border-color:var(--akzent); }
 .feld .einheit{ color:var(--text-blass); font-size:13px; min-width:46px; }
 .feld input.geaendert{ border-color: var(--geaendert); background:#fffaf0; }
+/* Die Maschinenwahl traegt ganze Saetze statt Zahlen - in den festen
+   220 px stand "die mit der wenigsten Arbei". Am Bild gemessen. */
+#plRegelWahl{ width:300px; }
 
 /* Schaetzwert- und Pflege-Marke */
 .marke{ font-size:11px; padding:1px 6px; border-radius:10px; border:1px solid currentColor; }
@@ -143,6 +154,152 @@ tr.summe td{ border-top:2px solid var(--rand); border-bottom:none; font-weight:6
   .karte{ border:none; padding:0; }
   main{ padding:0; max-width:none; }
 }
+/* ---- Werkstatt: Auftraege und Planung ----------------------------------
+   Dieselbe Bildsprache wie die Dreh-App: markierte Zeile statt Auswahl-
+   rahmen, Ampelfarben nur dort, wo sie eine Aussage tragen, flache
+   Knoepfe ohne Verlauf. Die Farben kommen aus dem Farbregler --ton,
+   damit ein Wechsel eine Zahl bleibt.                                   */
+tr.markiert > td{ background: hsl(var(--ton), 62%, 92%); }
+tr.ungepflegt > td{ background: hsl(45, 80%, 96%); }
+/* Von Hand umsortiert: leise markiert, nicht als Warnung. Es ist eine
+   Entscheidung, kein Fehler - aber man muss sie sehen. */
+tr.handsortiert > td{ background: hsl(var(--ton), 45%, 96%); }
+td.warnzeile{ color: var(--warn); }
+tr.summe > td{ font-weight:600; border-top:2px solid var(--rand); }
+
+.status{
+  display:inline-block; padding:1px 7px; border-radius:9px;
+  font-size:12px; white-space:nowrap;
+  background: var(--rand-fein); color: var(--text-blass);
+}
+.st-beauftragt{ background: hsl(var(--ton), 60%, 92%); color: var(--akzent); }
+.st-freigegeben{ background: hsl(var(--ton), 60%, 88%); color: var(--akzent); }
+.st-laeuft{ background:#fdf0d8; color: var(--warn); }
+.st-fertig,.st-gut{ background:#dff0e4; color: var(--gut); }
+.st-geliefert{ background:#e8ece9; color: var(--text-blass); }
+.st-eng{ background:#fdf0d8; color: var(--warn); }
+.st-schlecht{ background:#fadede; color: var(--schlecht); }
+
+/* Auslastungsbalken: der Balken IST die Aussage, die Zahl steht daneben.
+   Deshalb liegt er als Hintergrund unter der Zelle und nicht als eigene
+   Spalte - so bleibt die Tafel bei zwoelf Wochen noch lesbar. */
+td.bal{ min-width:66px; background-repeat:no-repeat; background-position:left center;
+        background-size:0 70%; }
+td.bal.ok  { background-image:linear-gradient(hsl(var(--ton),55%,74%),hsl(var(--ton),55%,74%)); }
+td.bal.eng { background-image:linear-gradient(#f3cd7a,#f3cd7a); }
+td.bal.voll{ background-image:linear-gradient(#e59292,#e59292); }
+
+
+/* Arbeitsgaenge. Der ERSTE Gang bekommt, was uebrig bleibt - seine Zeiten
+   sind gerechnet und deshalb kein Eingabefeld, sondern eine feste Zelle.
+   Das ist keine Bequemlichkeit: solange der erste Gang der Rest ist, KANN
+   die Summe der Gaenge gar nicht von der Kalkulation abweichen, ausser ins
+   Minus - und genau das ist der eine Fall, der eine Warnung verdient. */
+.unterkarte{
+  margin:10px 0; padding:8px 10px;
+  border:1px solid var(--rand-fein); border-radius:6px;
+}
+.unterkarte > h3{ margin:0 0 6px; font-size:14px; }
+tr.warnzeile > td{ color: var(--warn); }
+td.fest{ color: var(--text-blass); }
+tr.gangzeile > td{ border-top:0; padding-top:0; color: var(--text-blass); }
+/* Datum und Nummer brechen nicht um. Mit der Spalte "spaetestens ab"
+   wurde aus "2026-09-15" sonst "2026-09-" ueber "15". Nur diese Zellen -
+   die Begruendung unter der Lage soll umbrechen. */
+td.nw{ white-space:nowrap; }
+/* Klappbare Karten. Der Pfeil steht VOR der Ueberschrift, damit er die
+   Zeile nicht auseinanderzieht; U+FE0E zwingt die Textdarstellung -
+   ohne das malt iOS einen blauen Play-Knopf daraus (die Lehre aus der
+   Dreh-App). */
+/* Die Filterzeile ueber der Auftragsliste. Am Handy bricht sie um -
+   drei Felder nebeneinander sind bei 390 px keine Zeile mehr. */
+.filterzeile{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:6px 0 8px;
+}
+.filterzeile select, .filterzeile input{
+  font:inherit; padding:5px 8px; border:1px solid var(--rand); border-radius:5px;
+  background:#fff; color:var(--text);
+}
+.filterzeile input{ flex:1 1 160px; min-width:0; }
+
+/* Die Maschinenliste ist eine Eingabemaske: schmale Zahlenfelder, damit
+   Arbeitsraum und Minuten nebeneinander passen, und die Wochentage als
+   Kaestchen statt als Text - eine "1 2 3 4 5"-Eingabe ist eine
+   Fehlerquelle ohne Not. */
+#plMaschinen input[type="number"]{ width:66px; text-align:right; }
+#plMaschinen td:nth-child(3){ white-space:nowrap; }
+#plMaschinen input[type="text"]{ width:100%; min-width:120px; }
+#plMaschinen select{ max-width:130px; }
+#plMaschinen td, #plMaschinen th{ padding:3px 6px; vertical-align:top; }
+.wtage{ display:flex; flex-wrap:wrap; gap:2px 6px; }
+.wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
+.wtage input{ margin:0 2px 0 0; }
+
+/* Die freien Tage als Marken - eine Liste mit zwanzig Zeilen waere fuer
+   einen Betriebsurlaub die falsche Form. */
+.marken{ display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+.marke{
+  display:inline-flex; align-items:center; gap:5px;
+  background: hsl(var(--ton), 60%, 94%); color: var(--akzent);
+  border-radius:9px; padding:2px 4px 2px 9px; font-size:12px; white-space:nowrap;
+}
+.marke button{
+  border:0; background:none; color:var(--akzent); cursor:pointer;
+  font-size:13px; line-height:1; padding:0 3px;
+}
+
+.karte > h2.klapp{ cursor:pointer; user-select:none; }
+.karte > h2.klapp .pfeil{
+  display:inline-block; width:14px; color:var(--text-blass);
+  font-size:12px; transition:none;
+}
+.karte.zu > h2.klapp{ margin-bottom:0; }
+/* Die Zahlenspalten schmal halten, den Rest der Breite bekommt der Name -
+   sonst stehen Kopfzeile und Wert eine halbe Tabelle auseinander. */
+#afGaenge input[type="number"]{ width:84px; text-align:right; }
+#afGaenge input[type="text"]{ width:100%; }
+#afGaenge select{ max-width:230px; }
+#afGaenge td, #afGaenge th{ padding:3px 7px; }
+
+button.mini{
+  border:1px solid var(--rand); background:var(--flaeche); color:var(--akzent);
+  border-radius:4px; padding:1px 6px; cursor:pointer; font-size:14px;
+}
+button.knopf.gefahr{ color: var(--schlecht); }
+
+/* Papier: nur beim Drucken sichtbar - dieselbe Mechanik wie das Angebot */
+.nur-druck{ display:none; }
+table.papier{ width:100%; border-collapse:collapse; margin:6px 0 14px; }
+table.papier th, table.papier td{
+  border:1px solid #999; padding:4px 7px; text-align:left; font-size:13px;
+}
+table.papier td.leer{ height:26px; }
+@media print{
+  .nur-druck{ display:block; }
+  .kein-druck{ display:none !important; }
+}
+
+/* ---- Handy: die Maskenfelder ------------------------------------------
+   MUSS AM ENDE STEHEN. Dieselben Regeln weiter oben blieben wirkungslos,
+   weil .feld label spaeter im Dokument steht und bei gleicher Spezifitaet
+   gewinnt - eine Media-Query zaehlt dabei nicht mit.
+   GEMESSEN bei 390 px: Label 190 + Abstand 8 + Textfeld 220 ergeben 418 px
+   in einer 332-px-Karte; die Seite liess sich um 27 px zur Seite schieben.
+   Jetzt traegt das Label 118 px und das Textfeld nimmt, was uebrig ist. */
+@media (max-width: 700px){
+  .feld label{ min-width:118px; }
+  .feld input, .feld select{ width:auto; flex:1 1 auto; min-width:0; max-width:100%; }
+  /* Die ID-Regel oben schlaegt die Klassenregel auch hier - ohne diese
+     Zeile stuenden die 300 px auch am Handy und liefen aus dem Bild.
+     Neben der Aufschrift blieben dem Feld 184 px, der laengste Text
+     braucht 255 (gemessen) - also bricht die Zeile um und das Feld
+     bekommt die ganze Kartenbreite. */
+  #plRegelKarte .feld{ flex-wrap:wrap; }
+  #plRegelKarte .feld label{ flex:1 0 100%; }
+  #plRegelWahl{ width:100%; }
+  .feld .einheit{ min-width:0; }
+}
 </style>
 </head>
 <body>
+

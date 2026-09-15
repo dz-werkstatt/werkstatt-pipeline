@@ -17,10 +17,14 @@
     "import/30-step.js",
     "import/31-geometrie.js",
     "import/32-dxf.js",
+    "import/33-drehprofil.js",
+    "werkstatt/21-stamm.js",
+    "werkstatt/22-planung.js",
     "kalkulation/40-kalk.js",
     "ui/50-bedienung.js",
     "ui/51-vorschau3d.js",
     "ui/52-angebot.js",
+    "werkstatt/53-werkstatt-ui.js",
     "ui/99-schluss.html"
   ],
   "inhalt": {
@@ -32,10 +36,14 @@
     "import/30-step.js": "STEP-Leser (AP203/AP214/AP242): Saetze, Geometrie, Kanten, Flaechen",
     "import/31-geometrie.js": "Volumen, Oberflaeche, Rotation, Bohrungen, Rohteilvorschlag, Klassifikation",
     "import/32-dxf.js": "DXF-Leser (2D): Huellrechteck und Flaecheninhalt",
+    "import/33-drehprofil.js": "Drehkontur aus einem STEP-Drehkoerper: Profil in der (z,r)-Halbebene, Aussen- und Innenkontur im Format der Dreh-App",
+    "werkstatt/21-stamm.js": "Werkstatt-Stamm: Maschinen, Auftraege, Arbeitsgaenge, Maschinenwahl nach Arbeitsraum",
+    "werkstatt/22-planung.js": "Belegung der Arbeitsgangkette, Auslastung, Termine und Auswertung, DOM-frei",
     "kalkulation/40-kalk.js": "Zeitmodell und Preisrechnung, DOM-frei",
     "ui/50-bedienung.js": "Dateiannahme, Tabellen, Masken, Speicher",
     "ui/51-vorschau3d.js": "3D-Vorschau des Teils mit halbdurchsichtigem Rohteil",
     "ui/52-angebot.js": "Staffelpreise, Ueberschreiben, Angebots-PDF, JSON-Export",
+    "werkstatt/53-werkstatt-ui.js": "Auftragsliste, Auftragsmaske mit Arbeitsgaengen, Planungstafel, Laufkarte",
     "ui/99-schluss.html": "Script-Ende, body- und html-Ende"
   }
 }

@@ -6,7 +6,7 @@
 # =====================================================================
 # veroeffentlichen.ps1 - den gebauten Stand oeffentlich stellen
 # ---------------------------------------------------------------------
-# ZWEI REPOS, ZWEI ROLLEN (Stand 13.09.2026, nach Daniels Ansage "mein
+# ZWEI REPOS, ZWEI ROLLEN (Stand 13.09.2026, nach der Ansage "mein
 # Name soll nicht im Internet auftauchen"):
 #
 #   backup  -> dz-werkstatt/werkstatt-pipeline-projekt   PRIVAT
@@ -17,7 +17,7 @@
 #              mit EIGENER, kurzer Historie. Er traegt nur den
 #              ausgelieferten Stand; GitHub Pages liefert aus docs/ aus.
 #
-# WARUM getrennt: die ersten drei Commits des Projekts trugen Daniels
+# WARUM getrennt: die ersten drei Commits des Projekts trugen eine
 # private Mailadresse als Autor. In einem oeffentlichen Repo ist das fuer
 # jeden lesbar und wird von Crawlern gesammelt. Das Umschreiben der
 # Historie waere die andere Loesung gewesen; dieser Weg kommt ohne
@@ -65,7 +65,13 @@ if (-not $OhnePruefung) {
   Write-Output "Pruefstand ..."
   $p = & node pruefstand.js
   $p | Select-Object -Last 4
-  if ($p -notmatch 'PRUEFSTAND BESTANDEN') { Write-Output "PRUEFSTAND NICHT BESTANDEN - nichts veroeffentlicht."; exit 1 }
+  # ACHTUNG: -notmatch auf einem ARRAY filtert zeilenweise und liefert alle
+  # Zeilen OHNE den Treffer zurueck - das ist fast immer eine nicht leere
+  # Liste und damit wahr. Der Wachhund haette also jeden Lauf abgelehnt
+  # (beim ersten Einsatz prompt passiert). Deshalb erst zu EINEM Text
+  # zusammenfuegen und darauf pruefen.
+  $ptxt = ($p -join "`n")
+  if ($ptxt -notmatch 'PRUEFSTAND BESTANDEN') { Write-Output "PRUEFSTAND NICHT BESTANDEN - nichts veroeffentlicht."; exit 1 }
 }
 
 # 2) Klon vorhanden?
@@ -83,6 +89,40 @@ $tar = Join-Path $env:TEMP 'wp-pub.tar'
 if ($LASTEXITCODE -ne 0) { Write-Output "git archive fehlgeschlagen."; exit 1 }
 & tar -x -f $tar -C $pub
 Remove-Item $tar -ErrorAction SilentlyContinue
+
+# 3b) NAMENSWACHE - der letzte Halt vor dem Netz.
+# Der erste Umbenennungslauf der Schwester-App prueffte case-sensitive
+# und nur in sechs Dateien; vier Stellen in Grossbuchstaben rutschten
+# durch und standen danach live im Netz. Ein Gegencheck auf einen Namen
+# ist case-insensitive und laeuft ueber ALLE Dateien, sonst ist er
+# keiner. Geprueft wird der Stand, der WIRKLICH gespiegelt wurde - nicht
+# die Quellen daneben.
+Write-Output "Namenswache ..."
+# Die Woerter stehen NICHT als Literal da - sonst zeigte die Wache diese
+# Datei selbst an, und jeder Push braeche ab.
+$verboten = @(('dan' + 'iel'), ('zil' + 'iack'))
+$binaer = '.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.zip'
+$treffer = @()
+$geprueft = 0
+foreach ($f in (Get-ChildItem -Path $pub -Recurse -File -Force)) {
+  if ($f.FullName -like '*\.git\*') { continue }
+  if ($binaer -contains $f.Extension.ToLower()) { continue }
+  $geprueft++
+  $t = Get-Content -Raw -ErrorAction SilentlyContinue $f.FullName
+  if (-not $t) { continue }
+  foreach ($w in $verboten) {
+    if ($t.ToLower().Contains($w)) {
+      $treffer += ('{0}  ({1})' -f $f.FullName.Substring($pub.Length + 1), $w)
+    }
+  }
+}
+if ($treffer.Count -gt 0) {
+  Write-Output "ABBRUCH - ein Name steht in dem, was veroeffentlicht wuerde:"
+  $treffer | Select-Object -Unique | ForEach-Object { Write-Output ("  " + $_) }
+  Write-Output "Nichts gepusht. Erst die Stellen bereinigen, dann erneut."
+  exit 3
+}
+Write-Output ("  kein Name in {0} Dateien." -f $geprueft)
 
 # 4) Committen und pushen
 Push-Location $pub

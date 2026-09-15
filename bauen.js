@@ -1,7 +1,7 @@
 // =====================================================================
 // bauen.js — setzt die Werkstatt-Pipeline aus den Quellmodulen zusammen
 // ---------------------------------------------------------------------
-// [Daniels Ansage 13.09.2026: "so wie bei den Drehen und Fraesen Apps,
+// [Ansage 13.09.2026: "so wie bei den Drehen und Fraesen Apps,
 // so moechte ich's da auch haben"] Gebaut wird wie in den beiden
 // Schwester-Apps: Quellmodule in Ordnern, eine Byte-Verkettung, und
 // AUSGELIEFERT wird GENAU EINE HTML-Datei. Doppelklick, offline, kein

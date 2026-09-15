@@ -52,12 +52,17 @@ function meldungListe(titel, liste, art){
 
 /* ---- Blaetter ---- */
 function blatt(name){
-  ['Import', 'Kalk', 'Ein'].forEach(n => {
+  ['Import', 'Kalk', 'Auf', 'Plan', 'Ein'].forEach(n => {
     const b = el('tab' + n), s = el('blatt' + n);
     if(b) b.classList.toggle('an', n === name);
     if(s) s.classList.toggle('an', n === name);
   });
   if(name === 'Kalk') kalkMalen();
+  /* Die Planung rechnet beim Aufschlagen neu: sie haengt an Auftraegen,
+     Maschinen und am heutigen Tag - ein zwischengespeichertes Bild waere
+     schon morgen falsch. */
+  if(name === 'Auf') wListeMalen();
+  if(name === 'Plan') wPlanMalen();
   if(name === 'Ein') einMalen();
 }
 

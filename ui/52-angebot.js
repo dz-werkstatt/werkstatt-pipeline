@@ -128,7 +128,7 @@ function istMalen(){
 
 /* ---- Einstellungen -------------------------------------------------- */
 /* Die Gruppen, deren Startwerte bewusst PLATZHALTER sind: im oeffentlichen
-   Repo stehen runde Zahlen statt Daniels echter Saetze (Entscheid
+   Repo stehen runde Zahlen statt der echten Saetze (Entscheid
    13.09.2026). Solange die Gruppe gepflegt:false traegt, bekommt jedes ihrer
    Felder die Marke — dieselbe Mechanik wie beim Materialpreis, damit ein
    Platzhalter nicht stillschweigend in ein Angebot laeuft. */

@@ -133,14 +133,101 @@ function quader(l, br, h, loch){
   return B.text(schale);
 }
 
+/* Kreisflaeche in der Ebene z = zz: Vollkreis oder Ring.
+   raus = Aussenradius, rin = 0 fuer Vollkreis. Die Normale zeigt nach
+   +Z bei oben = true, sonst nach -Z. */
+function kreisFlaeche(B, cx, cy, zz, raus, rin, oben){
+  const {satz, pkt, ri, lage} = B;
+  const rand = kreisSchleife(B, cx, cy, zz, raus, oben);
+  const bounds = [satz('FACE_OUTER_BOUND(\'\',' + rand.loop + ',.T.)')];
+  if(rin > 0){
+    const loch = kreisSchleife(B, cx, cy, zz, rin, !oben);
+    bounds.push(satz('FACE_BOUND(\'\',' + loch.loop + ',.T.)'));
+  }
+  const n = oben ? 1 : -1;
+  const pl = satz('PLANE(\'\',' + lage(pkt(cx, cy, zz), ri(0, 0, n), ri(1, 0, 0)) + ')');
+  return satz('ADVANCED_FACE(\'\',(' + bounds.join(',') + '),' + pl + ',.T.)');
+}
+
+/* Zylindermantel ⌀d von z1 bis z2. aussen = Material liegt innen
+   (Mantel eines Wellenabsatzes), sonst Bohrungswand. */
+function mantel(B, cx, cy, z1, z2, r, aussen){
+  const {satz, pkt, ri, lage} = B;
+  const unten = kreisSchleife(B, cx, cy, z1, r, aussen);
+  const oben  = kreisSchleife(B, cx, cy, z2, r, !aussen);
+  const zy = satz('CYLINDRICAL_SURFACE(\'\',' +
+    lage(pkt(cx, cy, z1), ri(0, 0, 1), ri(1, 0, 0)) + ',' + r + ')');
+  const b1 = satz('FACE_OUTER_BOUND(\'\',' + unten.loop + ',.T.)');
+  const b2 = satz('FACE_BOUND(\'\',' + oben.loop + ',.T.)');
+  return satz('ADVANCED_FACE(\'\',(' + b1 + ',' + b2 + '),' + zy + ',' + (aussen ? '.T.' : '.F.') + ')');
+}
+
+/* ---------------------------------------------------------------------
+   DREHTEIL: Stufenwelle oder Rohr, Achse = Z, Stirn bei z = 0.
+   stufen = [[⌀, Laenge], ...] in Reihenfolge von z 0 aufwaerts.
+   di = Bohrungs-⌀ durchgehend (0 = Vollmaterial).
+
+   Warum ein eigener Koerper und nicht ein Kundenmodell: dasselbe
+   Argument wie beim Quader oben - ein Kundenmodell darf nicht ins
+   oeffentliche Repo, und sein wahres Profil steht nirgends geschrieben.
+   Hier ist jede Zahl von Hand nachrechenbar.
+   --------------------------------------------------------------------- */
+function drehteil(stufen, di){
+  const B = stepBauen();
+  const flaechen = [];
+  const cx = 0, cy = 0, ri2 = (di || 0) / 2;
+  let z = 0;
+  const kanten = [];                       /* z-Stellen der Absaetze */
+  stufen.forEach((st, i) => {
+    const r = st[0] / 2, l = st[1];
+    flaechen.push(mantel(B, cx, cy, z, z + l, r, true));
+    if(i > 0){
+      /* Ringflaeche zwischen der vorigen und dieser Stufe; die Normale
+         zeigt dorthin, wo kein Material steht. */
+      const rv = stufen[i-1][0] / 2;
+      const gross = Math.max(r, rv), klein = Math.min(r, rv);
+      flaechen.push(kreisFlaeche(B, cx, cy, z, gross, klein, r < rv));
+    }
+    kanten.push(z);
+    z += l;
+  });
+  /* Stirnflaechen: bei z 0 nach -Z, am Ende nach +Z; mit Bohrung als Ring */
+  flaechen.push(kreisFlaeche(B, cx, cy, 0, stufen[0][0] / 2, ri2, false));
+  flaechen.push(kreisFlaeche(B, cx, cy, z, stufen[stufen.length-1][0] / 2, ri2, true));
+  if(ri2 > 0) flaechen.push(mantel(B, cx, cy, 0, z, ri2, false));
+
+  const schale = '#8001=CLOSED_SHELL(\'\',(' + flaechen.join(',') + '));\n' +
+    '#8002=MANIFOLD_SOLID_BREP(\'\',#8001);';
+  return B.text(schale);
+}
+
 module.exports = {
   quader: quader,
+  drehteil: drehteil,
   /* Die erwarteten Werte, von Hand gerechnet. */
   werte: {
     quader: {v:40 * 30 * 10, a:2 * (40 * 30 + 40 * 10 + 30 * 10)},
     quaderLoch: {
       v: 40 * 30 * 10 - Math.PI * 25 * 10,
       a: 2 * (40 * 30 + 40 * 10 + 30 * 10) - 2 * Math.PI * 25 + Math.PI * 10 * 10
-    }
+    },
+    /* Stufenwelle ⌀40 x 20 dann ⌀30 x 30, voll:
+         dmax 40, Laenge 50
+       Die Kontur laeuft ab der Stirn ins Negative; Stirn ist das Ende
+       mit dem GROESSEREN STEP-z, hier also die ⌀30-Seite. */
+    welle: {dmax:40, laenge:50, punkte:[[0,30], [-30,30], [-30,40], [-50,40]]},
+    /* Rohr ⌀40 aussen, ⌀20 innen, 50 lang.
+       EIGENE FEHLERWARTUNG, hier festgehalten: erwartet waren zwei
+       nackte Mantelpunkte. Die STIRNFLAECHE gehoert aber mit in die
+       Kontur - sie ist ein Plansprung von ⌀20 auf ⌀40 bei z 0 und wird
+       abgedreht wie jedes andere Element. Die Trennung am Umkehrpunkt
+       gibt die vordere Stirn der Aussen-, die hintere der Innenkontur. */
+    rohr: {dmax:40, laenge:50,
+           aussen:[[0,20], [0,40], [-50,40]],
+           innen: [[0,20], [-50,20], [-50,40]]},
+    /* Gestufte Huelse ⌀50 x 20 + ⌀40 x 30, Bohrung ⌀20 durchgehend */
+    huelse: {dmax:50, laenge:50,
+             aussen:[[0,20], [0,40], [-30,40], [-30,50], [-50,50]],
+             innen: [[0,20], [-50,20], [-50,50]]}
   }
 };

@@ -3,7 +3,7 @@
   "_stand": "2026-09-13",
   "version": "1.0",
 
-  "_saetze_hinweis": "PLATZHALTER, bewusst runde Zahlen. Daniels Entscheid vom 13.09.2026: dieses Repo ist oeffentlich, und die Stundensaetze und die Marge eines Lohnfertigers gehen niemanden etwas an. Seine echten Werte traegt er im Blatt ein; sie liegen dann im Speicher seines Geraets, nie hier. Damit daraus keine Falle wird, ist gepflegt false: das Blatt zeigt einen Hinweis und die Felder tragen eine Marke, bis er sie einmal gestellt hat.",
+  "_saetze_hinweis": "PLATZHALTER, bewusst runde Zahlen. Entscheid vom 13.09.2026: dieses Repo ist oeffentlich, und die Stundensaetze und die Marge eines Lohnfertigers gehen niemanden etwas an. Die echten Werte traegt der Bediener im Blatt ein; sie liegen dann im Speicher seines Geraets, nie hier. Damit daraus keine Falle wird, ist gepflegt false: das Blatt zeigt einen Hinweis und die Felder tragen eine Marke, bis sie einmal gestellt sind.",
   "saetze": {
     "drehen": 50,
     "fraesen": 50,
