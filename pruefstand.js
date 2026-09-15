@@ -3527,7 +3527,9 @@ console.log('\n28) Stundensatz je Maschine');
     if(/auftragNachrechnen\(a, kalkRechnen, S\.V, W\.maschinen\)/.test(quelltext))
       ok('das Nachrechnen bekommt die Maschinen');
     else bad('das Nachrechnen bekommt die Maschinen NICHT - der Satz bliebe wirkungslos');
-    if(/Das Angebot bleibt davon unber&uuml;hrt/.test(quelltext))
+    /* Der Satz steht seit dem Aufraeumen von Blatt 4 im Aufklapper -
+       gesagt wird er weiter, nur nicht mehr ungefragt. */
+    if(/Das Angebot bleibt, was es war/.test(quelltext))
       ok('und die Karte sagt, dass das Angebot unberuehrt bleibt');
     else bad('die Karte verschweigt, dass das Angebot unberuehrt bleibt');
   }
@@ -4310,6 +4312,102 @@ console.log('\n33) Mannzeit ist nicht Maschinenzeit');
     if(/mann:nimm \* mFaktor/.test(quelltext))
       ok('jeder Belegungsblock traegt seine Mannminuten');
     else bad('die Bloecke tragen keine Mannminuten - die Uebersicht muesste neu rechnen');
+  }
+}
+
+/* --- 34. Blatt 4 ist das Arbeitsblatt --------------------------------
+   Seit es die Uebersicht gibt, hat Blatt 4 eine andere Rolle: dort wird
+   eingestellt, umsortiert und gedruckt. Gemessen (1366 px,
+   Beispiel-Werkstatt) war es 3203 px hoch - drei Bildschirme, alle
+   sieben Karten offen.
+
+   ZWEI GRIFFE, und der erste war der schlechtere - das gehoert
+   festgehalten, damit es niemand wiederholt:
+     Erklaertexte unter Aufklapper:   82 px von 3203. Die 31 Prozent
+       Text klangen nach viel, verteilen sich aber ueber neun Stellen zu
+       je 40 bis 90 Pixeln.
+     Selten gebrauchte Karten zu:    908 px. 3203 -> 2295, 28 Prozent.
+
+   GELOESCHT WIRD NICHTS. Der Aufklapper bleibt trotzdem: er nimmt den
+   Fliesstext aus dem Blickfeld, und beim DRUCKEN steht alles da - ein
+   Papier klappt niemand auf.                                        */
+console.log('\n34) Blatt 4 ist das Arbeitsblatt');
+{
+  const wErklaer = hole('wErklaer');
+  const W_ZU_LAPTOP = hole('W_ZU_LAPTOP'), W_ZU_HANDY = hole('W_ZU_HANDY');
+  const W_KARTEN = hole('W_KARTEN');
+
+  if(typeof wErklaer === 'function') ok('vorhanden: wErklaer');
+  else bad('fehlt: wErklaer');
+
+  /* (1) Der Baustein. */
+  {
+    const h = wErklaer('kurz', 'lang');
+    if(h.indexOf('kurz') === 0) ok('der erste Satz steht vorn und sichtbar');
+    else bad('der kurze Satz steht nicht vorn: ' + h.slice(0, 40));
+    if(/<details class="erklaer">/.test(h)) ok('  der Rest kommt unter den Aufklapper');
+    else bad('kein Aufklapper');
+    if(h.indexOf('lang') > 0) ok('  und geht nicht verloren');
+    else bad('der lange Text ist weg - geloescht wird nichts');
+    /* Ohne langen Teil KEIN leerer Aufklapper - ein Pfeil, hinter dem
+       nichts steht, ist eine Enttaeuschung. */
+    gleich('ohne langen Teil kein Aufklapper', wErklaer('nur kurz', ''), 'nur kurz');
+    gleich('  auch bei null', wErklaer('nur kurz', null), 'nur kurz');
+    /* Eine eigene Aufschrift ist moeglich - "Wie das gerechnet wird"
+       passt nicht auf jeden Aufklapper. */
+    if(/<summary>Warum<\/summary>/.test(wErklaer('a', 'b', 'Warum')))
+      ok('  eine eigene Aufschrift ist moeglich');
+    else bad('die Aufschrift laesst sich nicht setzen');
+  }
+
+  /* (2) Welche Karten sind zu? */
+  {
+    if(Array.isArray(W_ZU_LAPTOP) && W_ZU_LAPTOP.length === 3)
+      ok('am Laptop sind drei Karten zu');
+    else bad('am Laptop ist die Klappliste nicht drei lang');
+    /* WAS MAN TAEGLICH BRAUCHT, BLEIBT OFFEN. Kapazitaet, Auslastung
+       und Termine sind die drei Fragen, wegen derer man das Blatt
+       aufmacht - eine davon zuzuklappen waere das Gegenteil von
+       Aufraeumen. */
+    ['plKarteKap', 'plKarteAusl', 'plKarteTermine'].forEach(id => {
+      if(W_ZU_LAPTOP.indexOf(id) < 0) ok('  ' + id + ' bleibt offen');
+      else bad(id + ' ist zu - das ist eine der drei taeglichen Fragen');
+    });
+    /* Und die Maschinenkarte bleibt am Laptop offen: dort werden die
+       Werte eingetragen, auf denen alles andere steht. */
+    if(W_ZU_LAPTOP.indexOf('plKarteMasch') < 0) ok('  die Maschinenkarte bleibt am Laptop offen');
+    else bad('die Maschinenkarte ist am Laptop zu - dort werden die Werte eingetragen');
+    /* Am Handy ist sie zu - dort ist sie die laengste. */
+    if(W_ZU_HANDY.indexOf('plKarteMasch') >= 0) ok('  am Handy ist sie zu');
+    else bad('am Handy ist die Maschinenkarte offen - dort ist sie die laengste');
+    /* Jede zugeklappte Karte MUSS es auch geben. */
+    const fremd = W_ZU_LAPTOP.concat(W_ZU_HANDY).filter(id => W_KARTEN.indexOf(id) < 0);
+    gleich('keine Karte in der Klappliste, die es nicht gibt', fremd.length, 0);
+  }
+
+  /* (3) Nichts ist verschwunden - die langen Erklaerungen stehen
+     weiter im Quelltext, nur eben im Aufklapper. */
+  {
+    [['die Rueckwaertsrechnung', /R&uuml;ckw&auml;rtsrechnung vom Liefertermin/],
+     ['der Zettel rechnet nichts neu', /rechnet <b>nichts neu<\/b>/],
+     ['was "Arbeit verteilen" tut', /legt die l&auml;ngsten Auftr&auml;ge zuerst/],
+     ['wie die eigene Zeit gerechnet wird', /R&uuml;sten z&auml;hlt voll<\/b> auf dieses Konto/]
+    ].forEach(([was, re]) => {
+      if(re.test(quelltext)) ok('erklaert weiter: ' + was);
+      else bad('verloren gegangen: ' + was);
+    });
+  }
+
+  /* (4) Beim DRUCKEN steht alles da - ein Papier klappt niemand auf. */
+  {
+    if(/@media print\{ \.erklaer > summary\{ display:none; \}/.test(quelltext))
+      ok('beim Drucken ist der Aufklapper offen');
+    else bad('beim Drucken fehlt die Erklaerung - ein Papier klappt niemand auf');
+    /* Der Pfeil in TEXTdarstellung, sonst macht iOS ein Play-Symbol
+       daraus - dieselbe Falle wie bei den Gruppenkoepfen. */
+    if(/content:'\\25B8\\FE0E'/.test(quelltext))
+      ok('der Pfeil steht in Textdarstellung (iOS macht sonst ein Symbol daraus)');
+    else bad('der Pfeil kann auf iOS zum blauen Play-Knopf werden');
   }
 }
 

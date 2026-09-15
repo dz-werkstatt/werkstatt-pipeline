@@ -35,6 +35,13 @@ const W_SORT_NAMEN = { termin:'nach Termin', nummer:'nach Nummer', kunde:'nach K
 const W_KARTEN = ['plKarteKap', 'plKarteAusl', 'plKarteTermine',
                   'plKarteAusw', 'plKarteSollIst', 'plKarteZettel', 'plKarteMasch'];
 const W_ZU_HANDY = ['plKarteAusw', 'plKarteSollIst', 'plKarteZettel', 'plKarteMasch'];
+/* AM LAPTOP standen bis zum 15.09.2026 alle sieben offen - gemessen
+   3121 px, drei Bildschirme. Das war richtig, solange Blatt 4 die
+   einzige Uebersicht war; seit es die Uebersicht gibt, ist es das
+   ARBEITSBLATT. Oben bleibt, was man taeglich braucht: einstellen,
+   Auslastung sehen, Termine umsortieren. Der Rest ist zu und einen
+   Klick entfernt - und wer aufklappt, behaelt es offen. */
+const W_ZU_LAPTOP = ['plKarteAusw', 'plKarteSollIst', 'plKarteZettel'];
 
 const W = {
   auftraege: [],
@@ -236,6 +243,21 @@ function wFreiMalen(){
           (wirkung.ohneWirkung ? ' — davon ' + wirkung.ohneWirkung + ' ohne Wirkung (sie fallen ' +
             'ohnehin auf einen Tag, an dem keine Maschine l&auml;uft)' : '') + '.'
         : 'Kein freier Tag f&uuml;r die ganze Werkstatt.') + wart));
+}
+
+/* ---- Erklaerung, die nicht im Weg steht ------------------------------
+   Der erste Satz bleibt sichtbar, der Rest kommt unter den Aufklapper.
+   GELOESCHT WIRD NICHTS - wer wissen will, wie gerechnet wird, findet
+   es weiter; wer es weiss, sieht seine Zahlen.
+
+   Ein Text, den man dreimal gelesen hat und der beim vierten Mal noch
+   dasteht, wird beim fuenften nicht mehr gelesen. Und dann ueberliest
+   man auch den, der zaehlt.                                          */
+function wErklaer(kurz, lang, titel){
+  if(!lang) return kurz;
+  return kurz + '<details class="erklaer"><summary>' +
+    (titel || 'Wie das gerechnet wird') + '</summary>' +
+    '<div class="etext">' + lang + '</div></details>';
 }
 
 /* ---- Die Uebersicht --------------------------------------------------
@@ -541,16 +563,21 @@ function wMannMalen(){
     .map(m => wEsc(m.name) + ' ' + Math.round(maschineMannAnteil(m) * 100) + ' %' +
               (maschineMannGepflegt(m) ? '' : '<span class="klein"> (Annahme)</span>'));
   htm('plMannHinweis', an
-    ? 'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b> — das ist Deine Zeit, ' +
-      'nicht die der Maschinen (die k&ouml;nnten zusammen <b>' + wZahl(Math.round(mKap)) + ' h</b>). ' +
-      '<b>R&uuml;sten z&auml;hlt voll</b> darauf, die <b>St&uuml;ckzeit anteilig</b> — je nachdem, ' +
-      'wieviel die Maschine allein l&auml;uft: ' + anteile.join(', ') + '. ' +
-      'Die Spalte <i>Deine Zeit</i> in der Maschinentabelle stellt das je Maschine; ' +
-      'wo eine allein l&auml;uft, plant die App zwei parallel.'
-    : '<b>Keine Grenze gesetzt.</b> Dann rechnet die App jede Maschine f&uuml;r sich — zusammen ' +
-      '<b>' + wZahl(Math.round(mKap)) + ' h die Woche</b>. Das stimmt nur, wenn an jeder Maschine ' +
-      'jemand steht. F&uuml;r eine Werkstatt, in der einer alles macht, sind die Termine damit ' +
-      'deutlich zu fr&uuml;h.');
+    ? wErklaer(
+        'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b> — Deine Zeit, nicht ' +
+        'die der Maschinen (die k&ouml;nnten zusammen <b>' + wZahl(Math.round(mKap)) + ' h</b>).',
+        '<b>R&uuml;sten z&auml;hlt voll</b> auf dieses Konto, die <b>St&uuml;ckzeit anteilig</b> — je ' +
+        'nachdem, wieviel die Maschine allein l&auml;uft: ' + anteile.join(', ') + '.<br>' +
+        'Die Spalte <i>Deine Zeit %</i> in der Maschinentabelle stellt das je Maschine ein. Wo eine ' +
+        'Maschine allein l&auml;uft, bleibt Zeit f&uuml;r die zweite — dann plant die App beide ' +
+        'parallel. <b>0 %</b> hei&szlig;t &bdquo;l&auml;uft ganz allein&ldquo;, dann kostet nur das ' +
+        'R&uuml;sten Zeit.')
+    : wErklaer(
+        '<b>Keine Zeitgrenze gesetzt</b> — jede Maschine rechnet f&uuml;r sich, zusammen <b>' +
+        wZahl(Math.round(mKap)) + ' h die Woche</b>.',
+        'Das stimmt nur, wenn an jeder Maschine jemand steht. F&uuml;r eine Werkstatt, in der einer ' +
+        'alles macht, sind die Termine damit deutlich zu fr&uuml;h — trag oben ein, wieviele Stunden ' +
+        'Du wirklich da bist.'));
 }
 
 function wRegelnMalen(){
@@ -621,9 +648,12 @@ function wRegelnMalen(){
     ? ' Das betrifft <b>' + mehrgaengig + '</b> offene Auftr&auml;ge mit mehr als einem Gang.'
     : ' Zurzeit hat kein offener Auftrag mehr als einen Gang — der Wert &auml;ndert heute nichts.';
 
-  htm('plRegelHinweis', wahlText + wirkung + '<br>' + ueText + ueWirkung +
-      '<br>Die Regeln gelten f&uuml;r den <b>Vorschlag</b> und f&uuml;r <b>Arbeit verteilen</b>; ' +
-      'eine von Hand gesetzte Maschine r&uuml;hren sie nicht an.');
+  htm('plRegelHinweis', wErklaer(
+    wahlText + wirkung,
+    ueText + ueWirkung +
+    '<br>Die Regeln gelten f&uuml;r den <b>Vorschlag</b> beim Anlegen und f&uuml;r <b>Arbeit ' +
+    'verteilen</b>; eine von Hand gesetzte Maschine r&uuml;hren sie nicht an.',
+    'Abstand zwischen zwei G&auml;ngen, und wof&uuml;r die Regeln gelten'));
 }
 
 /* ---- Karten zuklappen ------------------------------------------------
@@ -647,7 +677,10 @@ function wZuLesen(){
      Grenze wie im Stylesheet - eine zweite waere eine zweite Wahrheit. */
   const schmal = typeof window !== 'undefined' && window.innerWidth &&
                  window.innerWidth < 900;
-  return schmal ? W_ZU_HANDY.slice() : [];
+  /* Am Handy ist auch die Maschinenkarte zu (sie ist dort am
+     laengsten); am Laptop bleibt sie offen, weil dort die Werte
+     eingetragen werden, die alles andere tragen. */
+  return schmal ? W_ZU_HANDY.slice() : W_ZU_LAPTOP.slice();
 }
 function wZuSichern(liste){
   try{ localStorage.setItem(SLOT_ZU, JSON.stringify(liste)); }catch(e){}
@@ -1113,8 +1146,18 @@ function wPlanMalen(){
   const b = wPlanRechnen();
   const ausl = planAuslastung(b, W.maschinen, W.frei);
 
-  /* --- Tafel: Maschinen als Zeilen, Wochen als Spalten --- */
-  const wochen = [...new Set(ausl.map(w => w.woche))].sort();
+  /* --- Tafel: Maschinen als Zeilen, Wochen als Spalten ---
+     NUR WOCHEN, IN DENEN ETWAS LIEGT, plus zwei Reserve: man will
+     sehen, wo es aufhoert und ob gleich danach etwas kommt. Im Bild
+     standen sonst neun Spalten, acht davon auf 0 % - das ist Papier,
+     keine Auskunft. Der Horizont bleibt, was er ist; es geht nur um
+     das, was auf dem Bildschirm steht. */
+  const alleWochen = [...new Set(ausl.map(w => w.woche))].sort();
+  const letzteVolle = alleWochen.reduce((i, w, k) =>
+    ausl.some(x => x.woche === w && x.belegt > 0) ? k : i, -1);
+  const wochen = letzteVolle < 0 ? alleWochen.slice(0, 3)
+                                 : alleWochen.slice(0, letzteVolle + 3);
+  const versteckt = alleWochen.length - wochen.length;
   const t = el('plTafel');
   if(t){
     let h = '<tr><th>Maschine</th>' + wochen.map(w => '<th class="z">KW ab<br>' +
@@ -1143,15 +1186,22 @@ function wPlanMalen(){
      Resttage sind voll" - ohne den Satz liest man eine Ueberlast, wo
      keine ist. */
   const ersteAngebrochen = planWochentag(planTag(b.ab)) > 1;
-  htm('plLegende', 'Grundlage ist die Kapazit&auml;t der Woche, nicht die Zahl der Tage: ' +
-      'eine Maschine, die nur montags l&auml;uft, ist mit einem vollen Montag zu 100 % ausgelastet. ' +
-      '<b>Gr&uuml;n</b> unter 85 %, <b>gelb</b> ab 85 %, <b>rot</b> &uuml;ber 100 % — dann ist der Plan nicht haltbar.' +
-      (ersteAngebrochen ? ' <b>Die erste Woche ist angebrochen</b> (Planung ab ' + b.ab +
-       '): dort z&auml;hlen nur die Resttage, 100 % hei&szlig;t also &bdquo;Resttage voll&ldquo;.' : '') +
-      '<br><b>Sp&auml;testens ab</b> ist die R&uuml;ckw&auml;rtsrechnung vom Liefertermin: der Tag, an dem ' +
-      'es losgehen muss, damit der Termin h&auml;lt — <b>auf einer freien Maschine</b>. Das ist eine ' +
-      'Frist, kein Plan. Der Unterschied zum Start links ist der <b>Puffer</b>; ist er negativ, ' +
-      'reicht die Zeit selbst dann nicht, wenn sonst nichts auf der Maschine l&auml;ge.');
+  htm('plLegende', wErklaer(
+    (versteckt > 0
+      ? 'Ab dem <b>' + (alleWochen[wochen.length] || '').slice(8) + '.' +
+        (alleWochen[wochen.length] || '').slice(5, 7) + '.</b> ist nichts geplant — ' +
+        versteckt + ' weitere Wochen im Horizont sind leer und stehen nicht in der Tafel.<br>'
+      : '') +
+    '<b>Gr&uuml;n</b> unter 85 %, <b>gelb</b> ab 85 %, <b>rot</b> &uuml;ber 100 %.' +
+      (ersteAngebrochen ? ' Die <b>erste Woche ist angebrochen</b> (Planung ab ' + b.ab +
+       ') — dort z&auml;hlen nur die Resttage.' : ''),
+    'Grundlage ist die Kapazit&auml;t der Woche, nicht die Zahl der Tage: eine Maschine, die nur ' +
+    'montags l&auml;uft, ist mit einem vollen Montag zu 100 % ausgelastet. &Uuml;ber 100 % ist der ' +
+    'Plan nicht haltbar.<br>' +
+    '<b>Sp&auml;testens ab</b> ist die R&uuml;ckw&auml;rtsrechnung vom Liefertermin: der Tag, an dem ' +
+    'es losgehen muss, damit der Termin h&auml;lt — <b>auf einer freien Maschine</b>. Das ist eine ' +
+    'Frist, kein Plan. Der Unterschied zum Start links ist der <b>Puffer</b>; ist er negativ, ' +
+    'reicht die Zeit selbst dann nicht, wenn sonst nichts auf der Maschine l&auml;ge.'));
 
   /* --- Termine --- */
   const tt = el('plTermine');
@@ -1308,11 +1358,12 @@ function wPlanMalen(){
     if(alt) zs.value = alt;
   }
   const zt = el('plZettelTage'); if(zt && !zt.value) zt.value = 7;
-  htm('plZettelHinweis', 'Die Liste f&uuml;r die Maschine: je Tag, was darauf liegt, mit ' +
-    'St&uuml;ckzahl, Werkstoff, Zeit und Termin — und einer Spalte zum Abhaken. Sie rechnet ' +
-    '<b>nichts neu</b>, sondern sortiert dieselben Bl&ouml;cke, die in der Tafel oben stehen. ' +
-    'Tage ohne Kapazit&auml;t (Wochenende) stehen nicht darauf; freie Arbeitstage schon — ' +
-    'die sind eine Aussage.');
+  htm('plZettelHinweis', wErklaer(
+    'Je Tag, was auf der Maschine liegt — mit St&uuml;ckzahl, Werkstoff, Zeit, Termin und einer ' +
+    'Spalte zum Abhaken.',
+    'Der Zettel rechnet <b>nichts neu</b>, sondern sortiert dieselben Bl&ouml;cke, die in der Tafel ' +
+    'oben stehen. Tage ohne Kapazit&auml;t (Wochenende) stehen nicht darauf; freie Arbeitstage ' +
+    'schon — die sind eine Aussage.', 'Woher die Zahlen kommen'));
 
   /* --- Maschinen ---
      JEDES Feld ist ein Feld. Der Arbeitsraum stand vorher als Text da -
@@ -1386,22 +1437,29 @@ function wPlanMalen(){
     (leer.length ? '<b>' + leer.map(m => wEsc(m.name)).join(', ') + '</b> ' +
       (leer.length === 1 ? 'steht leer' : 'stehen leer') + ', w&auml;hrend eine baugleiche Maschine ' +
       'l&auml;uft. ' : '') +
-    '<b>Auf die Maschinen verteilen</b> legt die l&auml;ngsten Auftr&auml;ge zuerst auf die passende ' +
-    'Maschine mit der bis dahin wenigsten Arbeit — nur innerhalb derselben Art, und nur wo das Teil ' +
-    'hineinpasst. Das ist ein Knopf und keine Automatik: wenn Du ein Teil aus gutem Grund auf einer ' +
-    'bestimmten Maschine f&auml;hrst, stell sie danach in der Auftragsmaske zur&uuml;ck.');
+    wErklaer('',
+      '<b>Auf die Maschinen verteilen</b> legt die l&auml;ngsten Auftr&auml;ge zuerst auf die passende ' +
+      'Maschine mit der bis dahin wenigsten Arbeit — nur innerhalb derselben Art, und nur wo das Teil ' +
+      'hineinpasst. Das ist ein Knopf und keine Automatik: wenn Du ein Teil aus gutem Grund auf einer ' +
+      'bestimmten Maschine f&auml;hrst, stell sie danach in der Auftragsmaske zur&uuml;ck.',
+      'Was der Knopf genau tut'));
   /* Was kostet welche Maschine? Eine Tabelle voller Platzhalter ist
      eine Falle, wenn man nicht sieht, welcher Wert woher kommt. */
   const eigene = W.maschinen.filter(m => maschineSatz(m, S.V).eigen);
   htm('plMaschSaetze', eigene.length
     ? '<b>' + eigene.length + ' von ' + W.maschinen.length + ' Maschinen</b> ' +
       (eigene.length === 1 ? 'hat' : 'haben') + ' einen eigenen Stundensatz: ' + eigene.map(m => wEsc(m.name) + ' ' + wZahl(maschineSatz(m, S.V).satz, 2) +
-      ' &euro;/h').join(', ') + '. Die &uuml;brigen rechnen mit dem Satz ihrer Gattung aus Blatt 5. ' +
-      '<b>Das Angebot bleibt davon unber&uuml;hrt</b> — es entsteht, bevor die Maschine feststeht. ' +
-      'Der Maschinensatz wirkt beim <b>Nachrechnen</b> eines Auftrags: dort steht sie fest.'
-    : 'Keine Maschine hat einen eigenen Stundensatz — alle rechnen mit dem Satz ihrer Gattung ' +
-      'aus Blatt 5. Trag in der Spalte <b>&euro;/h</b> einen ein, wenn eine Maschine anders ' +
-      'kostet; leer lassen hei&szlig;t &bdquo;wie die Gattung&ldquo;.');
+      ' &euro;/h').join(', ') + '. Die &uuml;brigen rechnen mit dem Satz ihrer Gattung aus Blatt 5.' +
+      '<details class="erklaer"><summary>Warum das Angebot davon unber&uuml;hrt bleibt</summary>' +
+      '<div class="etext"><b>Das Angebot bleibt, was es war</b> — es entsteht aus der STEP-Datei, ' +
+      'also bevor die Maschine feststeht. Der Maschinensatz wirkt beim <b>Nachrechnen</b> eines ' +
+      'Auftrags: dort steht sie fest, und die Differenz ist die Auskunft.</div></details>'
+    : wErklaer(
+        'Keine Maschine hat einen eigenen Stundensatz — alle rechnen mit dem Satz ihrer Gattung ' +
+        'aus Blatt 5.',
+        'Trag in der Spalte <b>&euro;/h</b> einen ein, wenn eine Maschine anders kostet; leer lassen ' +
+        'hei&szlig;t &bdquo;wie die Gattung&ldquo;. Der Satz wirkt beim <b>Nachrechnen</b> eines ' +
+        'Auftrags, nicht im Angebot — das entsteht, bevor die Maschine feststeht.'));
   htm('plMaschHinweis', un
     ? '<b>' + un + ' von ' + W.maschinen.length + ' Maschinen tragen Platzhalter.</b> ' +
       'Arbeitsraum, Minuten je Tag und Stundensatz sind gesch&auml;tzt, nicht gemessen — ' +

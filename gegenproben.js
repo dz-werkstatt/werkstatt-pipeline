@@ -139,6 +139,21 @@ const faelle = [
     erwartet:['der Grund nennt die Querflaechen nicht']
   },
   {
+    /* Der lange Text darf nicht verschwinden - geloescht wird nichts,
+       er wandert nur unter den Aufklapper. */
+    name:'Der Aufklapper wirft den langen Text weg',
+    suche:'  if(!lang) return kurz;',
+    ersatz:'  return kurz;',
+    erwartet:['der lange Text ist weg - geloescht wird nichts']
+  },
+  {
+    /* Was man taeglich braucht, bleibt offen. */
+    name:'Auch die Auslastung wird zugeklappt',
+    suche:"const W_ZU_LAPTOP = ['plKarteAusw', 'plKarteSollIst', 'plKarteZettel'];",
+    ersatz:"const W_ZU_LAPTOP = ['plKarteAusw', 'plKarteSollIst', 'plKarteZettel', 'plKarteAusl'];",
+    erwartet:['plKarteAusl ist zu - das ist eine der drei taeglichen Fragen']
+  },
+  {
     /* RUESTEN ZAEHLT VOLL. Wird es anteilig gerechnet, ist die
        Mannzeit zu niedrig und die Termine wieder zu frueh. */
     name:'Ruesten zaehlt nur anteilig',

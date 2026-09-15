@@ -235,6 +235,24 @@ td.nw{ white-space:nowrap; }
 .wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
 .wtage input{ margin:0 2px 0 0; }
 
+/* ---- Die Erklaerung unter dem Aufklapper -----------------------------
+   Nativ, ohne JavaScript. Der Pfeil steht in Textdarstellung (U+FE0E),
+   sonst macht iOS daraus ein blaues Play-Symbol - dieselbe Falle wie
+   bei den Gruppenkoepfen der Schwester-App.                          */
+.erklaer{ margin-top:4px; }
+.erklaer > summary{
+  cursor:pointer; list-style:none; color:var(--akzent);
+  font-size:12.5px; padding:2px 0; user-select:none;
+}
+.erklaer > summary::-webkit-details-marker{ display:none; }
+.erklaer > summary::before{ content:'\25B8\FE0E'; margin-right:5px; display:inline-block; }
+.erklaer[open] > summary::before{ transform:rotate(90deg); }
+.erklaer > summary:hover{ text-decoration:underline; }
+.erklaer .etext{ font-size:13px; color:var(--text-blass); line-height:1.5;
+  padding:4px 0 2px 14px; border-left:2px solid var(--rand-fein); margin-left:2px; }
+/* Beim DRUCKEN steht alles da: ein Papier klappt niemand auf. */
+@media print{ .erklaer > summary{ display:none; } .erklaer .etext{ border:0; padding-left:0; } }
+
 /* ---- Uebersicht ------------------------------------------------------
    Balken statt Prozenttabelle. Die Farbe traegt der Balken, die Zahl
    daneben bleibt Text - eine eingefaerbte Zahl waere zweimal dieselbe
