@@ -288,13 +288,15 @@ function planBelegen(ein){
      Zaehler liefe frueher oder spaeter auseinander. */
   const mannStunden = +e.mannStunden;
   const mannAn = isFinite(mannStunden) && mannStunden > 0;
+  /* Was an einem Tag schon an MANNZEIT verbraucht ist. Die Zahl steht
+     in den Bloecken selbst - ein zweiter Zaehler liefe frueher oder
+     spaeter auseinander. */
+  const mannStand = {};
   const mannFrei = (m, tag) => {
     if(!mannAn) return Infinity;
     const proTag = planMannMinuten(mannStunden, (m.tage || [1,2,3,4,5]).length);
     if(proTag === null) return Infinity;
-    let schon = 0;
-    maschinen.forEach(x => { schon += (stand[x.id] && stand[x.id][tag]) || 0; });
-    return Math.max(0, proTag - schon);
+    return Math.max(0, proTag - (mannStand[tag] || 0));
   };
 
   const bloecke = [], ergebnis = [], unplanbar = [];
@@ -327,6 +329,15 @@ function planBelegen(ein){
     for(let i = 0; i < min.gaenge.length; i++){
       const g = min.gaenge[i];
       const m = maschinen.find(x => x.id === g.maschine);
+      /* WIEVIEL MENSCH STECKT IN EINER MINUTE DIESES GANGS?
+         Ruesten voll, Stueckzeit anteilig - gemittelt ueber den ganzen
+         Gang, weil die Belegung nur Minuten kennt und nicht weiss,
+         welche davon Ruesten war. Bei einem Gang aus reiner Ruestzeit
+         ist der Faktor 1, bei reiner Laufzeit der Maschinenanteil. */
+      const mAnteil = maschineMannAnteil(m);
+      const mFaktor = g.minuten > 0
+        ? ((g.ruesten || 0) + (g.stueck || 0) * mAnteil) / g.minuten
+        : 1;
       let rest = g.minuten, gs = null, ge = null;
       while(rest > 0.0001 && tag <= grenze){
         const kap = planKapazitaet(m, tag, frei);
@@ -334,12 +345,21 @@ function planBelegen(ein){
         /* Das KLEINERE aus "was die Maschine koennte" und "was von der
            Manpower noch uebrig ist". Legt ein anderer Auftrag die
            Person heute schon auf eine andere Maschine, bleibt hier
-           weniger - genau das ist der Punkt. */
-        const frei_min = Math.min(kap - belegt, mannFrei(m, tag));
+           weniger - genau das ist der Punkt.
+           UMGERECHNET: die freie MANNzeit reicht fuer mehr
+           Maschinenminuten, wenn die Maschine einen Teil allein laeuft.
+           Bei mFaktor 0 (laeuft ganz allein) bremst sie gar nicht. */
+        const mFrei = mannFrei(m, tag);
+        const maschAusMann = mFaktor > 0 ? mFrei / mFaktor : Infinity;
+        const frei_min = Math.min(kap - belegt, maschAusMann);
         if(frei_min > 0.0001){
           const nimm = Math.min(frei_min, rest);
           stand[m.id][tag] = belegt + nimm;
+          mannStand[tag] = (mannStand[tag] || 0) + nimm * mFaktor;
           bloecke.push({ maschine:m.id, tag, datum:planText(tag), minuten:nimm,
+                         /* Wieviel davon DEINE Zeit war - die Uebersicht
+                            summiert diese Zahl, statt neu zu rechnen. */
+                         mann:nimm * mFaktor,
                          auftrag:a.nummer || a.teil, kunde:a.kunde, status:a.status,
                          gang:g.nr, gangName:g.name,
                          /* Zeigt auf seinen Auftrag: der Maschinenzettel
@@ -830,7 +850,11 @@ function planUebersicht(e){
     const jeWoche = {};
     (b.bloecke || []).forEach(x => {
       const wo = planText(planWochenanfang(x.tag));
-      jeWoche[wo] = (jeWoche[wo] || 0) + x.minuten;
+      /* DIE MANNMINUTEN, nicht die Maschinenminuten - sie stehen im
+         Block, weil die Planung sie dort abgelegt hat. Wer hier
+         x.minuten naehme, zaehlte die Zeit der Maschine als die des
+         Menschen und waere wieder beim Fehler von vorgestern. */
+      jeWoche[wo] = (jeWoche[wo] || 0) + (x.mann != null ? x.mann : x.minuten);
     });
     return { stunden:w, jeWoche };
   })();

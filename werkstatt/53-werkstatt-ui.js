@@ -535,12 +535,18 @@ function wMannMalen(){
      Grenze gerechnet wuerde. */
   const mKap = W.maschinen.filter(m => m.aktiv !== false)
     .reduce((s2, m) => s2 + (+m.minuten_je_tag || 0) * (m.tage || []).length, 0) / 60;
+  /* Was die Maschinen an Mannzeit KOSTEN - das ist die Zahl, die man
+     mit der Wochengrenze vergleicht. */
+  const anteile = W.maschinen.filter(m => m.aktiv !== false)
+    .map(m => wEsc(m.name) + ' ' + Math.round(maschineMannAnteil(m) * 100) + ' %' +
+              (maschineMannGepflegt(m) ? '' : '<span class="klein"> (Annahme)</span>'));
   htm('plMannHinweis', an
     ? 'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b> — das ist Deine Zeit, ' +
-      'nicht die der Maschinen. Die ' + W.maschinen.filter(m => m.aktiv !== false).length +
-      ' aktiven Maschinen k&ouml;nnten zusammen <b>' + wZahl(Math.round(mKap)) + ' h</b>; ' +
-      'solange Du allein einlegst, misst und umspannst, ist Deine Zeit die knappe Gr&ouml;&szlig;e. ' +
-      'Zwei Maschinen gleichzeitig z&auml;hlen deshalb <b>doppelt</b> auf dieses Konto.'
+      'nicht die der Maschinen (die k&ouml;nnten zusammen <b>' + wZahl(Math.round(mKap)) + ' h</b>). ' +
+      '<b>R&uuml;sten z&auml;hlt voll</b> darauf, die <b>St&uuml;ckzeit anteilig</b> — je nachdem, ' +
+      'wieviel die Maschine allein l&auml;uft: ' + anteile.join(', ') + '. ' +
+      'Die Spalte <i>Deine Zeit</i> in der Maschinentabelle stellt das je Maschine; ' +
+      'wo eine allein l&auml;uft, plant die App zwei parallel.'
     : '<b>Keine Grenze gesetzt.</b> Dann rechnet die App jede Maschine f&uuml;r sich — zusammen ' +
       '<b>' + wZahl(Math.round(mKap)) + ' h die Woche</b>. Das stimmt nur, wenn an jeder Maschine ' +
       'jemand steht. F&uuml;r eine Werkstatt, in der einer alles macht, sind die Termine damit ' +
@@ -1318,6 +1324,7 @@ function wPlanMalen(){
     const TAGE = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
     let h = '<tr><th>Maschine</th><th>Art</th><th>Arbeitsraum (mm)</th>' +
             '<th class="z">min/Tag</th><th class="z">&euro;/h</th>' +
+            '<th class="z">Deine Zeit %</th>' +
             '<th>Arbeitstage</th><th>l&auml;uft</th><th></th></tr>';
     W.maschinen.forEach((m, i) => {
       const nz = (feld, wert) => '<input type="number" step="1" min="0" data-mr="' + i +
@@ -1343,6 +1350,14 @@ function wPlanMalen(){
           'value="' + (m.satz != null && isFinite(+m.satz) && +m.satz > 0 ? +m.satz : '') + '" ' +
           'placeholder="' + (maschineSatz(m, S.V).gattung || 60) + '" ' +
           'title="leer = Satz der Gattung aus Blatt 5"></td>' +
+        /* Wieviel Prozent der STUECKZEIT musst Du dabeistehen? Leer
+           heisst: meine Annahme (100 % Handarbeit, 60 % an der
+           Maschine). Das Ruesten zaehlt immer voll und steht deshalb
+           nicht zur Wahl. */
+        '<td class="z"><input type="number" data-mm="' + i + '" step="5" min="0" max="100" ' +
+          'value="' + (maschineMannGepflegt(m) ? Math.round(+m.mannanteil * 100) : '') + '" ' +
+          'placeholder="' + Math.round(maschineMannAnteil(m) * 100) + '" ' +
+          'title="Anteil der Stueckzeit, den Du dabeistehst. Leer = Annahme."></td>' +
         '<td>' + tage + '</td>' +
         '<td><input type="checkbox" data-mk="' + i + '"' + (m.aktiv === false ? '' : ' checked') + '></td>' +
         '<td class="kein-druck"><button class="mini" data-mweg="' + i + '" title="Maschine entfernen">&#x2715;</button>' +
@@ -1795,7 +1810,7 @@ function wVerdrahten(){
   if(mt) mt.addEventListener('change', (ev) => {
     const t = ev.target, zu = (s) => t.closest && t.closest('[data-' + s + ']');
     const n = zu('mn'), z = zu('mz'), r = zu('mr'), a = zu('ma'), tg = zu('mt'), k = zu('mk');
-    const sa = zu('ms');
+    const sa = zu('ms'), ma = zu('mm');
     let was = false;
     if(n){ W.maschinen[+n.dataset.mn].name = n.value; was = true; }
     if(z){ W.maschinen[+z.dataset.mz].minuten_je_tag = Math.max(0, Math.round(+z.value || 0)); was = true; }
@@ -1829,6 +1844,15 @@ function wVerdrahten(){
          waere "umsonst" und ist etwas anderes - deshalb faellt sie auch
          auf die Gattung zurueck, statt still null Euro zu rechnen. */
       m.satz = (v === '' || !isFinite(+v) || +v <= 0) ? null : +v;
+      was = true;
+    }
+    if(ma){
+      const m = W.maschinen[+ma.dataset.mm];
+      const v = String(ma.value).trim();
+      /* Leer LOESCHT den Wert zurueck auf die Annahme. 0 ist etwas
+         anderes und erlaubt: die Maschine laeuft ganz allein. */
+      m.mannanteil = (v === '' || !isFinite(+v)) ? null
+        : Math.min(1, Math.max(0, Math.round(+v) / 100));
       was = true;
     }
     if(k){ W.maschinen[+k.dataset.mk].aktiv = !!k.checked; was = true; }

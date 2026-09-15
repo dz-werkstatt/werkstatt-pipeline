@@ -67,6 +67,7 @@ function maschineNeu(art, id){
   return {
     id: String(id || ''), name: '', art: a, aktiv: true,
     wartung: [],       /* Tage, an denen NUR diese Maschine stillsteht */
+    mannanteil: null,  /* Anteil der Stueckzeit, den der Mensch dabeisteht */
     raum: a === 'handarbeit' ? null
         : a === 'fraesen' ? {x:0, y:0, z:0} : {dmax:0, laenge:0},
     minuten_je_tag: 480, tage: [1,2,3,4,5],
@@ -891,6 +892,30 @@ function maschineLast(maschinen, auftraege, plant){
   return last;
 }
 
+/* ---- Wieviel Mensch steckt in einer Maschinenminute? -----------------
+   RUESTEN zaehlt immer voll - da steht man dran. Bei der STUECKZEIT
+   haengt es an der Maschine: am Handarbeitsplatz ist die Arbeit der
+   Mensch (100 %), eine CNC laeuft einen Teil der Zeit allein.
+
+   OHNE EIGENEN WERT gilt 100 % fuer Handarbeit und 60 % fuer alles mit
+   einer Spindel - eine Annahme fuer Einzel- und Kleinserienfertigung,
+   die als solche ausgewiesen wird. Wer laengere Zyklen faehrt oder
+   einen Stangenlader hat, traegt weniger ein.
+
+   0 ist erlaubt und heisst: laeuft voellig allein, nur das Ruesten
+   kostet Zeit.                                                       */
+function maschineMannAnteil(m){
+  if(!m) return 1;
+  const v = m.mannanteil;
+  if(v != null && isFinite(+v) && +v >= 0 && +v <= 1) return +v;
+  return m.art === 'handarbeit' ? 1 : 0.6;
+}
+/* Ist der Wert gesetzt oder ist es meine Annahme? Die Oberflaeche sagt
+   den Unterschied, sonst haelt man 60 % fuer eine Messung. */
+function maschineMannGepflegt(m){
+  return !!(m && m.mannanteil != null && isFinite(+m.mannanteil));
+}
+
 /* ---- Welche der passenden Maschinen? ---------------------------------
    ZWEI REGELN STEHEN ZUR WAHL, und welche gilt, ist eine EINSTELLUNG:
      'last'  - die passende Maschine mit der wenigsten Arbeit. Das war die
@@ -1193,6 +1218,7 @@ if(typeof module !== 'undefined' && module.exports){
                      WERKSTATT_SORTEN, auftraegeFiltern,
                      kalkGrundlage, auftragNachrechnen, auftragUebernehmen, maschineSatz,
                      WERKSTATT_MASCHINENWAHL, maschineGroesse,
+                     maschineMannAnteil, maschineMannGepflegt,
                      WERKSTATT_ARTEN, maschineNeu, maschineArtSetzen,
                      maschinePruefen, maschineBelegt };
 }

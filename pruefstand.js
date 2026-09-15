@@ -4150,6 +4150,169 @@ console.log('\n32) Mannstunden und Uebersicht');
   }
 }
 
+/* --- 33. Mannzeit ist nicht Maschinenzeit ----------------------------
+   DER FEHLER AUS DEM PAKET DAVOR, hier geradegerueckt: die
+   Mannstunden-Grenze nahm an, jede Maschinenminute koste eine
+   Mannminute. Das stimmt beim Ruesten - aber nicht, wenn die Drehbank
+   zehn Minuten schruppt und der Mann daneben an der Fraese steht.
+
+   Die App war vorher zu OPTIMISTISCH (jede Maschine fuer sich, 160
+   Stunden die Woche) und danach zu PESSIMISTISCH. Derselbe Fehler,
+   andere Richtung - und deshalb prueft dieser Abschnitt beide Enden,
+   nicht nur das neue.
+
+   Gemessen an der Beispiel-Werkstatt mit 30 h die Woche: ohne Grenze
+   ist der letzte Auftrag am 21.09. fertig, mit "jede Minute zaehlt" am
+   25.09., mit Ruesten voll und Stueckzeit zu 60 % am 22.09.        */
+console.log('\n33) Mannzeit ist nicht Maschinenzeit');
+{
+  const maschineMannAnteil = hole('maschineMannAnteil');
+  const maschineMannGepflegt = hole('maschineMannGepflegt');
+  const planBelegen = hole('planBelegen'), planUebersicht = hole('planUebersicht');
+  const neuerAuftrag = hole('neuerAuftrag');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+
+  ['maschineMannAnteil', 'maschineMannGepflegt'].forEach(nm => {
+    if(typeof hole(nm) === 'function') ok('vorhanden: ' + nm);
+    else bad('fehlt: ' + nm);
+  });
+
+  /* (1) Welcher Anteil gilt? */
+  {
+    const dreh = M0.filter(m => m.art === 'drehen')[0];
+    const hand = M0.filter(m => m.art === 'handarbeit')[0];
+    gleich('am Handarbeitsplatz zaehlt jede Minute', maschineMannAnteil(hand), 1);
+    gleich('an der Maschine die Annahme 60 %', maschineMannAnteil(dreh), 0.6);
+    gleich('  und sie ist als Annahme ausgewiesen', maschineMannGepflegt(dreh), false);
+    const eigen = JSON.parse(JSON.stringify(dreh));
+    eigen.mannanteil = 0.25;
+    gleich('ein eigener Wert gilt', maschineMannAnteil(eigen), 0.25);
+    gleich('  und ist als eigener ausgewiesen', maschineMannGepflegt(eigen), true);
+    /* NULL IST ERLAUBT und heisst etwas: laeuft ganz allein. Das darf
+       nicht wie "nicht gesetzt" behandelt werden. */
+    const allein = JSON.parse(JSON.stringify(dreh));
+    allein.mannanteil = 0;
+    gleich('0 heisst "laeuft allein", nicht "nicht gesetzt"', maschineMannAnteil(allein), 0);
+    gleich('  und gilt als gepflegt', maschineMannGepflegt(allein), true);
+    const mist = JSON.parse(JSON.stringify(dreh));
+    mist.mannanteil = 'viel';
+    gleich('Unsinn faellt auf die Annahme zurueck', maschineMannAnteil(mist), 0.6);
+    const zuViel = JSON.parse(JSON.stringify(dreh));
+    zuViel.mannanteil = 3;
+    gleich('  und ein Wert ueber 1 ebenso', maschineMannAnteil(zuViel), 0.6);
+  }
+
+  /* (2) RUESTEN ZAEHLT VOLL, STUECKZEIT ANTEILIG. Der tragende Fall. */
+  {
+    const bau = (nr, masch, ruest, stueckzeit, stueck) => {
+      const a = neuerAuftrag();
+      a.nummer = nr; a.teil = 'Teil ' + nr; a.stueck = stueck;
+      a.status = 'beauftragt';
+      a.klasse = masch === 'fr1' ? 'fraesteil_3ax' : 'drehteil_einfach';
+      a.gattung = masch === 'fr1' ? 'fraesen' : 'drehen';
+      a.maschine = masch; a.zeiten = {ruestzeit:ruest, stueckzeit:stueckzeit};
+      a.masse = masch === 'fr1' ? {dmax:0, laenge:0, x:100, y:100, z:50}
+                                : {dmax:60, laenge:200, x:0, y:0, z:0};
+      return a;
+    };
+    const M = (anteil) => {
+      const L = JSON.parse(JSON.stringify(M0));
+      L.forEach(m => { m.mannanteil = anteil; });
+      return L;
+    };
+    /* Ein Auftrag: 60 min Ruesten, 10 Stueck zu 30 min = 300 min
+       Stueckzeit, zusammen 360 Maschinenminuten.
+       Bei Anteil 1   sind das 360 Mannminuten.
+       Bei Anteil 0,5 sind es 60 + 150 = 210.
+       Bei Anteil 0   sind es 60. */
+    const nimm = (anteil) => {
+      const b = planBelegen({auftraege:[bau('X-1', 'm1000', 60, 30, 10)],
+                             maschinen:M(anteil), ab:'2026-09-14', tage:30, mannStunden:40});
+      return Math.round((b.bloecke || []).reduce((s2, x) => s2 + (x.mann || 0), 0));
+    };
+    gleich('Anteil 1: alle 360 Minuten sind Mannzeit', nimm(1), 360);
+    gleich('Anteil 0,5: Ruesten voll, Stueckzeit halb', nimm(0.5), 210);
+    gleich('Anteil 0: nur das Ruesten', nimm(0), 60);
+    /* Und die Maschinenminuten bleiben, was sie sind. */
+    const b = planBelegen({auftraege:[bau('X-2', 'm1000', 60, 30, 10)],
+                           maschinen:M(0.5), ab:'2026-09-14', tage:30, mannStunden:40});
+    gleich('die Maschine braucht trotzdem ihre 360 Minuten',
+           Math.round((b.bloecke || []).reduce((s2, x) => s2 + x.minuten, 0)), 360);
+  }
+
+  /* (3) WAS ALLEIN LAEUFT, BREMST DIE ZWEITE MASCHINE NICHT.
+     Das ist der Sinn der ganzen Uebung. */
+  {
+    const bau2 = (nr, masch) => {
+      const a = neuerAuftrag();
+      a.nummer = nr; a.teil = 'T' + nr; a.stueck = 1; a.status = 'beauftragt';
+      a.klasse = masch === 'fr1' ? 'fraesteil_3ax' : 'drehteil_einfach';
+      a.gattung = masch === 'fr1' ? 'fraesen' : 'drehen';
+      a.maschine = masch;
+      /* Reine Laufzeit, kein Ruesten - dann haengt alles am Anteil. */
+      a.zeiten = {ruestzeit:0, stueckzeit:360};
+      a.masse = masch === 'fr1' ? {dmax:0, laenge:0, x:100, y:100, z:50}
+                                : {dmax:60, laenge:200, x:0, y:0, z:0};
+      return a;
+    };
+    const paar = () => [bau2('P-1', 'm1000'), bau2('P-2', 'fr1')];
+    const mitAnteil = (anteil) => {
+      const L = JSON.parse(JSON.stringify(M0));
+      L.forEach(m => { m.mannanteil = anteil; });
+      const b = planBelegen({auftraege:paar(), maschinen:L, ab:'2026-09-14',
+                             tage:30, mannStunden:30});
+      return b.auftraege.map(z => z.ende).join(' ');
+    };
+    /* 30 h die Woche sind 360 min am Tag. Zwei Auftraege zu je 360 min
+       reiner Laufzeit: */
+    gleich('bei voller Mannzeit passt nur einer am Montag',
+           mitAnteil(1), '2026-09-14 2026-09-15');
+    gleich('bei halber passen beide am Montag',
+           mitAnteil(0.5), '2026-09-14 2026-09-14');
+    gleich('  und wenn sie ganz allein laufen erst recht',
+           mitAnteil(0), '2026-09-14 2026-09-14');
+  }
+
+  /* (4) Die Uebersicht zeigt die MANNminuten, nicht die
+     Maschinenminuten - sonst waere sie wieder beim Fehler. */
+  {
+    const L = JSON.parse(JSON.stringify(M0));
+    L.forEach(m => { m.mannanteil = 0.5; });
+    const a = neuerAuftrag();
+    a.nummer = 'U-1'; a.teil = 'Welle'; a.stueck = 10; a.status = 'beauftragt';
+    a.klasse = 'drehteil_einfach'; a.gattung = 'drehen'; a.maschine = 'm1000';
+    a.zeiten = {ruestzeit:60, stueckzeit:30};
+    a.masse = {dmax:60, laenge:200, x:0, y:0, z:0};
+    const e = {auftraege:[a], maschinen:L, ab:'2026-09-14', tage:30,
+               mannStunden:40, wochen:2};
+    const u = planUebersicht(e);
+    /* 210 Mannminuten von 40 h die Woche = 3,5 h von 40. */
+    nahe('die Uebersicht rechnet mit Mannminuten',
+         u.mann.wochen[0].belegt, 210 / 60, 1e-6);
+    /* Und die Maschinenzeile zeigt weiter die Maschine. */
+    const dreh = u.last.filter(m => m.id === 'm1000')[0];
+    if(dreh.wochen[0].belegt === 360) ok('  und die Maschinenzeile weiter die Maschine');
+    else bad('die Maschinenzeile zeigt ' + dreh.wochen[0].belegt + ' statt 360');
+  }
+
+  /* (5) Oberflaeche. */
+  {
+    if(/data-mm="/.test(quelltext)) ok('die Maschinentabelle hat eine Spalte fuer den Anteil');
+    else bad('die Maschinentabelle hat keine Spalte fuer den Anteil');
+    if(/R&uuml;sten z&auml;hlt voll/.test(quelltext))
+      ok('und der Hinweis sagt, dass Ruesten voll zaehlt');
+    else bad('der Hinweis erklaert die Rechnung nicht');
+    /* Leer loescht zurueck auf die Annahme, 0 ist etwas anderes. */
+    if(/\(v === '' \|\| !isFinite\(\+v\)\) \? null/.test(quelltext))
+      ok('leer loescht zurueck auf die Annahme, 0 bleibt 0');
+    else bad('leer und 0 sind nicht unterschieden - dann laesst sich "laeuft allein" nicht eintragen');
+    /* Und der Block traegt seine Mannminuten - daran haengt alles. */
+    if(/mann:nimm \* mFaktor/.test(quelltext))
+      ok('jeder Belegungsblock traegt seine Mannminuten');
+    else bad('die Bloecke tragen keine Mannminuten - die Uebersicht muesste neu rechnen');
+  }
+}
+
 /* --- Ergebnis -------------------------------------------------------- */
 console.log('\n' + '='.repeat(62));
 console.log('Haken: ' + haken + '   Fehler: ' + fehler + '   Hinweise: ' + warnungen);

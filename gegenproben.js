@@ -139,19 +139,35 @@ const faelle = [
     erwartet:['der Grund nennt die Querflaechen nicht']
   },
   {
+    /* RUESTEN ZAEHLT VOLL. Wird es anteilig gerechnet, ist die
+       Mannzeit zu niedrig und die Termine wieder zu frueh. */
+    name:'Ruesten zaehlt nur anteilig',
+    suche:'        ? ((g.ruesten || 0) + (g.stueck || 0) * mAnteil) / g.minuten',
+    ersatz:'        ? ((g.ruesten || 0) * mAnteil + (g.stueck || 0) * mAnteil) / g.minuten',
+    erwartet:['Anteil 0: nur das Ruesten']
+  },
+  {
+    /* Und die STUECKZEIT anteilig. Zaehlt sie voll, ist es der Fehler
+       von vorgestern: jede Maschinenminute eine Mannminute. */
+    name:'Stueckzeit zaehlt wieder voll',
+    suche:'        ? ((g.ruesten || 0) + (g.stueck || 0) * mAnteil) / g.minuten',
+    ersatz:'        ? ((g.ruesten || 0) + (g.stueck || 0)) / g.minuten',
+    erwartet:['bei halber passen beide am Montag']
+  },
+  {
     /* DER KERN: die Grenze gilt ueber Maschinen hinweg. Zaehlt sie nur
        je Maschine, ist sie wirkungslos - zwei Maschinen gleichzeitig
        kosten dann nichts extra. */
     name:'Die eigene Zeit zaehlt je Maschine statt gemeinsam',
-    suche:'    maschinen.forEach(x => { schon += (stand[x.id] && stand[x.id][tag]) || 0; });',
-    ersatz:'    schon = (stand[m.id] && stand[m.id][tag]) || 0;',
+    suche:'    return Math.max(0, proTag - (mannStand[tag] || 0));',
+    ersatz:'    return Math.max(0, proTag - ((stand[m.id] && stand[m.id][tag]) || 0));',
     erwartet:['mit 30 h die Woche muss der zweite warten']
   },
   {
     /* Und sie darf die Maschinengrenze nicht aufheben. */
     name:'Die Maschinengrenze faellt weg',
-    suche:'        const frei_min = Math.min(kap - belegt, mannFrei(m, tag));',
-    ersatz:'        const frei_min = mannAn ? mannFrei(m, tag) : (kap - belegt);',
+    suche:'        const frei_min = Math.min(kap - belegt, maschAusMann);',
+    ersatz:'        const frei_min = mannAn ? maschAusMann : (kap - belegt);',
     erwartet:['die Maschinengrenze gilt weiter']
   },
   {
