@@ -253,6 +253,80 @@ td.nw{ white-space:nowrap; }
 .wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
 .wtage input{ margin:0 2px 0 0; }
 
+/* ---- Uebersicht ------------------------------------------------------
+   Balken statt Prozenttabelle. Die Farbe traegt der Balken, die Zahl
+   daneben bleibt Text - eine eingefaerbte Zahl waere zweimal dieselbe
+   Information und einmal schlechter lesbar.                          */
+.kacheln{ display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 4px; }
+.kachel{
+  flex:1 1 150px; min-width:140px; background:var(--grund);
+  border:1px solid var(--rand-fein); border-radius:10px; padding:10px 12px;
+}
+.kachel .zahl{ font-size:30px; font-weight:700; line-height:1.1; color:var(--text);
+  font-variant-numeric: tabular-nums; }
+.kachel .wort{ font-size:13px; color:var(--text-blass); margin-top:2px; }
+.kachel .zeichen{ font-size:15px; margin-right:5px; }
+/* Der farbige Streifen traegt den Zustand - zusammen mit dem Zeichen
+   und dem Wort, nie allein. */
+.kachel.k-gut{    border-left:4px solid var(--gut); }
+.kachel.k-warn{   border-left:4px solid var(--warn); }
+.kachel.k-schlecht{ border-left:4px solid var(--schlecht); }
+.kachel.k-still{  border-left:4px solid var(--rand); }
+
+.balkenzeile{ display:flex; align-items:center; gap:10px; margin:5px 0; }
+.balkenzeile .bname{ flex:0 0 150px; font-size:13px; color:var(--text); }
+/* display:block ist hier KEIN Schmuck: beides sind <span>, und an
+   einem Inline-Element wirken width und height nicht. Ohne diese Zeile
+   sahen alle vier Wertbalken gleich aus - naemlich wie keiner. */
+.balkenzeile .bbahn{ display:block; flex:1 1 auto; background:var(--rand-fein);
+  border-radius:4px; height:16px; position:relative; overflow:hidden; }
+.balkenzeile .bfuell{ display:block; height:100%; border-radius:4px;
+  background:var(--akzent); min-width:2px; }
+.balkenzeile .bfuell.b-gut{ background:var(--gut); }
+.balkenzeile .bfuell.b-warn{ background:var(--warn); }
+.balkenzeile .bfuell.b-schlecht{ background:var(--schlecht); }
+.balkenzeile .bwert{ flex:0 0 96px; text-align:right; font-size:13px;
+  color:var(--text); font-variant-numeric: tabular-nums; }
+/* Die Wochen einer Maschine nebeneinander, damit man den Verlauf sieht
+   statt vier Zeilen zu vergleichen. */
+.wochenbalken{ display:flex; gap:2px; flex:1 1 auto; }
+.wochenbalken .wb{ display:block; flex:1 1 0; background:var(--rand-fein);
+  border-radius:4px; height:30px; position:relative; }
+/* Jeder Balken traegt seine Zahl - ein Balken ohne Zahl ist ein
+   Gefuehl, keine Auskunft. Bei 21 % waere der Streifen sonst fuenf
+   Pixel hoch und unlesbar. */
+.wochenbalken .wbz{ display:block; font-size:11px; text-align:center;
+  color:var(--text-blass); margin-top:2px; font-variant-numeric: tabular-nums; }
+.wbspalte{ flex:1 1 0; }
+.wochenbalken .wbf{ display:block; position:absolute; left:0; right:0; bottom:0;
+  border-radius:4px; background:var(--akzent); min-height:2px; }
+.wochenbalken .wbf.b-gut{ background:var(--gut); }
+.wochenbalken .wbf.b-warn{ background:var(--warn); }
+.wochenbalken .wbf.b-schlecht{ background:var(--schlecht); }
+.wochenkopf{ display:flex; gap:2px; flex:1 1 auto; }
+.wochenkopf span{ flex:1 1 0; font-size:11px; color:var(--text-blass); text-align:center; }
+
+.terminzeile{ display:flex; align-items:baseline; gap:10px; padding:5px 0;
+  border-bottom:1px solid var(--rand-fein); }
+.terminzeile:last-child{ border-bottom:0; }
+.terminzeile .tnr{ flex:0 0 72px; font-size:13px; color:var(--text-blass); }
+.terminzeile .tteil{ flex:1 1 auto; font-size:14px; color:var(--text); }
+.terminzeile .ttage{ flex:0 0 130px; text-align:right; font-size:13px;
+  font-variant-numeric: tabular-nums; }
+.terminzeile .ttage b{ font-size:15px; }
+.t-gut{ color:var(--gut); }
+.t-warn{ color:var(--warn); }
+.t-schlecht{ color:var(--schlecht); }
+
+@media (max-width: 700px){
+  .kachel{ flex:1 1 110px; min-width:100px; }
+  .kachel .zahl{ font-size:24px; }
+  .balkenzeile .bname{ flex:0 0 96px; font-size:12px; }
+  .balkenzeile .bwert{ flex:0 0 74px; font-size:12px; }
+  .terminzeile .tnr{ flex:0 0 58px; }
+  .terminzeile .ttage{ flex:0 0 96px; }
+}
+
 /* Die freien Tage als Marken - eine Liste mit zwanzig Zeilen waere fuer
    einen Betriebsurlaub die falsche Form. */
 .marken{ display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
@@ -324,7 +398,8 @@ table.papier td.leer{ height:26px; }
 <header>
   <span class="marke">Werkstatt-Pipeline</span>
   <span class="schritt">
-    <button id="tabImport" class="an">1 Teil</button>
+    <button id="tabUeber" class="an">&Uuml;bersicht</button>
+    <button id="tabImport">1 Teil</button>
     <button id="tabKalk">2 Angebot</button>
     <button id="tabAuf">3 Auftr&auml;ge</button>
     <button id="tabPlan">4 Planung</button>
@@ -334,8 +409,46 @@ table.papier td.leer{ height:26px; }
 
 <main>
 
+<!-- ============ UEBERSICHT ============================================
+     Die Frage, die man morgens hat: wo stehe ich? In dieser
+     Reihenfolge - erst was brennt, dann was laeuft, dann wie voll. -->
+<section class="blatt an" id="blattUeber">
+  <div class="karte" id="ueLeer" hidden>
+    <h2>Noch keine Auftr&auml;ge</h2>
+    <div class="klein" id="ueLeerText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteAmpel">
+    <h2>Wo stehe ich?</h2>
+    <div class="kacheln" id="ueAmpel"></div>
+    <div class="klein" id="ueAmpelText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteTermine">
+    <h2>Als N&auml;chstes f&auml;llig</h2>
+    <div id="ueTermine"></div>
+  </div>
+
+  <div class="karte" id="ueKarteLast">
+    <h2>Wie voll bin ich?</h2>
+    <div id="ueLast"></div>
+    <div class="klein" id="ueLastText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteWert">
+    <h2>Was steht offen</h2>
+    <div id="ueWert"></div>
+    <div class="klein" id="ueWertText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteSoll">
+    <h2>Stimmen die Zeiten?</h2>
+    <div id="ueSoll"></div>
+  </div>
+</section>
+
 <!-- ================= 1 TEIL ================= -->
-<section class="blatt an" id="blattImport">
+<section class="blatt" id="blattImport">
 
   <div class="karte">
     <div id="ablage">
@@ -551,6 +664,12 @@ table.papier td.leer{ height:26px; }
     <h2>Kapazit&auml;t</h2>
     <div class="feld"><label for="plAb">Planung ab</label><input type="date" id="plAb"></div>
     <div class="feld"><label for="plTage">Horizont</label><input type="number" id="plTage" step="1" min="7"><span class="einheit">Tage</span></div>
+    <!-- DIE KNAPPE GROESSE ist nicht die Maschine, sondern die Zeit des
+         Menschen davor. Ohne diese Zahl rechnet die App vier Maschinen
+         mal acht Stunden. -->
+    <div class="feld"><label for="plMann">Deine Zeit je Woche</label>
+      <input type="number" id="plMann" step="1" min="0" max="168"><span class="einheit">h</span></div>
+    <div class="klein" id="plMannHinweis"></div>
     <!-- Freie Tage: Feiertage, Betriebsurlaub. Die Belegung kennt sie
          seit jeher, nur gab es kein Feld dafuer. -->
     <div class="unterkarte" id="plFreiKarte">
@@ -666,8 +785,41 @@ table.papier td.leer{ height:26px; }
     <h2>Firmendaten f&uuml;r das Angebot</h2>
     <div id="einFirma"></div>
   </div>
+  <!-- DIE SICHERUNG. Sie steht VOR der Einstellungs-Sicherung, weil sie
+       der Hauptweg ist: eine Datei, alles darin. -->
+  <div class="karte" id="einSicherKarte">
+    <h2>Sicherung</h2>
+    <div class="meldung warn" id="sicherStand"></div>
+    <div class="knopfzeile">
+      <button class="knopf haupt" id="btnSicherExport">Alles als Datei sichern</button>
+      <button class="knopf" id="btnSicherImport">Sicherung zur&uuml;ckholen</button>
+      <input type="file" id="sicherDatei" accept=".json,.JSON" hidden>
+    </div>
+    <div id="sicherVorschau" hidden>
+      <div class="meldung info" id="sicherInhalt"></div>
+      <div class="knopfzeile">
+        <button class="knopf gefahr" id="btnSicherErsetzen">Alles ersetzen</button>
+        <button class="knopf" id="btnSicherDazu">Nur Auftr&auml;ge dazuladen</button>
+        <button class="knopf" id="btnSicherAbbruch">Abbrechen</button>
+      </div>
+    </div>
+    <div class="klein" id="sicherHinweis"></div>
+  </div>
+
+  <!-- Zum Ausprobieren. Steht neben der Sicherung, weil beide den
+       ganzen Bestand anfassen und beide vorher fragen muessen. -->
+  <div class="karte" id="einDemoKarte">
+    <h2>Beispieldaten</h2>
+    <div class="knopfzeile">
+      <button class="knopf" id="btnDemo">Beispiel-Werkstatt laden</button>
+      <button class="knopf gefahr" id="btnDemoJa" hidden>Ja, vorhandene ersetzen</button>
+      <button class="knopf" id="btnDemoNein" hidden>Abbrechen</button>
+    </div>
+    <div class="klein" id="demoHinweis"></div>
+  </div>
+
   <div class="karte">
-    <h2>Einstellungen sichern</h2>
+    <h2>Nur die Einstellungen</h2>
     <div class="knopfzeile">
       <button class="knopf" id="btnEinExport">Als Datei sichern</button>
       <button class="knopf" id="btnEinImport">Aus Datei laden</button>
@@ -675,7 +827,9 @@ table.papier td.leer{ height:26px; }
       <button class="knopf" id="btnEinReset">Auf Startwerte zur&uuml;cksetzen</button>
     </div>
     <div class="klein" style="color:var(--text-blass);font-size:13px;margin-top:8px">
-      Die Einstellungen liegen im Browser dieses Ger&auml;ts. Wer sie auf ein zweites Ger&auml;t bringen will, sichert sie als Datei und l&auml;dt sie dort.
+      Nur Stundens&auml;tze, Werkstoffe und Zuschl&auml;ge &mdash; <b>ohne</b> Auftr&auml;ge und Maschinen.
+      Daf&uuml;r ist die <b>Sicherung</b> dar&uuml;ber da. Diese kleine Datei ist f&uuml;r den Fall,
+      dass nur die Rechenwerte auf ein anderes Ger&auml;t sollen.
     </div>
   </div>
 </section>
@@ -798,14 +952,14 @@ const KALK_VORGABEN = {
   "_stand": "2026-09-13",
   "version": "1.0",
 
-  "_saetze_hinweis": "PLATZHALTER, bewusst runde Zahlen. Entscheid vom 13.09.2026: dieses Repo ist oeffentlich, und die Stundensaetze und die Marge eines Lohnfertigers gehen niemanden etwas an. Die echten Werte traegt der Bediener im Blatt ein; sie liegen dann im Speicher seines Geraets, nie hier. Damit daraus keine Falle wird, ist gepflegt false: das Blatt zeigt einen Hinweis und die Felder tragen eine Marke, bis sie einmal gestellt sind.",
+  "_saetze_hinweis": "BRANCHENUEBLICHE WERTE, keine Betriebszahlen (Ansage 15.09.2026). Was ein Lohnfertiger fuer eine Dreh- oder Fraesstunde verlangen kann, ist Branchenwissen und kein Geschaeftsgeheimnis - Drehen 50 bis 60, dreiachsiges Fraesen 60 bis 70 Euro. Hier steht die Mitte. Wer andere Zahlen hat, traegt sie im Blatt ein; sie liegen dann im Speicher seines Geraets und nie in dieser Datei. Deshalb steht gepflegt auf true: die Rechnung ist brauchbar, ohne dass jemand erst etwas eintragen muss. Runde 50/50/50 waeren KEINE Vorsicht gewesen, sondern eine Zahl, die niemandem hilft.",
   "saetze": {
-    "drehen": 50,
-    "fraesen": 50,
-    "handarbeit": 50,
+    "drehen": 55,
+    "fraesen": 65,
+    "handarbeit": 45,
     "ruesten_wie_maschine": true,
-    "ruesten": 50,
-    "gepflegt": false
+    "ruesten": 55,
+    "gepflegt": true
   },
 
   "werkstoffe": [
@@ -835,10 +989,10 @@ const KALK_VORGABEN = {
     "toleranz_mittel": 1.0,
     "toleranz_fein": 1.4,
     "oberflaeche_fein": 1.3,
-    "_gewinn_hinweis": "Gewinn und Mindestauftrag sind wie die Stundensaetze PLATZHALTER — s. _saetze_hinweis.",
+    "_gewinn_hinweis": "Wie die Stundensaetze BRANCHENUEBLICH: 15 Prozent Gewinnaufschlag und 100 Euro Mindestauftragswert liegen im ueblichen Rahmen der Lohnfertigung. Wer anders rechnet, traegt es im Blatt ein.",
     "gewinn": 0.15,
     "mindestauftrag": 100,
-    "gepflegt": false
+    "gepflegt": true
   },
 
   "zeiten": {
@@ -1908,6 +2062,12 @@ function fRohteil(teil, rot, form, auf, sechskant){
      nach unten zeigt, obwohl die Flaeche nicht der Boden ist.
    Fraesteil komplex: der Rest. */
 const F_RICHTUNGEN = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+/* Ab welcher Neigung gilt eine Flaeche als AUFLAGE statt als
+   Hinterschnitt? 0,98 entspricht rund 11 Grad - eine Flaeche, die
+   weiter als das aus der Waagerechten kippt, liegt nicht mehr satt auf
+   und ist wirklich ein Problem beim Aufspannen. */
+const F_AUFLAGE = 0.98;
+
 function fHinterschnitt(modell){
   let best = 1, bestR = [0, 0, 1];
   F_RICHTUNGEN.forEach(R => {
@@ -1919,8 +2079,19 @@ function fHinterschnitt(modell){
       let n = null;
       if(f.art === 'ebene' && f.rahmen) n = fV.mul(fV.norm(f.rahmen.z), f.sinn ? 1 : -1);
       if(!n) return;                        /* gekruemmte Flaechen zaehlen nicht mit */
+      const d = fV.dot(n, R);
+      /* DIE AUFLAGE IST KEIN HINTERSCHNITT. Eine Flaeche, die GENAU
+         entgegen der Spindel zeigt, ist die Seite, auf der das Teil
+         liegt - die bearbeitet man in der zweiten Aufspannung, und
+         dafuer gibt es den Parameter "Seiten". Ohne diese Ausnahme
+         zaehlte jeder Quader seine eigene Rueckseite als Hinterschnitt
+         (Wuerfel: genau ein Sechstel), und die Unterscheidung
+         3ax/komplex griff bei keinem einzigen Teil. */
+      if(d < -F_AUFLAGE) return;
       ganz += f._w.flaeche;
-      if(fV.dot(n, R) < -0.02) schlecht += f._w.flaeche;   /* zeigt von der Spindel weg */
+      /* Uebrig bleibt, was SCHRAEG nach hinten zeigt - das erreicht der
+         Fraeser von oben nicht, und genau darum geht es. */
+      if(d < -0.02) schlecht += f._w.flaeche;
     });
     const q = ganz > 0 ? schlecht / ganz : 1;
     if(q < best){ best = q; bestR = R; }
@@ -3453,6 +3624,244 @@ function maschineVorschlag(a, maschinen, auftraege, regel){
   return beste.id;
 }
 
+/* ---- Die Sicherung ---------------------------------------------------
+   EINE Datei, alles darin. Siehe Kopf des Patches fuer die Linie
+   zwischen Betriebsdaten und Ansichtszustand.                         */
+const SICHERUNG_VERSION = '1.0';
+const SICHERUNG_KENNUNG = 'werkstatt-pipeline-sicherung';
+
+/* Hat dieser Auftrag WIRKLICH eine Rueckmeldung? Ein leeres Feld
+   {gefertigt:0, ausschuss:0, gaenge:[]} traegt jeder Auftrag, den
+   jemand einmal geoeffnet hat - es ist keine Rueckmeldung, sondern das
+   Formular dafuer. Gezaehlt wird, was jemand eingetragen HAT. */
+function hatRueckmeldung(a){
+  const r = a && a.rueckmeldung;
+  if(!r) return false;
+  if(+r.gefertigt > 0 || +r.ausschuss > 0) return true;
+  if(String(r.datum || '').trim()) return true;
+  return Array.isArray(r.gaenge) && r.gaenge.some(g =>
+    g && (istZahl(g.ruestzeit) || istZahl(g.stueckzeit)));
+}
+
+function sicherungBauen(d){
+  const e = d || {};
+  const kopie = v => JSON.parse(JSON.stringify(v == null ? null : v));
+  const auftraege = Array.isArray(e.auftraege) ? kopie(e.auftraege) : [];
+  const maschinen = Array.isArray(e.maschinen) ? kopie(e.maschinen) : [];
+  const frei = Array.isArray(e.frei) ? kopie(e.frei) : [];
+  return {
+    kennung: SICHERUNG_KENNUNG,
+    version: SICHERUNG_VERSION,
+    gesichert: String(e.heute || ''),
+    /* Die Zaehlung steht IM Kopf, nicht nur in den Listen: wer die Datei
+       in einem Texteditor oeffnet, soll in der ersten Zeile sehen, was
+       drin ist, ohne 4000 Zeilen zu zaehlen. */
+    enthaelt: {
+      auftraege: auftraege.length,
+      maschinen: maschinen.length,
+      freieTage: frei.length,
+      wartungstage: maschinen.reduce((s, m) => s + ((Array.isArray(m.wartung) && m.wartung.length) || 0), 0),
+      rueckmeldungen: auftraege.filter(hatRueckmeldung).length,
+      einstellungen: !!e.einstellungen
+    },
+    auftraege, maschinen, frei,
+    regeln: e.regeln ? kopie(e.regeln) : null,
+    einstellungen: e.einstellungen ? kopie(e.einstellungen) : null
+  };
+}
+
+/* Beanstandungen einer gelesenen Datei; leer heisst brauchbar.
+   GEPRUEFT WIRD DAS GERUEST, nicht der Inhalt jedes Auftrags - dafuer
+   gibt es auftragPruefen, und ein einzelner krummer Auftrag darf eine
+   Sicherung mit 200 guten nicht unbrauchbar machen. */
+function sicherungPruefen(o){
+  const f = [];
+  if(!o || typeof o !== 'object') return ['Das ist keine Sicherungsdatei.'];
+  if(o.kennung !== SICHERUNG_KENNUNG)
+    f.push('Die Datei traegt nicht die Kennung einer Werkstatt-Sicherung.');
+  if(typeof o.version !== 'string' || !o.version)
+    f.push('Die Datei nennt keine Version.');
+  else if(o.version.split('.')[0] !== SICHERUNG_VERSION.split('.')[0])
+    f.push('Die Datei ist Version ' + o.version + ', diese App liest ' +
+           SICHERUNG_VERSION + ' - das Format hat sich geaendert.');
+  ['auftraege', 'maschinen', 'frei'].forEach(k => {
+    if(!Array.isArray(o[k])) f.push('Der Abschnitt "' + k + '" fehlt oder ist keine Liste.');
+  });
+  if(Array.isArray(o.maschinen) && !o.maschinen.length)
+    f.push('Die Datei enthaelt keine einzige Maschine - ohne Maschinen laesst sich nichts planen.');
+  return f;
+}
+
+/* Was steckt WIRKLICH drin? Nicht der Kopf wird gezaehlt, sondern die
+   Listen - ein Kopf laesst sich von Hand aendern, und dann stuende eine
+   Zahl da, die nichts mit dem Inhalt zu tun hat. */
+function sicherungZahlen(o){
+  const a = (o && Array.isArray(o.auftraege)) ? o.auftraege : [];
+  const m = (o && Array.isArray(o.maschinen)) ? o.maschinen : [];
+  return {
+    auftraege: a.length,
+    maschinen: m.length,
+    freieTage: (o && Array.isArray(o.frei)) ? o.frei.length : 0,
+    wartungstage: m.reduce((s, x) => s + ((Array.isArray(x.wartung) && x.wartung.length) || 0), 0),
+    rueckmeldungen: a.filter(hatRueckmeldung).length,
+    regeln: !!(o && o.regeln),
+    einstellungen: !!(o && o.einstellungen),
+    gesichert: (o && o.gesichert) || ''
+  };
+}
+
+/* DAZULADEN statt ersetzen. Zwei Regeln, und beide sind vorsichtig:
+
+   1. Der VORHANDENE Auftrag gewinnt. Ohne Zeitstempel je Auftrag kann
+      die App nicht wissen, welcher der neuere ist - und der vorhandene
+      traegt vielleicht Rueckmeldungen von der Maschine, die in der
+      Datei noch nicht stehen. Was uebersprungen wird, wird GEZAEHLT
+      und benannt.
+   2. Die STAMMDATEN bleiben, wie sie sind. Maschinen zu vereinen
+      erzeugt Dubletten ("Monforts 1000" zweimal), und daran haengt die
+      ganze Planung. Wer Maschinen uebernehmen will, ersetzt.
+
+   Ein Auftrag OHNE Nummer laesst sich nicht abgleichen - er kommt dazu,
+   und das ist die richtige Richtung: lieber einer zuviel, den man sieht
+   und loescht, als einer zu wenig, den niemand vermisst.             */
+function sicherungVereinen(jetzt, datei){
+  const vorhanden = Array.isArray(jetzt) ? jetzt : [];
+  const kommt = (datei && Array.isArray(datei.auftraege)) ? datei.auftraege : [];
+  const kennt = {};
+  vorhanden.forEach(a => { const n = String((a && a.nummer) || '').trim(); if(n) kennt[n] = true; });
+  const dazu = [], uebersprungen = [];
+  kommt.forEach(a => {
+    const n = String((a && a.nummer) || '').trim();
+    if(n && kennt[n]){ uebersprungen.push(n); return; }
+    if(n) kennt[n] = true;
+    dazu.push(JSON.parse(JSON.stringify(a)));
+  });
+  return { auftraege: vorhanden.concat(dazu), dazu: dazu.length, uebersprungen };
+}
+
+/* Welche Auftraege zeigen auf eine Maschine, die es hier nicht gibt?
+   DAS IST DER FALL, DER STILL SCHADET: ein solcher Auftrag faellt aus
+   der Planung, ohne dass jemand ihn vermisst - derselbe Befund wie beim
+   Gang ohne Maschine. Nach jedem Dazuladen wird er genannt. */
+function sicherungFremdeMaschinen(auftraege, maschinen){
+  const da = {};
+  (maschinen || []).forEach(m => { da[m.id] = true; });
+  const raus = [];
+  (auftraege || []).forEach(a => {
+    auftragGaenge(a).forEach(g => {
+      if(g.maschine && !da[g.maschine])
+        raus.push({ nummer:String(a.nummer || ''), teil:String(a.teil || ''),
+                    gang:g.nr, maschine:g.maschine });
+    });
+  });
+  return raus;
+}
+
+/* ---- Demo-Werkstatt --------------------------------------------------
+   Siehe Kopf dieses Pakets: erfundene Kunden, echte Musterteile,
+   absichtlich ein paar Befunde darin.                                */
+const DEMO_KUNDEN = ['Musterbau GmbH', 'Beispiel Antriebe KG', 'Demo Hydraulik',
+                     'Probe Werkzeugbau', 'Muster Pumpen AG'];
+
+/* tag(0) ist heute, tag(-7) vorige Woche, tag(14) in zwei Wochen. */
+function demoWerkstatt(heute, maschinen){
+  const M = maschinen || WERKSTATT_MASCHINEN;
+  const h = planTag(heute) || planTag(planText(Date.now()));
+  const tag = (n) => planText(planPlus(h, n));
+  const drehen = M.filter(m => m.art === 'drehen')[0];
+  const fraese = M.filter(m => m.art === 'fraesen')[0];
+  const zweite = M.filter(m => m.art === 'drehen')[1] || drehen;
+
+  /* [nummer, kunde, teil, klasse, gattung, maschine, stueck, ruest,
+      stueck-zeit, status, liefertermin, preis] */
+  const roh = [
+    ['A-1041', 0, 'Welle glatt ⌀40x200',   'drehteil_einfach', 'drehen',   drehen, 120, 20, 3.9,  'geliefert',  tag(-6),  387],
+    ['A-1042', 1, 'Buchse ⌀60x45',         'drehteil_einfach', 'drehen',   zweite, 200, 20, 2.9,  'geliefert',  tag(-2),  580],
+    ['A-1043', 2, 'Flansch ⌀120',          'drehteil_fraes',   'drehen',   drehen,  60, 40, 9.3,  'laeuft',     tag(3),   234],
+    ['A-1044', 0, 'Platte 200x120x12',     'fraesteil_3ax',    'fraesen',  fraese,  90, 45, 5.7,  'laeuft',     tag(5),   285],
+    ['A-1045', 3, 'Lagerbock 120x80x60',   'fraesteil_3ax',    'fraesen',  fraese,  45, 45, 9.6,  'freigegeben',tag(2),   193],
+    ['A-1046', 4, 'Stufenwelle ⌀50x200',   'drehteil_einfach', 'drehen',   zweite,  80, 20, 5.1,  'freigegeben',tag(9),   440],
+    ['A-1047', 1, 'Deckel 90x90x10',       'fraesteil_3ax',    'fraesen',  fraese, 150, 45, 3.2,  'beauftragt', tag(12),  656],
+    ['A-1048', 2, 'Lagerbuchse ⌀80/⌀60',   'drehteil_einfach', 'drehen',   drehen, 110, 20, 4.2,  'fertig',     tag(4),   254],
+    ['A-1049', 3, 'Klotz 80x80x80',        'fraesteil_3ax',    'fraesen',  fraese,  30, 45, 12.4, 'laeuft',     tag(-1),  216],
+    ['A-1050', 4, 'Platte mit Bohrung',    'fraesteil_3ax',    'fraesen',  fraese, 140, 45, 4.4,  'angeboten',  tag(24),  657]
+  ];
+
+  const masse = {
+    'Welle glatt ⌀40x200':   {dmax:40,  laenge:200, x:0, y:0, z:0},
+    'Buchse ⌀60x45':         {dmax:60,  laenge:45,  x:0, y:0, z:0},
+    'Flansch ⌀120':          {dmax:120, laenge:40,  x:120, y:120, z:40},
+    'Platte 200x120x12':     {dmax:0, laenge:0, x:200, y:120, z:12},
+    'Lagerbock 120x80x60':   {dmax:0, laenge:0, x:120, y:80,  z:60},
+    'Stufenwelle ⌀50x200':   {dmax:50,  laenge:200, x:0, y:0, z:0},
+    'Deckel 90x90x10':       {dmax:0, laenge:0, x:90,  y:90,  z:10},
+    'Lagerbuchse ⌀80/⌀60':   {dmax:80,  laenge:60,  x:0, y:0, z:0},
+    'Klotz 80x80x80':        {dmax:0, laenge:0, x:80,  y:80,  z:80},
+    'Platte mit Bohrung':    {dmax:0, laenge:0, x:160, y:100, z:15}
+  };
+
+  const raus = roh.map(r => {
+    const a = neuerAuftrag();
+    a.nummer = r[0];
+    a.kunde = DEMO_KUNDEN[r[1]];
+    a.teil = r[2];
+    a.zeichnungsnr = 'Z-' + r[0].slice(2);
+    a.werkstoff = /Platte|Klotz|Deckel|Lagerbock/.test(r[2]) ? 'S235' : 'C45';
+    a.klasse = r[3];
+    a.gattung = r[4];
+    a.maschine = r[5] ? r[5].id : '';
+    a.stueck = r[6];
+    a.zeiten = {ruestzeit:r[7], stueckzeit:r[8]};
+    a.status = r[9];
+    a.liefertermin = r[10];
+    a.preis = r[11];
+    a.angelegt = tag(-30);
+    a.masse = masse[r[2]] || {dmax:0, laenge:0, x:0, y:0, z:0};
+    return a;
+  });
+
+  /* EIN AUFTRAG MIT ZWEI GAENGEN - der Flansch laeuft erst auf der
+     Drehbank und dann auf der Fraese. Ohne den zeigt die Planung nie
+     eine Gangkette. */
+  const flansch = raus.filter(a => a.nummer === 'A-1043')[0];
+  if(flansch && fraese){
+    gaengeMaterialisieren(flansch);
+    flansch.gaenge[0].name = 'Drehen';
+    flansch.gaenge[0].ruestzeit = 20;
+    flansch.gaenge[0].stueckzeit = 6.5;
+    const g2 = gangAnhaengen(flansch, 'Fraesen', fraese.id);
+    g2.ruestzeit = 20;
+    g2.stueckzeit = 2.8;
+  }
+
+  /* ZWEI RUECKMELDUNGEN, absichtlich in beide Richtungen: einmal ging
+     es schneller als kalkuliert, einmal langsamer. Ein Bestand, in dem
+     alles genau aufgeht, zeigt die Soll-Ist-Rechnung als sinnlos. */
+  const w1 = raus.filter(a => a.nummer === 'A-1041')[0];
+  if(w1){
+    w1.rueckmeldung.gefertigt = 25;
+    w1.rueckmeldung.ausschuss = 0;
+    w1.rueckmeldung.datum = tag(-6);
+    istSetzen(w1, 1, 'ruestzeit', 24);
+    istSetzen(w1, 1, 'stueckzeit', 4.4);      /* 13 % langsamer */
+  }
+  const w2 = raus.filter(a => a.nummer === 'A-1042')[0];
+  if(w2){
+    w2.rueckmeldung.gefertigt = 48;
+    w2.rueckmeldung.ausschuss = 2;            /* und etwas Ausschuss */
+    w2.rueckmeldung.datum = tag(-2);
+    istSetzen(w2, 1, 'ruestzeit', 18);
+    istSetzen(w2, 1, 'stueckzeit', 2.6);      /* 10 % schneller */
+  }
+
+  return {
+    auftraege: raus,
+    /* Ein freier Tag und eine Wartung, damit die Tafel beides zeigt. */
+    frei: [tag(21)],
+    wartung: {maschine: zweite ? zweite.id : '', tage: [tag(7), tag(8)]}
+  };
+}
+
 if(typeof module !== 'undefined' && module.exports){
   module.exports = { WERKSTATT_VERSION, WERKSTATT_MASCHINEN, WERKSTATT_STATUS,
                      WERKSTATT_STATUS_PLANT, neuerAuftrag, auftragPruefen,
@@ -3460,6 +3869,10 @@ if(typeof module !== 'undefined' && module.exports){
                      gangNeu, auftragGaenge, gaengeSumme, gaengeMaterialisieren,
                      gangAnhaengen, gangEntfernen, gaengeAusgleichen, gangHinweis,
                      fraesAnteil, gaengeVorschlagen,
+                     DEMO_KUNDEN, demoWerkstatt,
+                     SICHERUNG_VERSION, SICHERUNG_KENNUNG, sicherungBauen, hatRueckmeldung,
+                     sicherungPruefen, sicherungZahlen, sicherungVereinen,
+                     sicherungFremdeMaschinen,
                      istZahl, istGaenge, istSumme, istSetzen, lieferschein,
                      WERKSTATT_SORTEN, auftraegeFiltern,
                      kalkGrundlage, auftragNachrechnen, auftragUebernehmen, maschineSatz,
@@ -3625,6 +4038,21 @@ function planMinuten(a){
    Beide sind Listen von Tagen im selben Format. Eine Maschine ohne
    `wartung` verhaelt sich wie vorher - gespeicherte Maschinenlisten aus
    der Zeit davor laufen unveraendert weiter.                           */
+/* ---- Wieviel Mensch ist an einem Tag da? -----------------------------
+   Die Wochenzahl wird auf die Arbeitstage verteilt - wer samstags
+   faehrt, verteilt auf sechs. 0 heisst "keine Grenze".
+
+   GERUNDET WIRD NICHT: 30 Stunden auf 5 Tage sind 360 Minuten, auf 6
+   Tage 300. Eine gerundete Tageszahl summiert sich ueber die Woche auf
+   etwas anderes als die Wochenzahl - und dann stimmt genau die Groesse
+   nicht mehr, die jemand eingetragen hat.                          */
+function planMannMinuten(mannStunden, tageProWoche){
+  const w = +mannStunden;
+  if(!isFinite(w) || w <= 0) return null;
+  const n = Math.max(1, Math.round(+tageProWoche || 5));
+  return w * 60 / n;
+}
+
 function planKapazitaet(m, t, frei){
   if(!m || !m.aktiv) return 0;
   const tage = m.tage || [1,2,3,4,5];
@@ -3641,7 +4069,8 @@ function planKapazitaet(m, t, frei){
    vom Liefertermin: der letzte Gang muss am Liefertag fertig sein, der
    vorige einen Tag frueher, und so weiter bis zum ersten.
 
-   OHNE KAPAZITAETSPRUEFUNG, und das ist Absicht. Ein spaetester Start
+   OHNE KAPAZITAETSPRUEFUNG UND OHNE MANPOWER-GRENZE, und das ist
+   Absicht. Ein spaetester Start
    ist eine FRIST, kein Plan: er sagt, wann es selbst auf einer voellig
    freien Maschine zu spaet waere. Ob die Maschine an diesen Tagen
    wirklich frei ist, beantwortet die Vorwaertsplanung daneben - und die
@@ -3733,6 +4162,23 @@ function planBelegen(ein){
   const stand = {};
   maschinen.forEach(m => { stand[m.id] = {}; });
 
+  /* MANPOWER: eine Grenze ueber ALLE Maschinen zusammen. Ohne sie
+     rechnet die App vier Maschinen mal acht Stunden - in einer
+     Ein-Mann-Werkstatt gibt es die nicht, und jeder Termin waere zu
+     frueh versprochen. Siehe Kopf des Pakets.
+     Was schon verbraucht ist, steht im BELEGUNGSSTAND - ein zweiter
+     Zaehler liefe frueher oder spaeter auseinander. */
+  const mannStunden = +e.mannStunden;
+  const mannAn = isFinite(mannStunden) && mannStunden > 0;
+  const mannFrei = (m, tag) => {
+    if(!mannAn) return Infinity;
+    const proTag = planMannMinuten(mannStunden, (m.tage || [1,2,3,4,5]).length);
+    if(proTag === null) return Infinity;
+    let schon = 0;
+    maschinen.forEach(x => { schon += (stand[x.id] && stand[x.id][tag]) || 0; });
+    return Math.max(0, proTag - schon);
+  };
+
   const bloecke = [], ergebnis = [], unplanbar = [];
   /* Der Horizont als DATUM statt als Schrittzaehler: mehrere Gaenge
      hintereinander duerfen zusammen nicht weiter reichen als die eine
@@ -3767,7 +4213,11 @@ function planBelegen(ein){
       while(rest > 0.0001 && tag <= grenze){
         const kap = planKapazitaet(m, tag, frei);
         const belegt = stand[m.id][tag] || 0;
-        const frei_min = kap - belegt;
+        /* Das KLEINERE aus "was die Maschine koennte" und "was von der
+           Manpower noch uebrig ist". Legt ein anderer Auftrag die
+           Person heute schon auf eine andere Maschine, bleibt hier
+           weniger - genau das ist der Punkt. */
+        const frei_min = Math.min(kap - belegt, mannFrei(m, tag));
         if(frei_min > 0.0001){
           const nimm = Math.min(frei_min, rest);
           stand[m.id][tag] = belegt + nimm;
@@ -3855,6 +4305,9 @@ function planBelegen(ein){
   });
 
   return { bloecke, auftraege:ergebnis, unplanbar,
+           /* Womit gerechnet wurde, gehoert ins Ergebnis - sonst steht
+              eine Terminkette da, deren Grundlage niemand sieht. */
+           mannStunden: mannAn ? mannStunden : null,
            horizont, ab:planText(ab), bis:planText(planPlus(ab, horizont - 1)) };
 }
 
@@ -4193,12 +4646,141 @@ function planSollIst(auftraege, maschinen, von, bis){
   };
 }
 
+/* ---- Die Uebersicht --------------------------------------------------
+   Fasst zusammen, was die Planung ohnehin gerechnet hat. Siehe Kopf des
+   Pakets: rechnet NICHTS neu, sonst gaebe es zwei Wahrheiten.
+
+   `e` ist dasselbe Eingabeobjekt wie bei planBelegen, plus `wochen`
+   (wieviele Wochen die Auslastung zeigen soll).                     */
+function planUebersicht(e){
+  const E = e || {};
+  const auftraege = E.auftraege || [];
+  const maschinen = E.maschinen || [];
+  const heute = planTag(E.ab) || planTag(planText(Date.now()));
+  const b = E.belegung || planBelegen(E);
+  const wochenZahl = Math.max(1, Math.round(+E.wochen || 4));
+
+  /* ---- 1. Termine: was ist ueberfaellig, was wird eng? ----
+     UEBERFAELLIG heisst: der Liefertag ist vorbei und das Teil ist
+     nicht draussen. Das ist eine Tatsache, kein Rechenergebnis - und
+     deshalb steht es an erster Stelle.
+     GERISSEN heisst: der Plan sagt, es wird nicht mehr rechtzeitig
+     fertig. Das ist eine Vorhersage, und sie kann sich noch aendern. */
+  const offen = auftraege.filter(a => a.status !== 'geliefert' && a.status !== 'angeboten');
+  const ueberfaellig = [], gerissen = [], eng = [];
+  const zeilen = [];
+  (b.auftraege || []).forEach(z => {
+    const a = z.auftrag;
+    const soll = planTag(a.liefertermin);
+    const ueber = soll !== null && soll < heute && a.status !== 'geliefert';
+    const zeile = {
+      nummer:String(a.nummer || ''), teil:String(a.teil || ''), kunde:String(a.kunde || ''),
+      status:a.status, termin:a.liefertermin || '', start:z.start, ende:z.ende,
+      puffer:z.puffer, grundVerzug:z.grundVerzug || null,
+      maschinen:(z.gaenge || []).map(g => g.maschine),
+      ueberfaellig:ueber,
+      /* Wieviele Arbeitstage bis zum Termin - das ist die Zahl, die man
+         wirklich liest, nicht das Datum. */
+      tageBis: soll === null ? null : Math.round((soll - heute) / 86400000)
+    };
+    zeilen.push(zeile);
+    if(ueber) ueberfaellig.push(zeile);
+    else if(z.puffer !== null && z.puffer < 0) gerissen.push(zeile);
+    else if(z.puffer !== null && z.puffer <= 2) eng.push(zeile);
+  });
+  /* Auftraege, die gar nicht in den Plan passen, sind der schlimmste
+     Fall - sie tauchen in keiner Tafel auf. */
+  const unplanbar = (b.unplanbar || []).map(u => ({
+    nummer:String(u.auftrag.nummer || ''), teil:String(u.auftrag.teil || ''),
+    grund:u.grund
+  }));
+
+  /* ---- 2. Was laeuft, was wartet ---- */
+  const nachStatus = {};
+  auftraege.forEach(a => { nachStatus[a.status] = (nachStatus[a.status] || 0) + 1; });
+
+  /* ---- 3. Auslastung, auf die naechsten Wochen gekuerzt ----
+     Neun Spalten, von denen acht leer sind, sind keine Auskunft. */
+  const ausl = planAuslastung(b, maschinen, E.frei);
+  /* DIE EIGENE ZEIT ist fuer eine Ein-Mann-Werkstatt die Zahl, die
+     zaehlt. Vier Maschinen zu je 20 % sehen leer aus und sind in
+     Wahrheit die volle Woche. Gerechnet aus denselben Bloecken wie die
+     Maschinenauslastung - keine zweite Wahrheit. */
+  const mann = (function(){
+    const w = +E.mannStunden;
+    if(!isFinite(w) || w <= 0) return null;
+    const jeWoche = {};
+    (b.bloecke || []).forEach(x => {
+      const wo = planText(planWochenanfang(x.tag));
+      jeWoche[wo] = (jeWoche[wo] || 0) + x.minuten;
+    });
+    return { stunden:w, jeWoche };
+  })();
+  const wochen = [...new Set(ausl.map(w => w.woche))].sort().slice(0, wochenZahl);
+  const last = maschinen.map(m => ({
+    id:m.id, name:m.name, art:m.art,
+    wochen: wochen.map(w => {
+      const z = ausl.filter(x => x.maschine === m.id && x.woche === w)[0];
+      return { woche:w, belegt:z ? z.belegt : 0, kapazitaet:z ? z.kapazitaet : 0,
+               anteil:z && z.kapazitaet > 0 ? z.belegt / z.kapazitaet : 0,
+               angebrochen:!!(z && z.angebrochen) };
+    })
+  }));
+
+  /* ---- 4. Wert: was steht offen ----
+     Getrennt nach dem, was verbindlich ist, und dem, was noch ein
+     Angebot ist - das sind zwei verschiedene Zahlen, und sie in eine zu
+     werfen waere die haeufigste Art, sich reich zu rechnen. */
+  const wert = (liste) => liste.reduce((s, a) => s + (+a.preis || 0) * Math.max(1, +a.stueck || 1), 0);
+  const werte = {
+    angeboten: wert(auftraege.filter(a => a.status === 'angeboten')),
+    beauftragt: wert(auftraege.filter(a => ['beauftragt', 'freigegeben'].indexOf(a.status) >= 0)),
+    inArbeit: wert(auftraege.filter(a => a.status === 'laeuft')),
+    fertig: wert(auftraege.filter(a => a.status === 'fertig')),
+    geliefert: wert(auftraege.filter(a => a.status === 'geliefert'))
+  };
+  werte.offen = werte.beauftragt + werte.inArbeit + werte.fertig;
+
+  /* ---- 5. Soll gegen Ist ---- */
+  const si = planSollIst(auftraege);
+
+  return {
+    heute: planText(heute),
+    zahlen: {
+      gesamt: auftraege.length,
+      offen: offen.length,
+      ueberfaellig: ueberfaellig.length,
+      gerissen: gerissen.length,
+      eng: eng.length,
+      unplanbar: unplanbar.length,
+      laeuft: nachStatus.laeuft || 0,
+      wartet: (nachStatus.beauftragt || 0) + (nachStatus.freigegeben || 0),
+      fertig: nachStatus.fertig || 0
+    },
+    nachStatus, ueberfaellig, gerissen, eng, unplanbar, zeilen,
+    last, wochen, werte, sollIst: si,
+    /* null heisst: keine Grenze gesetzt, es gilt die Maschinenrechnung. */
+    mann: mann ? {
+      stunden: mann.stunden,
+      wochen: wochen.map(w => {
+        const belegt = (mann.jeWoche[w] || 0) / 60;
+        return { woche:w, belegt, kapazitaet:mann.stunden,
+                 anteil: mann.stunden > 0 ? belegt / mann.stunden : 0 };
+      })
+    } : null,
+    /* Die naechsten fuenf nach Termin - das ist die Liste, die man
+       morgens ansieht. */
+    naechste: zeilen.filter(z => z.tageBis !== null)
+      .sort((p, q) => p.tageBis - q.tageBis).slice(0, 5)
+  };
+}
+
 if(typeof module !== 'undefined' && module.exports){
   module.exports = { planTag, planText, planPlus, planWochentag, planWochenanfang,
                      planMinuten, planKapazitaet, planBelegen, planAuslastung,
                      planSpaetester, planVerschieben, planRangLoeschen, planVerteilen,
                      planZettel, planFreiBereich, planFreiNorm, planFreiWirkung,
-                     planImFenster, planAuswertung, planSollIst };
+                     planImFenster, planAuswertung, planSollIst, planUebersicht };
 }
 /* =====================================================================
    kalkulation/40-kalk.js — vom Teil zum Preis
@@ -4470,7 +5052,7 @@ function meldungListe(titel, liste, art){
 
 /* ---- Blaetter ---- */
 function blatt(name){
-  ['Import', 'Kalk', 'Auf', 'Plan', 'Ein'].forEach(n => {
+  ['Ueber', 'Import', 'Kalk', 'Auf', 'Plan', 'Ein'].forEach(n => {
     const b = el('tab' + n), s = el('blatt' + n);
     if(b) b.classList.toggle('an', n === name);
     if(s) s.classList.toggle('an', n === name);
@@ -4482,6 +5064,7 @@ function blatt(name){
   if(name === 'Auf') wListeMalen();
   if(name === 'Plan') wPlanMalen();
   if(name === 'Ein') einMalen();
+  if(name === 'Ueber') wUebersichtMalen();
 }
 
 /* ---- Dateien annehmen ---------------------------------------------- */
@@ -5412,6 +5995,7 @@ const SLOT_ZU = 'wp_zu';
 const SLOT_FILTER = 'wp_filter';
 const SLOT_FREI = 'wp_frei';
 const SLOT_REGELN = 'wp_regeln';
+const SLOT_STAND = 'wp_stand';
 
 /* Die Auswahl im Statusfeld. "offen" ist die taegliche Frage; die
    sechs Einzelstufen stehen darunter, weil man manchmal genau eine
@@ -5442,6 +6026,9 @@ const W = {
   filter: {status:'alle', text:'', sortieren:'termin'},
   frei: [],            /* Feiertage und Betriebsurlaub, JJJJ-MM-TT */
   regeln: {wahl:'last', uebergabe:1},   /* Punkt 7 und 8 der Liste */
+  mannStunden: 30,     /* Stunden je Woche, die wirklich da sind */
+  sicherung: null,     /* gelesene Datei, wartet auf den zweiten Klick */
+  demoFragt: false,    /* Beispieldaten wuerden Vorhandenes ersetzen */
   nachrechnung: null   /* Ergebnis von auftragNachrechnen fuer die offene Maske */
 };
 
@@ -5495,9 +6082,14 @@ function wRegelnLaden(){
   const w = g && WERKSTATT_MASCHINENWAHL.indexOf(g.wahl) >= 0 ? g.wahl : 'last';
   const u = g && isFinite(+g.uebergabe) ? Math.min(30, Math.max(0, Math.round(+g.uebergabe))) : 1;
   W.regeln = {wahl:w, uebergabe:u};
+  /* Die eigene Zeit liegt im selben Slot - sie ist dieselbe Art von
+     Einstellung: eine Regel, nach der geplant wird. */
+  W.mannStunden = (g && isFinite(+g.mannStunden)) ? Math.min(168, Math.max(0, +g.mannStunden)) : 30;
 }
 function wRegelnSichern(){
-  try{ localStorage.setItem(SLOT_REGELN, JSON.stringify(W.regeln)); }catch(e){}
+  try{ localStorage.setItem(SLOT_REGELN,
+    JSON.stringify({wahl:W.regeln.wahl, uebergabe:W.regeln.uebergabe,
+                    mannStunden:W.mannStunden})); }catch(e){}
 }
 
 function wFilterLaden(){
@@ -5518,6 +6110,50 @@ function wSichern(){
     localStorage.setItem(SLOT_AUF, JSON.stringify(W.auftraege));
     localStorage.setItem(SLOT_MASCH, JSON.stringify(W.maschinen));
   }catch(e){ meldung('Die Auftraege liessen sich nicht speichern: ' + e.message, 'warn'); }
+  wStandZaehlen();
+}
+
+/* ---- Wann wurde zuletzt gesichert? -----------------------------------
+   EINE SICHERUNGSFUNKTION, AN DIE NIEMAND DENKT, SICHERT NICHTS. Also
+   zaehlt die App mit, wie oft sich seit der letzten Sicherung etwas
+   geaendert hat, und sagt es in der Karte. Der Zaehler ist absichtlich
+   grob - er zaehlt Speichervorgaenge, nicht Felder; es geht um die
+   Groessenordnung, nicht um Buchhaltung.                              */
+function wStandLesen(){
+  try{
+    const g = JSON.parse(localStorage.getItem(SLOT_STAND) || 'null');
+    if(g && typeof g === 'object')
+      return {gesichert:String(g.gesichert || ''), zahl:Math.max(0, Math.round(+g.zahl || 0))};
+  }catch(e){}
+  return {gesichert:'', zahl:0};
+}
+function wStandSchreiben(s){
+  try{ localStorage.setItem(SLOT_STAND, JSON.stringify(s)); }catch(e){}
+}
+function wStandZaehlen(){
+  const s = wStandLesen();
+  s.zahl++;
+  wStandSchreiben(s);
+  wStandMalen();
+}
+function wStandMalen(){
+  const e = el('sicherStand'); if(!e) return;
+  const s = wStandLesen();
+  const zahl = W.auftraege.length;
+  if(!s.gesichert){
+    e.className = 'meldung warn';
+    e.innerHTML = zahl
+      ? '<b>Noch nie gesichert.</b> ' + wZahl(zahl) + ' Auftr&auml;ge liegen nur im Browser dieses ' +
+        'Ger&auml;ts &mdash; ein gel&ouml;schter Websitespeicher, und sie sind weg.'
+      : 'Noch nichts zu sichern. Sobald der erste Auftrag angelegt ist, geh&ouml;rt er hierher.';
+    return;
+  }
+  const alt = s.zahl >= 20;
+  e.className = 'meldung ' + (alt ? 'warn' : 'info');
+  e.innerHTML = 'Zuletzt gesichert am <b>' + wEsc(s.gesichert) + '</b>' +
+    (s.zahl ? ' &mdash; seither <b>' + s.zahl + ' &Auml;nderung' + (s.zahl === 1 ? '' : 'en') + '</b>' +
+      (alt ? '. Zeit f&uuml;r eine neue Sicherung.' : '.')
+          : ' &mdash; seither nichts ge&auml;ndert.');
 }
 
 /* ---- Freie Tage ------------------------------------------------------
@@ -5576,11 +6212,297 @@ function wFreiMalen(){
       '(Betriebsurlaub). Mit dem Feld links w&auml;hlst Du, ob der Tag f&uuml;r die ganze Werkstatt ' +
       'gilt oder ob <b>eine Maschine in die Wartung</b> geht.'
     : ((W.frei.length
-        ? '<b>' + wirkung.zahl + '</b> freie Tage f&uuml;r die ganze Werkstatt, <b>' + wirkung.imFenster +
+        ? '<b>' + wirkung.zahl + '</b> freie' + (wirkung.zahl === 1 ? 'r Tag' : ' Tage') +
+          ' f&uuml;r die ganze Werkstatt, <b>' + wirkung.imFenster +
           '</b> davon im Planungszeitraum' +
           (wirkung.ohneWirkung ? ' — davon ' + wirkung.ohneWirkung + ' ohne Wirkung (sie fallen ' +
             'ohnehin auf einen Tag, an dem keine Maschine l&auml;uft)' : '') + '.'
         : 'Kein freier Tag f&uuml;r die ganze Werkstatt.') + wart));
+}
+
+/* ---- Die Uebersicht --------------------------------------------------
+   Regeln, nach denen hier gezeichnet wird - sie stehen hier, weil man
+   sie beim naechsten Kaestchen wieder braucht:
+
+   1. STATUSFARBE NIE ALLEIN. Jede farbige Zahl traegt Zeichen und Wort.
+   2. DIE ZAHL BLEIBT TEXTFARBEN. Farbe hat der Balken; eine
+      eingefaerbte Zahl waere zweimal dasselbe und einmal schlechter
+      lesbar.
+   3. DIREKT BESCHRIFTET statt Legende - der Blick soll nicht springen.
+   4. DIESELBEN SCHWELLEN wie die Tafel (unter 85 / ab 85 / ueber 100),
+      sonst machen zwei Bilder desselben Plans verschiedene Aussagen.
+   5. JEDER BALKEN TRAEGT SEINE ZAHL. Ein Balken ohne Zahl ist ein
+      Gefuehl, keine Auskunft.                                       */
+
+/* Die Schwelle, an der aus "voll" ein Problem wird - dieselbe wie in
+   planAuslastung, und nur hier steht sie. */
+function ueStufe(anteil){
+  if(anteil > 1.0001) return 'schlecht';
+  if(anteil >= 0.85) return 'warn';
+  return 'gut';
+}
+function ueKachel(zahl, wort, stufe, zeichen, titel){
+  return '<div class="kachel k-' + stufe + '"' +
+    (titel ? ' title="' + wEsc(titel) + '"' : '') + '>' +
+    '<div class="zahl">' + wZahl(zahl) + '</div>' +
+    '<div class="wort"><span class="zeichen">' + zeichen + '</span>' + wort + '</div></div>';
+}
+
+function wUebersichtMalen(){
+  if(!el('ueAmpel')) return;
+  const leer = !W.auftraege.length;
+  const zeig = (id, an) => { const e = el(id); if(e) e.hidden = !an; };
+  ['ueKarteAmpel', 'ueKarteTermine', 'ueKarteLast', 'ueKarteWert', 'ueKarteSoll']
+    .forEach(id => zeig(id, !leer));
+  zeig('ueLeer', leer);
+  if(leer){
+    htm('ueLeerText',
+      'Sobald der erste Auftrag angelegt ist, steht hier, wo Du stehst: was &uuml;berf&auml;llig ' +
+      'ist, was als N&auml;chstes f&auml;llig wird, wie voll die Maschinen sind und was offen ' +
+      'ist. Zum Ausprobieren gibt es in <b>Blatt 5</b> eine Beispiel-Werkstatt.');
+    return;
+  }
+
+  const ab = (el('plAb') || {}).value || wHeute();
+  const tage = Math.max(7, Math.round(+(el('plTage') || {}).value || 60));
+  const u = planUebersicht({
+    auftraege:W.auftraege, maschinen:W.maschinen, ab, tage,
+    frei:W.frei, uebergabe:W.regeln.uebergabe, mannStunden:W.mannStunden, wochen:4
+  });
+
+  /* ---- 1. Wo stehe ich? ---- */
+  {
+    const z = u.zahlen;
+    let h = '';
+    h += ueKachel(z.ueberfaellig, 'überfällig', z.ueberfaellig ? 'schlecht' : 'gut',
+      z.ueberfaellig ? '&#x26A0;' : '&#x2713;',
+      'Liefertag vorbei und noch nicht geliefert');
+    h += ueKachel(z.gerissen + z.eng, z.gerissen ? 'Termin in Gefahr' : 'wird knapp',
+      z.gerissen ? 'schlecht' : (z.eng ? 'warn' : 'gut'),
+      z.gerissen ? '&#x26A0;' : (z.eng ? '&#x25B2;' : '&#x2713;'),
+      'Puffer unter drei Tagen, oder der Plan reicht nicht mehr');
+    h += ueKachel(z.laeuft, 'läuft gerade', 'still', '&#x25B6;', 'Status laeuft');
+    h += ueKachel(z.wartet, 'wartet', 'still', '&#x25CB;', 'beauftragt oder freigegeben');
+    if(z.unplanbar)
+      h += ueKachel(z.unplanbar, 'nicht planbar', 'schlecht', '&#x26A0;',
+        'passt nicht in den Horizont oder hat keine Maschine');
+    htm('ueAmpel', h);
+
+    const saetze = [];
+    if(z.ueberfaellig) saetze.push('<b>' + z.ueberfaellig + '</b> ' +
+      (z.ueberfaellig === 1 ? 'Auftrag ist' : 'Auftr&auml;ge sind') + ' &uuml;ber den Liefertag.');
+    if(z.gerissen) saetze.push('<b>' + z.gerissen + '</b> ' +
+      (z.gerissen === 1 ? 'Termin ist' : 'Termine sind') + ' nach dieser Planung nicht mehr zu halten.');
+    if(!z.ueberfaellig && !z.gerissen && z.eng)
+      saetze.push('Kein Termin ist gerissen, aber <b>' + z.eng + '</b> ' +
+        (z.eng === 1 ? 'hat' : 'haben') + ' weniger als drei Tage Luft.');
+    if(!z.ueberfaellig && !z.gerissen && !z.eng)
+      saetze.push('Alle Termine halten &mdash; mit mehr als drei Tagen Luft.');
+    saetze.push('Gerechnet ab <b>' + wEsc(ab) + '</b> &uuml;ber ' + tage + ' Tage.');
+    htm('ueAmpelText', saetze.join(' '));
+  }
+
+  /* ---- 2. Als Naechstes faellig ----
+     Die Zahl, die man wirklich liest, ist "in wieviel Tagen", nicht das
+     Datum. Das Datum steht daneben, damit man es eintragen kann. */
+  {
+    const h = u.naechste.map(z => {
+      const t = z.tageBis;
+      const stufe = z.ueberfaellig ? 'schlecht' : (t <= 2 ? 'warn' : 'gut');
+      const text = z.ueberfaellig
+        ? '<b>' + Math.abs(t) + '</b> ' + (Math.abs(t) === 1 ? 'Tag' : 'Tage') + ' &uuml;berf&auml;llig'
+        : (t === 0 ? '<b>heute</b>' : 'in <b>' + t + '</b> ' + (t === 1 ? 'Tag' : 'Tagen'));
+      return '<div class="terminzeile">' +
+        '<span class="tnr">' + wEsc(z.nummer || '—') + '</span>' +
+        '<span class="tteil">' + wEsc(z.teil) +
+          (z.kunde ? ' <span class="klein">· ' + wEsc(z.kunde) + '</span>' : '') + '</span>' +
+        '<span class="ttage t-' + stufe + '">' + text + '</span></div>';
+    }).join('');
+    htm('ueTermine', h || '<div class="klein">Kein Auftrag mit Liefertermin.</div>');
+  }
+
+  /* ---- 3. Wie voll bin ich? ----
+     Vier Wochen nebeneinander je Maschine. Die alte Tafel zeigte neun
+     Spalten, acht davon auf null - das ist keine Auskunft, das ist
+     Papier. */
+  {
+    const kw = (d) => { const t = planTag(d); return t ? (d.slice(8) + '.' + d.slice(5, 7)) : d; };
+    let h = '<div class="balkenzeile"><span class="bname"></span>' +
+      '<span class="wochenkopf">' + u.wochen.map(w => '<span>ab ' + kw(w) + '</span>').join('') +
+      '</span><span class="bwert"></span></div>';
+
+    /* DIE EIGENE ZEIT ZUERST. Vier Maschinen zu je 20 % sehen leer aus
+       und sind in Wahrheit die volle Woche - wer nur die
+       Maschinenprozente liest, verplant sich. */
+    if(u.mann){
+      const bal = u.mann.wochen.map(w => {
+        const p = Math.min(1, w.anteil);
+        const st = ueStufe(w.anteil);
+        const proz = Math.round(w.anteil * 100);
+        return '<span class="wbspalte" title="' + wEsc('Deine Zeit, Woche ab ' + w.woche + ': ' +
+          proz + ' % (' + (Math.round(w.belegt * 10) / 10) + ' von ' + w.kapazitaet + ' h)') + '">' +
+          '<span class="wb">' +
+          (w.anteil > 0 ? '<span class="wbf b-' + st + '" style="height:' +
+            Math.round(p * 100) + '%"></span>' : '') +
+          '</span><span class="wbz">' + proz + ' %</span></span>';
+      }).join('');
+      const jetzt = u.mann.wochen[0] ? Math.round(u.mann.wochen[0].anteil * 100) : 0;
+      h += '<div class="balkenzeile"><span class="bname"><b>Deine Zeit</b> ' +
+        '<span class="klein">' + u.mann.stunden + ' h/Woche</span></span>' +
+        '<span class="wochenbalken">' + bal + '</span>' +
+        '<span class="bwert">' + jetzt + ' %<span class="klein"> jetzt</span></span></div>';
+    }
+    u.last.forEach(m => {
+      const bal = m.wochen.map(w => {
+        const p = Math.min(1, w.anteil);
+        const st = ueStufe(w.anteil);
+        const proz = Math.round(w.anteil * 100);
+        return '<span class="wbspalte" title="' + wEsc(m.name + ', Woche ab ' + w.woche + ': ' +
+          proz + ' % (' + wMin(w.belegt) + ' von ' + wMin(w.kapazitaet) + ')') + '">' +
+          '<span class="wb">' +
+          (w.anteil > 0 ? '<span class="wbf b-' + st + '" style="height:' +
+            Math.round(p * 100) + '%"></span>' : '') +
+          '</span><span class="wbz">' + (w.kapazitaet > 0 ? proz + ' %' : '—') + '</span></span>';
+      }).join('');
+      /* Die Zahl der ERSTEN Woche steht rechts - das ist die, die
+         heute zaehlt. */
+      const jetzt = m.wochen[0] ? Math.round(m.wochen[0].anteil * 100) : 0;
+      h += '<div class="balkenzeile"><span class="bname">' + wEsc(m.name) + '</span>' +
+        '<span class="wochenbalken">' + bal + '</span>' +
+        '<span class="bwert">' + jetzt + ' %<span class="klein"> jetzt</span></span></div>';
+    });
+    htm('ueLast', h);
+
+    const voll = u.last.filter(m => m.wochen[0] && m.wochen[0].anteil > 1);
+    const leerM = u.last.filter(m => m.wochen[0] && m.wochen[0].anteil === 0 &&
+      u.last.some(x => x.art === m.art && x.wochen[0] && x.wochen[0].anteil > 0.5));
+    const mannVoll = u.mann && u.mann.wochen[0] && u.mann.wochen[0].anteil > 1;
+    htm('ueLastText',
+      (u.mann
+        ? '<b>Deine Zeit ist die knappe Gr&ouml;&szlig;e</b>, nicht die Maschine: geplant wird mit ' +
+          u.mann.stunden + ' h die Woche, und zwei Maschinen gleichzeitig z&auml;hlen doppelt darauf. ' +
+          (mannVoll ? '<b>Diese Woche ist sie &uuml;berbucht.</b> ' : '')
+        : '<b>Keine Zeitgrenze gesetzt</b> &mdash; jede Maschine rechnet f&uuml;r sich. Das stimmt nur, ' +
+          'wenn an jeder jemand steht (Blatt 4, <i>Deine Zeit je Woche</i>). ') +
+      (voll.length ? '<b>' + voll.map(m => wEsc(m.name)).join(', ') + '</b> ist in dieser Woche ' +
+        '&uuml;ber der Kapazit&auml;t &mdash; der Plan h&auml;lt dort nicht. ' : '') +
+      (leerM.length ? '<b>' + leerM.map(m => wEsc(m.name)).join(', ') + '</b> steht leer, w&auml;hrend ' +
+        'eine baugleiche Maschine l&auml;uft &mdash; <i>Arbeit verteilen</i> in Blatt 4. ' : '') +
+      'Die <b>erste Woche ist angebrochen</b>: dort z&auml;hlen nur die Resttage. ' +
+      'Gr&uuml;n unter 85 %, gelb ab 85 %, rot &uuml;ber 100 % &mdash; dieselben Schwellen wie in der Tafel.');
+  }
+
+  /* ---- 4. Was steht offen ----
+     Angebot und Auftrag getrennt. Sie in eine Zahl zu werfen ist die
+     haeufigste Art, sich reich zu rechnen. */
+  {
+    const W_ = u.werte;
+    const gr = Math.max(W_.offen, W_.angeboten, 1);
+    const zeile = (name, v, klasse, titel) =>
+      '<div class="balkenzeile"><span class="bname">' + name + '</span>' +
+      '<span class="bbahn" title="' + wEsc(titel) + '"><span class="bfuell ' + klasse +
+        '" style="width:' + Math.round(Math.min(1, v / gr) * 100) + '%"></span></span>' +
+      '<span class="bwert">' + wZahl(Math.round(v)) + ' &euro;</span></div>';
+    htm('ueWert',
+      zeile('beauftragt', W_.beauftragt, '', 'beauftragt und freigegeben, noch nicht angefangen') +
+      zeile('in Arbeit', W_.inArbeit, 'b-gut', 'Status laeuft') +
+      zeile('fertig, nicht geliefert', W_.fertig, 'b-warn', 'fertig, aber noch nicht ausgeliefert') +
+      zeile('Angebote offen', W_.angeboten, '', 'noch kein Auftrag &mdash; zaehlt nicht als Umsatz'));
+    htm('ueWertText',
+      '<b>' + wZahl(Math.round(W_.offen)) + ' &euro;</b> sind beauftragt und noch nicht geliefert. ' +
+      'Die <b>Angebote</b> stehen bewusst daneben und nicht dazu &mdash; sie sind noch kein Auftrag. ' +
+      'Gerechnet mit Preis mal St&uuml;ckzahl aus dem Auftrag.');
+  }
+
+  /* ---- 5. Stimmen die Zeiten? ----
+     EIN MITTELWERT ALLEIN VERBIRGT DIE STREUUNG: zwei Auftraege mit
+     1,14 und 0,90 ergeben 1,00, und das saehe aus, als stimmte alles.
+     Also stehen die Einzelwerte daneben. */
+  {
+    const si = u.sollIst;
+    if(!si || !si.zahl){
+      htm('ueSoll', '<div class="klein">Noch keine vollst&auml;ndige R&uuml;ckmeldung. ' +
+        'Sobald ein Auftrag mit gefertigter St&uuml;ckzahl und Zeiten zur&uuml;ckgemeldet ist, ' +
+        'steht hier, wie die Kalkulation getroffen hat.</div>');
+    } else {
+      const f = si.faktor;
+      const proz = Math.round((f - 1) * 100);
+      const stufe = Math.abs(proz) <= 5 ? 'gut' : (Math.abs(proz) <= 15 ? 'warn' : 'schlecht');
+      const einzeln = (si.zeilen || []).filter(z => z.faktor != null);
+      htm('ueSoll',
+        '<div class="kacheln">' +
+        ueKachel(Math.abs(proz) + ' %', proz === 0 ? 'wie kalkuliert'
+          : (proz > 0 ? 'länger gebraucht' : 'schneller fertig'),
+          stufe, proz > 0 ? '&#x25B2;' : (proz < 0 ? '&#x25BC;' : '&#x2713;'),
+          'Ist-Zeit gegen Soll-Zeit, ueber ' + si.zahl + ' Auftraege') +
+        ueKachel(si.zahl, 'Aufträge zurückgemeldet', 'still', '&#x25CB;', '') +
+        '</div>' +
+        '<div class="klein">' +
+        (einzeln.length > 1
+          ? 'Einzeln: ' + einzeln.map(z => wEsc(z.nummer || '—') + ' <b>' +
+              (z.faktor > 1 ? '+' : '') + Math.round((z.faktor - 1) * 100) + ' %</b>').join(', ') +
+            '. <b>Der Mittelwert allein verbirgt die Streuung</b> &mdash; zwei Auftr&auml;ge mit ' +
+            '+14 % und &minus;10 % ergeben zusammen null.'
+          : 'Ein einzelner Auftrag ist noch keine Aussage &uuml;ber die Kalkulation.') +
+        ' Die App &auml;ndert davon <b>nichts</b> von selbst; was daraus folgt, entscheidest Du.</div>');
+    }
+  }
+}
+
+/* ---- Beispieldaten ---------------------------------------------------
+   Der Hinweis sagt VORHER, was der Knopf tut - und wenn schon Arbeit da
+   ist, sagt er es deutlich.                                          */
+function wDemoMalen(){
+  const ja = el('btnDemoJa'), nein = el('btnDemoNein');
+  const fragt = !!W.demoFragt;
+  if(ja) ja.hidden = !fragt;
+  if(nein) nein.hidden = !fragt;
+  htm('demoHinweis', fragt
+    ? '<b>Hier liegen ' + wZahl(W.auftraege.length) + ' Auftr&auml;ge.</b> Die Beispieldaten ' +
+      'w&uuml;rden sie <b>ersetzen</b>. Wenn Du sie behalten willst, sichere sie erst ' +
+      '(Karte dar&uuml;ber) &mdash; dann kannst Du jederzeit zur&uuml;ck.'
+    : 'Zehn erfundene Auftr&auml;ge &uuml;ber alle Status, zwei mit R&uuml;ckmeldung, einer ' +
+      'mit zwei Arbeitsg&auml;ngen, ein gerissener Termin, dazu ein freier Tag und zwei ' +
+      'Wartungstage. Damit haben Tafel, Termine und Auswertung etwas zu zeigen. ' +
+      '<b>Alles erfunden</b>, die Teile sind die zehn Musterk&ouml;rper aus <i>muster/</i>.');
+}
+
+/* ---- Die Vorschau vor dem Zurueckholen -------------------------------
+   Sie ist der eigentliche Schutz: erst steht da, WAS kommt und WAS es
+   ersetzt, dann erst gibt es einen Knopf, der es tut.                 */
+function wSicherVorschau(){
+  const v = el('sicherVorschau'); if(!v) return;
+  const d = W.sicherung;
+  v.hidden = !d;
+  const h = el('sicherHinweis');
+  if(!d){
+    if(h) htm('sicherHinweis',
+      'Die Sicherung nimmt <b>Auftr&auml;ge, Maschinen, freie Tage, Wartung, Planungsregeln und ' +
+      'Einstellungen</b> in eine Datei. Nicht mit hinein gehen Filter und zugeklappte Karten &mdash; ' +
+      'das ist Ansicht, keine Auskunft.<br>' +
+      'Alles liegt sonst nur im Browser <b>dieses</b> Ger&auml;ts: ein gel&ouml;schter ' +
+      'Websitespeicher, ein neuer Rechner, und es ist weg.');
+    return;
+  }
+  const z = sicherungZahlen(d);
+  const jetzt = W.auftraege.length;
+  /* "1 freie Tage" stand im Bild - die Mehrzahl gehoert an die Zahl,
+     nicht ans Wort. */
+  const mz = (n, eins, viele) => n + ' ' + (n === 1 ? eins : viele);
+  htm('sicherInhalt',
+    '<b>In der Datei:</b> ' + mz(z.auftraege, 'Auftrag', 'Auftr&auml;ge') + ', ' +
+    mz(z.maschinen, 'Maschine', 'Maschinen') + ', ' +
+    mz(z.freieTage, 'freier Tag', 'freie Tage') + ', ' +
+    mz(z.wartungstage, 'Wartungstag', 'Wartungstage') +
+    (z.rueckmeldungen ? ', davon ' + mz(z.rueckmeldungen, 'Auftrag', 'Auftr&auml;ge') +
+      ' mit R&uuml;ckmeldung' : '') +
+    (z.einstellungen ? ', dazu die Einstellungen' : ', <b>ohne</b> Einstellungen') +
+    (z.gesichert ? '. Gesichert am <b>' + wEsc(z.gesichert) + '</b>' : '') + '.<br>' +
+    '<b>Hier liegen jetzt:</b> ' + mz(jetzt, 'Auftrag', 'Auftr&auml;ge') + ' auf ' +
+    mz(W.maschinen.length, 'Maschine', 'Maschinen') + '.<br>' +
+    '<b>Alles ersetzen</b> wirft den hiesigen Stand weg und setzt den aus der Datei. ' +
+    '<b>Nur Auftr&auml;ge dazuladen</b> l&auml;sst Maschinen und Einstellungen in Ruhe und ' +
+    'h&auml;ngt die Auftr&auml;ge an, die es hier noch nicht gibt.');
 }
 
 /* ---- Planungsregeln --------------------------------------------------
@@ -5588,6 +6510,25 @@ function wFreiMalen(){
    Wirkung man erst sieht, wenn man drei Karten weiter scrollt, ist eine
    Zumutung - also rechnet die Karte beide Regeln durch und sagt, was
    die andere anders machen wuerde.                                    */
+function wMannMalen(){
+  const f = el('plMann'); if(f) f.value = W.mannStunden;
+  const an = W.mannStunden > 0;
+  /* Was die Maschinen zusammen koennten - die Zahl, die ohne diese
+     Grenze gerechnet wuerde. */
+  const mKap = W.maschinen.filter(m => m.aktiv !== false)
+    .reduce((s2, m) => s2 + (+m.minuten_je_tag || 0) * (m.tage || []).length, 0) / 60;
+  htm('plMannHinweis', an
+    ? 'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b> — das ist Deine Zeit, ' +
+      'nicht die der Maschinen. Die ' + W.maschinen.filter(m => m.aktiv !== false).length +
+      ' aktiven Maschinen k&ouml;nnten zusammen <b>' + wZahl(Math.round(mKap)) + ' h</b>; ' +
+      'solange Du allein einlegst, misst und umspannst, ist Deine Zeit die knappe Gr&ouml;&szlig;e. ' +
+      'Zwei Maschinen gleichzeitig z&auml;hlen deshalb <b>doppelt</b> auf dieses Konto.'
+    : '<b>Keine Grenze gesetzt.</b> Dann rechnet die App jede Maschine f&uuml;r sich — zusammen ' +
+      '<b>' + wZahl(Math.round(mKap)) + ' h die Woche</b>. Das stimmt nur, wenn an jeder Maschine ' +
+      'jemand steht. F&uuml;r eine Werkstatt, in der einer alles macht, sind die Termine damit ' +
+      'deutlich zu fr&uuml;h.');
+}
+
 function wRegelnMalen(){
   const s = el('plRegelWahl'); if(s) s.value = W.regeln.wahl;
   const u = el('plUebergabe'); if(u) u.value = W.regeln.uebergabe;
@@ -6139,7 +7080,8 @@ function wPlanRechnen(){
      Oberflaeche hat sie nie uebergeben - also gab es keinen Weg, einen
      Feiertag einzutragen, und der Plan liess am 3. Oktober arbeiten. */
   W.belegung = planBelegen({ auftraege:W.auftraege, maschinen:W.maschinen, ab, tage,
-                             frei:W.frei, uebergabe:W.regeln.uebergabe });
+                             frei:W.frei, uebergabe:W.regeln.uebergabe,
+                             mannStunden:W.mannStunden });
   return W.belegung;
 }
 
@@ -6392,7 +7334,10 @@ function wPlanMalen(){
   }
   wFreiMalen();
   wRegelnMalen();
+  wMannMalen();
   wFraesMalen();
+  wStandMalen();
+  wSicherVorschau();
   wMaschinenPruefen();
   const un = W.maschinen.filter(m => m.gepflegt === false).length;
   /* Eine Maschine, die nichts zu tun hat, waehrend eine baugleiche
@@ -6904,6 +7849,140 @@ function wVerdrahten(){
 
   wKartenVerdrahten();
 
+  /* ---- Beispieldaten -------------------------------------------------
+     Zehn erfundene Auftraege ueber alle Status, zwei mit Rueckmeldung,
+     einer mit zwei Gaengen, ein freier Tag und eine Wartung. Genug,
+     damit Tafel, Termine und Auswertung etwas zu zeigen haben.       */
+  const demoLaden = () => {
+    const d = demoWerkstatt(wHeute(), W.maschinen);
+    W.auftraege = d.auftraege;
+    W.frei = planFreiNorm(d.frei);
+    if(d.wartung && d.wartung.maschine){
+      const m = W.maschinen.filter(x => x.id === d.wartung.maschine)[0];
+      if(m) m.wartung = planFreiNorm(d.wartung.tage);
+    }
+    W.gewaehlt = -1;
+    wSichern(); wFreiSichern();
+    wFilterMalen(); wListeMalen(); wPlanMalen(); wFraesMalen(); wStandMalen();
+    blatt('Auf');
+    meldung('<b>Beispiel-Werkstatt geladen:</b> ' + d.auftraege.length + ' Auftr&auml;ge ' +
+      'ueber alle Status, zwei mit R&uuml;ckmeldung, einer mit zwei Arbeitsg&auml;ngen, ' +
+      'dazu ein freier Tag und zwei Wartungstage. <b>Alles erfunden</b> &mdash; die Kunden ' +
+      'hei&szlig;en Musterbau und Beispiel Antriebe, die Teile sind die Musterk&ouml;rper. ' +
+      'Zum Wegr&auml;umen: Sicherung zur&uuml;ckholen oder die Auftr&auml;ge einzeln l&ouml;schen.',
+      'info');
+    wDemoMalen();
+  };
+
+  on('btnDemo', 'click', () => {
+    /* WER SCHON AUFTRAEGE HAT, bekommt sie nicht still ueberschrieben. */
+    if(W.auftraege.length){
+      W.demoFragt = true; wDemoMalen();
+      return;
+    }
+    demoLaden();
+  });
+  on('btnDemoJa', 'click', () => { W.demoFragt = false; demoLaden(); });
+  on('btnDemoNein', 'click', () => { W.demoFragt = false; wDemoMalen(); });
+
+  /* ---- Sicherung ----------------------------------------------------
+     EINE Datei, alles darin. Der zweite Klick ist Absicht: ein Import,
+     der still 40 Auftraege ersetzt, ist die zweite Gelegenheit, Daten zu
+     verlieren.                                                        */
+  on('btnSicherExport', 'click', () => {
+    const d = sicherungBauen({
+      auftraege: W.auftraege, maschinen: W.maschinen, frei: W.frei,
+      regeln: W.regeln, einstellungen: S.V, heute: wHeute()
+    });
+    const n = 'werkstatt-sicherung-' + (wHeute() || 'ohne-datum') + '.json';
+    dateiSichern(n, JSON.stringify(d, null, 1));
+    wStandSchreiben({gesichert: wHeute(), zahl: 0});
+    wStandMalen();
+    const z = d.enthaelt;
+    meldung('Gesichert als <b>' + wEsc(n) + '</b>: ' + z.auftraege + ' Auftr&auml;ge, ' +
+      z.maschinen + ' Maschinen, ' + z.freieTage + ' freie Tage' +
+      (z.rueckmeldungen ? ', ' + z.rueckmeldungen + ' mit R&uuml;ckmeldung' : '') +
+      '. <b>Leg die Datei irgendwohin, wo sie einen Festplattenschaden &uuml;berlebt</b> &mdash; ' +
+      'im Download-Ordner desselben Rechners ist sie keine Sicherung.', 'info');
+  });
+
+  on('btnSicherImport', 'click', () => el('sicherDatei') && el('sicherDatei').click());
+  on('sicherDatei', 'change', () => {
+    const f = el('sicherDatei').files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let d = null;
+      try{ d = JSON.parse(String(r.result)); }
+      catch(e){ meldung('Das ist keine lesbare Datei: ' + wEsc(e.message), 'warn'); return; }
+      const f2 = sicherungPruefen(d);
+      if(f2.length){
+        meldungListe('Diese Datei l&auml;sst sich nicht zur&uuml;ckholen:', f2, 'warn');
+        W.sicherung = null; wSicherVorschau();
+        return;
+      }
+      W.sicherung = d;
+      wSicherVorschau();
+    };
+    r.onerror = () => meldung('Die Datei liess sich nicht lesen.', 'warn');
+    r.readAsText(f);
+    el('sicherDatei').value = '';    /* dieselbe Datei zweimal waehlen koennen */
+  });
+
+  on('btnSicherAbbruch', 'click', () => { W.sicherung = null; wSicherVorschau(); });
+
+  on('btnSicherErsetzen', 'click', () => {
+    const d = W.sicherung; if(!d) return;
+    const z = sicherungZahlen(d);
+    W.auftraege = JSON.parse(JSON.stringify(d.auftraege));
+    W.maschinen = JSON.parse(JSON.stringify(d.maschinen));
+    W.frei = planFreiNorm(d.frei);
+    if(d.regeln){
+      const wa = WERKSTATT_MASCHINENWAHL.indexOf(d.regeln.wahl) >= 0 ? d.regeln.wahl : 'last';
+      const ue = isFinite(+d.regeln.uebergabe) ? Math.min(30, Math.max(0, Math.round(+d.regeln.uebergabe))) : 1;
+      W.regeln = {wahl: wa, uebergabe: ue};
+      wRegelnSichern();
+    }
+    /* Die EINSTELLUNGEN gehen durch kalkMerge - eine alte Datei kennt
+       vielleicht nicht jedes heutige Feld, und dann soll der Startwert
+       gelten statt undefined. */
+    if(d.einstellungen){ S.V = kalkMerge(KALK_VORGABEN, d.einstellungen); einSichern(); }
+    W.gewaehlt = -1;
+    wSichern(); wFreiSichern();
+    wStandSchreiben({gesichert: z.gesichert || wHeute(), zahl: 0});
+    W.sicherung = null; wSicherVorschau();
+    wFilterMalen(); wListeMalen(); wPlanMalen(); wFraesMalen(); wStandMalen();
+    meldung('Zur&uuml;ckgeholt: <b>' + z.auftraege + ' Auftr&auml;ge</b>, ' + z.maschinen +
+      ' Maschinen, ' + z.freieTage + ' freie Tage' +
+      (z.einstellungen ? ', dazu die Einstellungen' : '') + '. Der vorherige Stand dieses ' +
+      'Ger&auml;ts ist damit weg.', 'info');
+  });
+
+  on('btnSicherDazu', 'click', () => {
+    const d = W.sicherung; if(!d) return;
+    const v = sicherungVereinen(W.auftraege, d);
+    W.auftraege = v.auftraege;
+    W.gewaehlt = -1;
+    wSichern();
+    W.sicherung = null; wSicherVorschau();
+    wFilterMalen(); wListeMalen(); wPlanMalen(); wFraesMalen(); wStandMalen();
+    /* WAS NICHT PASST, WIRD GENANNT: ein Auftrag, dessen Maschine es
+       hier nicht gibt, faellt still aus der Planung - derselbe Befund
+       wie beim Gang ohne Maschine. */
+    const fremd = sicherungFremdeMaschinen(v.auftraege, W.maschinen);
+    meldung('<b>' + v.dazu + ' Auftr&auml;ge</b> dazugeladen' +
+      (v.uebersprungen.length
+        ? ', <b>' + v.uebersprungen.length + '</b> &uuml;bersprungen (die Nummer gibt es hier schon: ' +
+          wEsc(v.uebersprungen.slice(0, 8).join(', ')) +
+          (v.uebersprungen.length > 8 ? ' …' : '') + ')'
+        : '') + '. Die Maschinen und Einstellungen dieses Ger&auml;ts sind unver&auml;ndert.',
+      v.uebersprungen.length ? 'warn' : 'info');
+    if(fremd.length)
+      meldungListe('Diese Arbeitsg&auml;nge zeigen auf eine Maschine, die es hier nicht gibt &mdash; ' +
+        'sie fallen aus der Planung, bis Du sie umstellst:',
+        fremd.slice(0, 10).map(x => (x.nummer || '(ohne Nummer)') + ' ' + x.teil +
+          ', Gang ' + x.gang + ': ' + x.maschine), 'warn');
+  });
+
   /* Der Fraesanteil. Wer ihn eintraegt, hat ihn gemessen - mehr kann
      die App nicht wissen, und die Marke faellt sichtbar weg. */
   on('einFraesStueck', 'change', () => {
@@ -6925,6 +8004,17 @@ function wVerdrahten(){
     W.regeln.wahl = WERKSTATT_MASCHINENWAHL.indexOf(v) >= 0 ? v : 'last';
     wRegelnSichern(); wPlanMalen();
   });
+  on('plMann', 'change', () => {
+    const v = +(el('plMann') || {}).value;
+    W.mannStunden = isFinite(v) ? Math.min(168, Math.max(0, v)) : 30;
+    wRegelnSichern(); wPlanMalen();
+    meldung(W.mannStunden > 0
+      ? 'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b>. ' +
+        'Die Termine rechnen sich neu.'
+      : '<b>Keine Zeitgrenze mehr.</b> Jede Maschine rechnet fuer sich — das stimmt nur, ' +
+        'wenn an jeder jemand steht.', 'info');
+  });
+
   on('plUebergabe', 'change', () => {
     const v = +(el('plUebergabe') || {}).value;
     W.regeln.uebergabe = isFinite(v) ? Math.min(30, Math.max(0, Math.round(v))) : 1;
@@ -6986,6 +8076,15 @@ function wVerdrahten(){
   const ab = el('plAb'); if(ab && !ab.value) ab.value = wHeute();
   const tg = el('plTage'); if(tg && !tg.value) tg.value = 60;
   wListeMalen();
+  /* EINMAL BEIM START ZEICHNEN, was nicht auf dem Planungsblatt liegt.
+     Am Bild gefunden: wer beim Oeffnen gleich auf Blatt 5 geht, sah eine
+     LEERE Sicherungskarte - weder Stand noch Erklaerung. Sie wurde nur
+     gezeichnet, wenn man vorher Blatt 4 besucht hatte, also genau dann
+     nicht, wenn man sie braucht. */
+  wStandMalen();
+  wSicherVorschau();
+  wFraesMalen();
+  wDemoMalen();
 }
 
 /* ---- Start ----------------------------------------------------------

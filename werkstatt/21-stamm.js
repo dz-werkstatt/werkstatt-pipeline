@@ -940,6 +940,244 @@ function maschineVorschlag(a, maschinen, auftraege, regel){
   return beste.id;
 }
 
+/* ---- Die Sicherung ---------------------------------------------------
+   EINE Datei, alles darin. Siehe Kopf des Patches fuer die Linie
+   zwischen Betriebsdaten und Ansichtszustand.                         */
+const SICHERUNG_VERSION = '1.0';
+const SICHERUNG_KENNUNG = 'werkstatt-pipeline-sicherung';
+
+/* Hat dieser Auftrag WIRKLICH eine Rueckmeldung? Ein leeres Feld
+   {gefertigt:0, ausschuss:0, gaenge:[]} traegt jeder Auftrag, den
+   jemand einmal geoeffnet hat - es ist keine Rueckmeldung, sondern das
+   Formular dafuer. Gezaehlt wird, was jemand eingetragen HAT. */
+function hatRueckmeldung(a){
+  const r = a && a.rueckmeldung;
+  if(!r) return false;
+  if(+r.gefertigt > 0 || +r.ausschuss > 0) return true;
+  if(String(r.datum || '').trim()) return true;
+  return Array.isArray(r.gaenge) && r.gaenge.some(g =>
+    g && (istZahl(g.ruestzeit) || istZahl(g.stueckzeit)));
+}
+
+function sicherungBauen(d){
+  const e = d || {};
+  const kopie = v => JSON.parse(JSON.stringify(v == null ? null : v));
+  const auftraege = Array.isArray(e.auftraege) ? kopie(e.auftraege) : [];
+  const maschinen = Array.isArray(e.maschinen) ? kopie(e.maschinen) : [];
+  const frei = Array.isArray(e.frei) ? kopie(e.frei) : [];
+  return {
+    kennung: SICHERUNG_KENNUNG,
+    version: SICHERUNG_VERSION,
+    gesichert: String(e.heute || ''),
+    /* Die Zaehlung steht IM Kopf, nicht nur in den Listen: wer die Datei
+       in einem Texteditor oeffnet, soll in der ersten Zeile sehen, was
+       drin ist, ohne 4000 Zeilen zu zaehlen. */
+    enthaelt: {
+      auftraege: auftraege.length,
+      maschinen: maschinen.length,
+      freieTage: frei.length,
+      wartungstage: maschinen.reduce((s, m) => s + ((Array.isArray(m.wartung) && m.wartung.length) || 0), 0),
+      rueckmeldungen: auftraege.filter(hatRueckmeldung).length,
+      einstellungen: !!e.einstellungen
+    },
+    auftraege, maschinen, frei,
+    regeln: e.regeln ? kopie(e.regeln) : null,
+    einstellungen: e.einstellungen ? kopie(e.einstellungen) : null
+  };
+}
+
+/* Beanstandungen einer gelesenen Datei; leer heisst brauchbar.
+   GEPRUEFT WIRD DAS GERUEST, nicht der Inhalt jedes Auftrags - dafuer
+   gibt es auftragPruefen, und ein einzelner krummer Auftrag darf eine
+   Sicherung mit 200 guten nicht unbrauchbar machen. */
+function sicherungPruefen(o){
+  const f = [];
+  if(!o || typeof o !== 'object') return ['Das ist keine Sicherungsdatei.'];
+  if(o.kennung !== SICHERUNG_KENNUNG)
+    f.push('Die Datei traegt nicht die Kennung einer Werkstatt-Sicherung.');
+  if(typeof o.version !== 'string' || !o.version)
+    f.push('Die Datei nennt keine Version.');
+  else if(o.version.split('.')[0] !== SICHERUNG_VERSION.split('.')[0])
+    f.push('Die Datei ist Version ' + o.version + ', diese App liest ' +
+           SICHERUNG_VERSION + ' - das Format hat sich geaendert.');
+  ['auftraege', 'maschinen', 'frei'].forEach(k => {
+    if(!Array.isArray(o[k])) f.push('Der Abschnitt "' + k + '" fehlt oder ist keine Liste.');
+  });
+  if(Array.isArray(o.maschinen) && !o.maschinen.length)
+    f.push('Die Datei enthaelt keine einzige Maschine - ohne Maschinen laesst sich nichts planen.');
+  return f;
+}
+
+/* Was steckt WIRKLICH drin? Nicht der Kopf wird gezaehlt, sondern die
+   Listen - ein Kopf laesst sich von Hand aendern, und dann stuende eine
+   Zahl da, die nichts mit dem Inhalt zu tun hat. */
+function sicherungZahlen(o){
+  const a = (o && Array.isArray(o.auftraege)) ? o.auftraege : [];
+  const m = (o && Array.isArray(o.maschinen)) ? o.maschinen : [];
+  return {
+    auftraege: a.length,
+    maschinen: m.length,
+    freieTage: (o && Array.isArray(o.frei)) ? o.frei.length : 0,
+    wartungstage: m.reduce((s, x) => s + ((Array.isArray(x.wartung) && x.wartung.length) || 0), 0),
+    rueckmeldungen: a.filter(hatRueckmeldung).length,
+    regeln: !!(o && o.regeln),
+    einstellungen: !!(o && o.einstellungen),
+    gesichert: (o && o.gesichert) || ''
+  };
+}
+
+/* DAZULADEN statt ersetzen. Zwei Regeln, und beide sind vorsichtig:
+
+   1. Der VORHANDENE Auftrag gewinnt. Ohne Zeitstempel je Auftrag kann
+      die App nicht wissen, welcher der neuere ist - und der vorhandene
+      traegt vielleicht Rueckmeldungen von der Maschine, die in der
+      Datei noch nicht stehen. Was uebersprungen wird, wird GEZAEHLT
+      und benannt.
+   2. Die STAMMDATEN bleiben, wie sie sind. Maschinen zu vereinen
+      erzeugt Dubletten ("Monforts 1000" zweimal), und daran haengt die
+      ganze Planung. Wer Maschinen uebernehmen will, ersetzt.
+
+   Ein Auftrag OHNE Nummer laesst sich nicht abgleichen - er kommt dazu,
+   und das ist die richtige Richtung: lieber einer zuviel, den man sieht
+   und loescht, als einer zu wenig, den niemand vermisst.             */
+function sicherungVereinen(jetzt, datei){
+  const vorhanden = Array.isArray(jetzt) ? jetzt : [];
+  const kommt = (datei && Array.isArray(datei.auftraege)) ? datei.auftraege : [];
+  const kennt = {};
+  vorhanden.forEach(a => { const n = String((a && a.nummer) || '').trim(); if(n) kennt[n] = true; });
+  const dazu = [], uebersprungen = [];
+  kommt.forEach(a => {
+    const n = String((a && a.nummer) || '').trim();
+    if(n && kennt[n]){ uebersprungen.push(n); return; }
+    if(n) kennt[n] = true;
+    dazu.push(JSON.parse(JSON.stringify(a)));
+  });
+  return { auftraege: vorhanden.concat(dazu), dazu: dazu.length, uebersprungen };
+}
+
+/* Welche Auftraege zeigen auf eine Maschine, die es hier nicht gibt?
+   DAS IST DER FALL, DER STILL SCHADET: ein solcher Auftrag faellt aus
+   der Planung, ohne dass jemand ihn vermisst - derselbe Befund wie beim
+   Gang ohne Maschine. Nach jedem Dazuladen wird er genannt. */
+function sicherungFremdeMaschinen(auftraege, maschinen){
+  const da = {};
+  (maschinen || []).forEach(m => { da[m.id] = true; });
+  const raus = [];
+  (auftraege || []).forEach(a => {
+    auftragGaenge(a).forEach(g => {
+      if(g.maschine && !da[g.maschine])
+        raus.push({ nummer:String(a.nummer || ''), teil:String(a.teil || ''),
+                    gang:g.nr, maschine:g.maschine });
+    });
+  });
+  return raus;
+}
+
+/* ---- Demo-Werkstatt --------------------------------------------------
+   Siehe Kopf dieses Pakets: erfundene Kunden, echte Musterteile,
+   absichtlich ein paar Befunde darin.                                */
+const DEMO_KUNDEN = ['Musterbau GmbH', 'Beispiel Antriebe KG', 'Demo Hydraulik',
+                     'Probe Werkzeugbau', 'Muster Pumpen AG'];
+
+/* tag(0) ist heute, tag(-7) vorige Woche, tag(14) in zwei Wochen. */
+function demoWerkstatt(heute, maschinen){
+  const M = maschinen || WERKSTATT_MASCHINEN;
+  const h = planTag(heute) || planTag(planText(Date.now()));
+  const tag = (n) => planText(planPlus(h, n));
+  const drehen = M.filter(m => m.art === 'drehen')[0];
+  const fraese = M.filter(m => m.art === 'fraesen')[0];
+  const zweite = M.filter(m => m.art === 'drehen')[1] || drehen;
+
+  /* [nummer, kunde, teil, klasse, gattung, maschine, stueck, ruest,
+      stueck-zeit, status, liefertermin, preis] */
+  const roh = [
+    ['A-1041', 0, 'Welle glatt ⌀40x200',   'drehteil_einfach', 'drehen',   drehen, 120, 20, 3.9,  'geliefert',  tag(-6),  387],
+    ['A-1042', 1, 'Buchse ⌀60x45',         'drehteil_einfach', 'drehen',   zweite, 200, 20, 2.9,  'geliefert',  tag(-2),  580],
+    ['A-1043', 2, 'Flansch ⌀120',          'drehteil_fraes',   'drehen',   drehen,  60, 40, 9.3,  'laeuft',     tag(3),   234],
+    ['A-1044', 0, 'Platte 200x120x12',     'fraesteil_3ax',    'fraesen',  fraese,  90, 45, 5.7,  'laeuft',     tag(5),   285],
+    ['A-1045', 3, 'Lagerbock 120x80x60',   'fraesteil_3ax',    'fraesen',  fraese,  45, 45, 9.6,  'freigegeben',tag(2),   193],
+    ['A-1046', 4, 'Stufenwelle ⌀50x200',   'drehteil_einfach', 'drehen',   zweite,  80, 20, 5.1,  'freigegeben',tag(9),   440],
+    ['A-1047', 1, 'Deckel 90x90x10',       'fraesteil_3ax',    'fraesen',  fraese, 150, 45, 3.2,  'beauftragt', tag(12),  656],
+    ['A-1048', 2, 'Lagerbuchse ⌀80/⌀60',   'drehteil_einfach', 'drehen',   drehen, 110, 20, 4.2,  'fertig',     tag(4),   254],
+    ['A-1049', 3, 'Klotz 80x80x80',        'fraesteil_3ax',    'fraesen',  fraese,  30, 45, 12.4, 'laeuft',     tag(-1),  216],
+    ['A-1050', 4, 'Platte mit Bohrung',    'fraesteil_3ax',    'fraesen',  fraese, 140, 45, 4.4,  'angeboten',  tag(24),  657]
+  ];
+
+  const masse = {
+    'Welle glatt ⌀40x200':   {dmax:40,  laenge:200, x:0, y:0, z:0},
+    'Buchse ⌀60x45':         {dmax:60,  laenge:45,  x:0, y:0, z:0},
+    'Flansch ⌀120':          {dmax:120, laenge:40,  x:120, y:120, z:40},
+    'Platte 200x120x12':     {dmax:0, laenge:0, x:200, y:120, z:12},
+    'Lagerbock 120x80x60':   {dmax:0, laenge:0, x:120, y:80,  z:60},
+    'Stufenwelle ⌀50x200':   {dmax:50,  laenge:200, x:0, y:0, z:0},
+    'Deckel 90x90x10':       {dmax:0, laenge:0, x:90,  y:90,  z:10},
+    'Lagerbuchse ⌀80/⌀60':   {dmax:80,  laenge:60,  x:0, y:0, z:0},
+    'Klotz 80x80x80':        {dmax:0, laenge:0, x:80,  y:80,  z:80},
+    'Platte mit Bohrung':    {dmax:0, laenge:0, x:160, y:100, z:15}
+  };
+
+  const raus = roh.map(r => {
+    const a = neuerAuftrag();
+    a.nummer = r[0];
+    a.kunde = DEMO_KUNDEN[r[1]];
+    a.teil = r[2];
+    a.zeichnungsnr = 'Z-' + r[0].slice(2);
+    a.werkstoff = /Platte|Klotz|Deckel|Lagerbock/.test(r[2]) ? 'S235' : 'C45';
+    a.klasse = r[3];
+    a.gattung = r[4];
+    a.maschine = r[5] ? r[5].id : '';
+    a.stueck = r[6];
+    a.zeiten = {ruestzeit:r[7], stueckzeit:r[8]};
+    a.status = r[9];
+    a.liefertermin = r[10];
+    a.preis = r[11];
+    a.angelegt = tag(-30);
+    a.masse = masse[r[2]] || {dmax:0, laenge:0, x:0, y:0, z:0};
+    return a;
+  });
+
+  /* EIN AUFTRAG MIT ZWEI GAENGEN - der Flansch laeuft erst auf der
+     Drehbank und dann auf der Fraese. Ohne den zeigt die Planung nie
+     eine Gangkette. */
+  const flansch = raus.filter(a => a.nummer === 'A-1043')[0];
+  if(flansch && fraese){
+    gaengeMaterialisieren(flansch);
+    flansch.gaenge[0].name = 'Drehen';
+    flansch.gaenge[0].ruestzeit = 20;
+    flansch.gaenge[0].stueckzeit = 6.5;
+    const g2 = gangAnhaengen(flansch, 'Fraesen', fraese.id);
+    g2.ruestzeit = 20;
+    g2.stueckzeit = 2.8;
+  }
+
+  /* ZWEI RUECKMELDUNGEN, absichtlich in beide Richtungen: einmal ging
+     es schneller als kalkuliert, einmal langsamer. Ein Bestand, in dem
+     alles genau aufgeht, zeigt die Soll-Ist-Rechnung als sinnlos. */
+  const w1 = raus.filter(a => a.nummer === 'A-1041')[0];
+  if(w1){
+    w1.rueckmeldung.gefertigt = 25;
+    w1.rueckmeldung.ausschuss = 0;
+    w1.rueckmeldung.datum = tag(-6);
+    istSetzen(w1, 1, 'ruestzeit', 24);
+    istSetzen(w1, 1, 'stueckzeit', 4.4);      /* 13 % langsamer */
+  }
+  const w2 = raus.filter(a => a.nummer === 'A-1042')[0];
+  if(w2){
+    w2.rueckmeldung.gefertigt = 48;
+    w2.rueckmeldung.ausschuss = 2;            /* und etwas Ausschuss */
+    w2.rueckmeldung.datum = tag(-2);
+    istSetzen(w2, 1, 'ruestzeit', 18);
+    istSetzen(w2, 1, 'stueckzeit', 2.6);      /* 10 % schneller */
+  }
+
+  return {
+    auftraege: raus,
+    /* Ein freier Tag und eine Wartung, damit die Tafel beides zeigt. */
+    frei: [tag(21)],
+    wartung: {maschine: zweite ? zweite.id : '', tage: [tag(7), tag(8)]}
+  };
+}
+
 if(typeof module !== 'undefined' && module.exports){
   module.exports = { WERKSTATT_VERSION, WERKSTATT_MASCHINEN, WERKSTATT_STATUS,
                      WERKSTATT_STATUS_PLANT, neuerAuftrag, auftragPruefen,
@@ -947,6 +1185,10 @@ if(typeof module !== 'undefined' && module.exports){
                      gangNeu, auftragGaenge, gaengeSumme, gaengeMaterialisieren,
                      gangAnhaengen, gangEntfernen, gaengeAusgleichen, gangHinweis,
                      fraesAnteil, gaengeVorschlagen,
+                     DEMO_KUNDEN, demoWerkstatt,
+                     SICHERUNG_VERSION, SICHERUNG_KENNUNG, sicherungBauen, hatRueckmeldung,
+                     sicherungPruefen, sicherungZahlen, sicherungVereinen,
+                     sicherungFremdeMaschinen,
                      istZahl, istGaenge, istSumme, istSetzen, lieferschein,
                      WERKSTATT_SORTEN, auftraegeFiltern,
                      kalkGrundlage, auftragNachrechnen, auftragUebernehmen, maschineSatz,

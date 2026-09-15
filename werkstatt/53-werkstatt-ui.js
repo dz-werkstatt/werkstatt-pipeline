@@ -13,6 +13,7 @@ const SLOT_ZU = 'wp_zu';
 const SLOT_FILTER = 'wp_filter';
 const SLOT_FREI = 'wp_frei';
 const SLOT_REGELN = 'wp_regeln';
+const SLOT_STAND = 'wp_stand';
 
 /* Die Auswahl im Statusfeld. "offen" ist die taegliche Frage; die
    sechs Einzelstufen stehen darunter, weil man manchmal genau eine
@@ -43,6 +44,9 @@ const W = {
   filter: {status:'alle', text:'', sortieren:'termin'},
   frei: [],            /* Feiertage und Betriebsurlaub, JJJJ-MM-TT */
   regeln: {wahl:'last', uebergabe:1},   /* Punkt 7 und 8 der Liste */
+  mannStunden: 30,     /* Stunden je Woche, die wirklich da sind */
+  sicherung: null,     /* gelesene Datei, wartet auf den zweiten Klick */
+  demoFragt: false,    /* Beispieldaten wuerden Vorhandenes ersetzen */
   nachrechnung: null   /* Ergebnis von auftragNachrechnen fuer die offene Maske */
 };
 
@@ -96,9 +100,14 @@ function wRegelnLaden(){
   const w = g && WERKSTATT_MASCHINENWAHL.indexOf(g.wahl) >= 0 ? g.wahl : 'last';
   const u = g && isFinite(+g.uebergabe) ? Math.min(30, Math.max(0, Math.round(+g.uebergabe))) : 1;
   W.regeln = {wahl:w, uebergabe:u};
+  /* Die eigene Zeit liegt im selben Slot - sie ist dieselbe Art von
+     Einstellung: eine Regel, nach der geplant wird. */
+  W.mannStunden = (g && isFinite(+g.mannStunden)) ? Math.min(168, Math.max(0, +g.mannStunden)) : 30;
 }
 function wRegelnSichern(){
-  try{ localStorage.setItem(SLOT_REGELN, JSON.stringify(W.regeln)); }catch(e){}
+  try{ localStorage.setItem(SLOT_REGELN,
+    JSON.stringify({wahl:W.regeln.wahl, uebergabe:W.regeln.uebergabe,
+                    mannStunden:W.mannStunden})); }catch(e){}
 }
 
 function wFilterLaden(){
@@ -119,6 +128,50 @@ function wSichern(){
     localStorage.setItem(SLOT_AUF, JSON.stringify(W.auftraege));
     localStorage.setItem(SLOT_MASCH, JSON.stringify(W.maschinen));
   }catch(e){ meldung('Die Auftraege liessen sich nicht speichern: ' + e.message, 'warn'); }
+  wStandZaehlen();
+}
+
+/* ---- Wann wurde zuletzt gesichert? -----------------------------------
+   EINE SICHERUNGSFUNKTION, AN DIE NIEMAND DENKT, SICHERT NICHTS. Also
+   zaehlt die App mit, wie oft sich seit der letzten Sicherung etwas
+   geaendert hat, und sagt es in der Karte. Der Zaehler ist absichtlich
+   grob - er zaehlt Speichervorgaenge, nicht Felder; es geht um die
+   Groessenordnung, nicht um Buchhaltung.                              */
+function wStandLesen(){
+  try{
+    const g = JSON.parse(localStorage.getItem(SLOT_STAND) || 'null');
+    if(g && typeof g === 'object')
+      return {gesichert:String(g.gesichert || ''), zahl:Math.max(0, Math.round(+g.zahl || 0))};
+  }catch(e){}
+  return {gesichert:'', zahl:0};
+}
+function wStandSchreiben(s){
+  try{ localStorage.setItem(SLOT_STAND, JSON.stringify(s)); }catch(e){}
+}
+function wStandZaehlen(){
+  const s = wStandLesen();
+  s.zahl++;
+  wStandSchreiben(s);
+  wStandMalen();
+}
+function wStandMalen(){
+  const e = el('sicherStand'); if(!e) return;
+  const s = wStandLesen();
+  const zahl = W.auftraege.length;
+  if(!s.gesichert){
+    e.className = 'meldung warn';
+    e.innerHTML = zahl
+      ? '<b>Noch nie gesichert.</b> ' + wZahl(zahl) + ' Auftr&auml;ge liegen nur im Browser dieses ' +
+        'Ger&auml;ts &mdash; ein gel&ouml;schter Websitespeicher, und sie sind weg.'
+      : 'Noch nichts zu sichern. Sobald der erste Auftrag angelegt ist, geh&ouml;rt er hierher.';
+    return;
+  }
+  const alt = s.zahl >= 20;
+  e.className = 'meldung ' + (alt ? 'warn' : 'info');
+  e.innerHTML = 'Zuletzt gesichert am <b>' + wEsc(s.gesichert) + '</b>' +
+    (s.zahl ? ' &mdash; seither <b>' + s.zahl + ' &Auml;nderung' + (s.zahl === 1 ? '' : 'en') + '</b>' +
+      (alt ? '. Zeit f&uuml;r eine neue Sicherung.' : '.')
+          : ' &mdash; seither nichts ge&auml;ndert.');
 }
 
 /* ---- Freie Tage ------------------------------------------------------
@@ -177,11 +230,297 @@ function wFreiMalen(){
       '(Betriebsurlaub). Mit dem Feld links w&auml;hlst Du, ob der Tag f&uuml;r die ganze Werkstatt ' +
       'gilt oder ob <b>eine Maschine in die Wartung</b> geht.'
     : ((W.frei.length
-        ? '<b>' + wirkung.zahl + '</b> freie Tage f&uuml;r die ganze Werkstatt, <b>' + wirkung.imFenster +
+        ? '<b>' + wirkung.zahl + '</b> freie' + (wirkung.zahl === 1 ? 'r Tag' : ' Tage') +
+          ' f&uuml;r die ganze Werkstatt, <b>' + wirkung.imFenster +
           '</b> davon im Planungszeitraum' +
           (wirkung.ohneWirkung ? ' — davon ' + wirkung.ohneWirkung + ' ohne Wirkung (sie fallen ' +
             'ohnehin auf einen Tag, an dem keine Maschine l&auml;uft)' : '') + '.'
         : 'Kein freier Tag f&uuml;r die ganze Werkstatt.') + wart));
+}
+
+/* ---- Die Uebersicht --------------------------------------------------
+   Regeln, nach denen hier gezeichnet wird - sie stehen hier, weil man
+   sie beim naechsten Kaestchen wieder braucht:
+
+   1. STATUSFARBE NIE ALLEIN. Jede farbige Zahl traegt Zeichen und Wort.
+   2. DIE ZAHL BLEIBT TEXTFARBEN. Farbe hat der Balken; eine
+      eingefaerbte Zahl waere zweimal dasselbe und einmal schlechter
+      lesbar.
+   3. DIREKT BESCHRIFTET statt Legende - der Blick soll nicht springen.
+   4. DIESELBEN SCHWELLEN wie die Tafel (unter 85 / ab 85 / ueber 100),
+      sonst machen zwei Bilder desselben Plans verschiedene Aussagen.
+   5. JEDER BALKEN TRAEGT SEINE ZAHL. Ein Balken ohne Zahl ist ein
+      Gefuehl, keine Auskunft.                                       */
+
+/* Die Schwelle, an der aus "voll" ein Problem wird - dieselbe wie in
+   planAuslastung, und nur hier steht sie. */
+function ueStufe(anteil){
+  if(anteil > 1.0001) return 'schlecht';
+  if(anteil >= 0.85) return 'warn';
+  return 'gut';
+}
+function ueKachel(zahl, wort, stufe, zeichen, titel){
+  return '<div class="kachel k-' + stufe + '"' +
+    (titel ? ' title="' + wEsc(titel) + '"' : '') + '>' +
+    '<div class="zahl">' + wZahl(zahl) + '</div>' +
+    '<div class="wort"><span class="zeichen">' + zeichen + '</span>' + wort + '</div></div>';
+}
+
+function wUebersichtMalen(){
+  if(!el('ueAmpel')) return;
+  const leer = !W.auftraege.length;
+  const zeig = (id, an) => { const e = el(id); if(e) e.hidden = !an; };
+  ['ueKarteAmpel', 'ueKarteTermine', 'ueKarteLast', 'ueKarteWert', 'ueKarteSoll']
+    .forEach(id => zeig(id, !leer));
+  zeig('ueLeer', leer);
+  if(leer){
+    htm('ueLeerText',
+      'Sobald der erste Auftrag angelegt ist, steht hier, wo Du stehst: was &uuml;berf&auml;llig ' +
+      'ist, was als N&auml;chstes f&auml;llig wird, wie voll die Maschinen sind und was offen ' +
+      'ist. Zum Ausprobieren gibt es in <b>Blatt 5</b> eine Beispiel-Werkstatt.');
+    return;
+  }
+
+  const ab = (el('plAb') || {}).value || wHeute();
+  const tage = Math.max(7, Math.round(+(el('plTage') || {}).value || 60));
+  const u = planUebersicht({
+    auftraege:W.auftraege, maschinen:W.maschinen, ab, tage,
+    frei:W.frei, uebergabe:W.regeln.uebergabe, mannStunden:W.mannStunden, wochen:4
+  });
+
+  /* ---- 1. Wo stehe ich? ---- */
+  {
+    const z = u.zahlen;
+    let h = '';
+    h += ueKachel(z.ueberfaellig, 'überfällig', z.ueberfaellig ? 'schlecht' : 'gut',
+      z.ueberfaellig ? '&#x26A0;' : '&#x2713;',
+      'Liefertag vorbei und noch nicht geliefert');
+    h += ueKachel(z.gerissen + z.eng, z.gerissen ? 'Termin in Gefahr' : 'wird knapp',
+      z.gerissen ? 'schlecht' : (z.eng ? 'warn' : 'gut'),
+      z.gerissen ? '&#x26A0;' : (z.eng ? '&#x25B2;' : '&#x2713;'),
+      'Puffer unter drei Tagen, oder der Plan reicht nicht mehr');
+    h += ueKachel(z.laeuft, 'läuft gerade', 'still', '&#x25B6;', 'Status laeuft');
+    h += ueKachel(z.wartet, 'wartet', 'still', '&#x25CB;', 'beauftragt oder freigegeben');
+    if(z.unplanbar)
+      h += ueKachel(z.unplanbar, 'nicht planbar', 'schlecht', '&#x26A0;',
+        'passt nicht in den Horizont oder hat keine Maschine');
+    htm('ueAmpel', h);
+
+    const saetze = [];
+    if(z.ueberfaellig) saetze.push('<b>' + z.ueberfaellig + '</b> ' +
+      (z.ueberfaellig === 1 ? 'Auftrag ist' : 'Auftr&auml;ge sind') + ' &uuml;ber den Liefertag.');
+    if(z.gerissen) saetze.push('<b>' + z.gerissen + '</b> ' +
+      (z.gerissen === 1 ? 'Termin ist' : 'Termine sind') + ' nach dieser Planung nicht mehr zu halten.');
+    if(!z.ueberfaellig && !z.gerissen && z.eng)
+      saetze.push('Kein Termin ist gerissen, aber <b>' + z.eng + '</b> ' +
+        (z.eng === 1 ? 'hat' : 'haben') + ' weniger als drei Tage Luft.');
+    if(!z.ueberfaellig && !z.gerissen && !z.eng)
+      saetze.push('Alle Termine halten &mdash; mit mehr als drei Tagen Luft.');
+    saetze.push('Gerechnet ab <b>' + wEsc(ab) + '</b> &uuml;ber ' + tage + ' Tage.');
+    htm('ueAmpelText', saetze.join(' '));
+  }
+
+  /* ---- 2. Als Naechstes faellig ----
+     Die Zahl, die man wirklich liest, ist "in wieviel Tagen", nicht das
+     Datum. Das Datum steht daneben, damit man es eintragen kann. */
+  {
+    const h = u.naechste.map(z => {
+      const t = z.tageBis;
+      const stufe = z.ueberfaellig ? 'schlecht' : (t <= 2 ? 'warn' : 'gut');
+      const text = z.ueberfaellig
+        ? '<b>' + Math.abs(t) + '</b> ' + (Math.abs(t) === 1 ? 'Tag' : 'Tage') + ' &uuml;berf&auml;llig'
+        : (t === 0 ? '<b>heute</b>' : 'in <b>' + t + '</b> ' + (t === 1 ? 'Tag' : 'Tagen'));
+      return '<div class="terminzeile">' +
+        '<span class="tnr">' + wEsc(z.nummer || '—') + '</span>' +
+        '<span class="tteil">' + wEsc(z.teil) +
+          (z.kunde ? ' <span class="klein">· ' + wEsc(z.kunde) + '</span>' : '') + '</span>' +
+        '<span class="ttage t-' + stufe + '">' + text + '</span></div>';
+    }).join('');
+    htm('ueTermine', h || '<div class="klein">Kein Auftrag mit Liefertermin.</div>');
+  }
+
+  /* ---- 3. Wie voll bin ich? ----
+     Vier Wochen nebeneinander je Maschine. Die alte Tafel zeigte neun
+     Spalten, acht davon auf null - das ist keine Auskunft, das ist
+     Papier. */
+  {
+    const kw = (d) => { const t = planTag(d); return t ? (d.slice(8) + '.' + d.slice(5, 7)) : d; };
+    let h = '<div class="balkenzeile"><span class="bname"></span>' +
+      '<span class="wochenkopf">' + u.wochen.map(w => '<span>ab ' + kw(w) + '</span>').join('') +
+      '</span><span class="bwert"></span></div>';
+
+    /* DIE EIGENE ZEIT ZUERST. Vier Maschinen zu je 20 % sehen leer aus
+       und sind in Wahrheit die volle Woche - wer nur die
+       Maschinenprozente liest, verplant sich. */
+    if(u.mann){
+      const bal = u.mann.wochen.map(w => {
+        const p = Math.min(1, w.anteil);
+        const st = ueStufe(w.anteil);
+        const proz = Math.round(w.anteil * 100);
+        return '<span class="wbspalte" title="' + wEsc('Deine Zeit, Woche ab ' + w.woche + ': ' +
+          proz + ' % (' + (Math.round(w.belegt * 10) / 10) + ' von ' + w.kapazitaet + ' h)') + '">' +
+          '<span class="wb">' +
+          (w.anteil > 0 ? '<span class="wbf b-' + st + '" style="height:' +
+            Math.round(p * 100) + '%"></span>' : '') +
+          '</span><span class="wbz">' + proz + ' %</span></span>';
+      }).join('');
+      const jetzt = u.mann.wochen[0] ? Math.round(u.mann.wochen[0].anteil * 100) : 0;
+      h += '<div class="balkenzeile"><span class="bname"><b>Deine Zeit</b> ' +
+        '<span class="klein">' + u.mann.stunden + ' h/Woche</span></span>' +
+        '<span class="wochenbalken">' + bal + '</span>' +
+        '<span class="bwert">' + jetzt + ' %<span class="klein"> jetzt</span></span></div>';
+    }
+    u.last.forEach(m => {
+      const bal = m.wochen.map(w => {
+        const p = Math.min(1, w.anteil);
+        const st = ueStufe(w.anteil);
+        const proz = Math.round(w.anteil * 100);
+        return '<span class="wbspalte" title="' + wEsc(m.name + ', Woche ab ' + w.woche + ': ' +
+          proz + ' % (' + wMin(w.belegt) + ' von ' + wMin(w.kapazitaet) + ')') + '">' +
+          '<span class="wb">' +
+          (w.anteil > 0 ? '<span class="wbf b-' + st + '" style="height:' +
+            Math.round(p * 100) + '%"></span>' : '') +
+          '</span><span class="wbz">' + (w.kapazitaet > 0 ? proz + ' %' : '—') + '</span></span>';
+      }).join('');
+      /* Die Zahl der ERSTEN Woche steht rechts - das ist die, die
+         heute zaehlt. */
+      const jetzt = m.wochen[0] ? Math.round(m.wochen[0].anteil * 100) : 0;
+      h += '<div class="balkenzeile"><span class="bname">' + wEsc(m.name) + '</span>' +
+        '<span class="wochenbalken">' + bal + '</span>' +
+        '<span class="bwert">' + jetzt + ' %<span class="klein"> jetzt</span></span></div>';
+    });
+    htm('ueLast', h);
+
+    const voll = u.last.filter(m => m.wochen[0] && m.wochen[0].anteil > 1);
+    const leerM = u.last.filter(m => m.wochen[0] && m.wochen[0].anteil === 0 &&
+      u.last.some(x => x.art === m.art && x.wochen[0] && x.wochen[0].anteil > 0.5));
+    const mannVoll = u.mann && u.mann.wochen[0] && u.mann.wochen[0].anteil > 1;
+    htm('ueLastText',
+      (u.mann
+        ? '<b>Deine Zeit ist die knappe Gr&ouml;&szlig;e</b>, nicht die Maschine: geplant wird mit ' +
+          u.mann.stunden + ' h die Woche, und zwei Maschinen gleichzeitig z&auml;hlen doppelt darauf. ' +
+          (mannVoll ? '<b>Diese Woche ist sie &uuml;berbucht.</b> ' : '')
+        : '<b>Keine Zeitgrenze gesetzt</b> &mdash; jede Maschine rechnet f&uuml;r sich. Das stimmt nur, ' +
+          'wenn an jeder jemand steht (Blatt 4, <i>Deine Zeit je Woche</i>). ') +
+      (voll.length ? '<b>' + voll.map(m => wEsc(m.name)).join(', ') + '</b> ist in dieser Woche ' +
+        '&uuml;ber der Kapazit&auml;t &mdash; der Plan h&auml;lt dort nicht. ' : '') +
+      (leerM.length ? '<b>' + leerM.map(m => wEsc(m.name)).join(', ') + '</b> steht leer, w&auml;hrend ' +
+        'eine baugleiche Maschine l&auml;uft &mdash; <i>Arbeit verteilen</i> in Blatt 4. ' : '') +
+      'Die <b>erste Woche ist angebrochen</b>: dort z&auml;hlen nur die Resttage. ' +
+      'Gr&uuml;n unter 85 %, gelb ab 85 %, rot &uuml;ber 100 % &mdash; dieselben Schwellen wie in der Tafel.');
+  }
+
+  /* ---- 4. Was steht offen ----
+     Angebot und Auftrag getrennt. Sie in eine Zahl zu werfen ist die
+     haeufigste Art, sich reich zu rechnen. */
+  {
+    const W_ = u.werte;
+    const gr = Math.max(W_.offen, W_.angeboten, 1);
+    const zeile = (name, v, klasse, titel) =>
+      '<div class="balkenzeile"><span class="bname">' + name + '</span>' +
+      '<span class="bbahn" title="' + wEsc(titel) + '"><span class="bfuell ' + klasse +
+        '" style="width:' + Math.round(Math.min(1, v / gr) * 100) + '%"></span></span>' +
+      '<span class="bwert">' + wZahl(Math.round(v)) + ' &euro;</span></div>';
+    htm('ueWert',
+      zeile('beauftragt', W_.beauftragt, '', 'beauftragt und freigegeben, noch nicht angefangen') +
+      zeile('in Arbeit', W_.inArbeit, 'b-gut', 'Status laeuft') +
+      zeile('fertig, nicht geliefert', W_.fertig, 'b-warn', 'fertig, aber noch nicht ausgeliefert') +
+      zeile('Angebote offen', W_.angeboten, '', 'noch kein Auftrag &mdash; zaehlt nicht als Umsatz'));
+    htm('ueWertText',
+      '<b>' + wZahl(Math.round(W_.offen)) + ' &euro;</b> sind beauftragt und noch nicht geliefert. ' +
+      'Die <b>Angebote</b> stehen bewusst daneben und nicht dazu &mdash; sie sind noch kein Auftrag. ' +
+      'Gerechnet mit Preis mal St&uuml;ckzahl aus dem Auftrag.');
+  }
+
+  /* ---- 5. Stimmen die Zeiten? ----
+     EIN MITTELWERT ALLEIN VERBIRGT DIE STREUUNG: zwei Auftraege mit
+     1,14 und 0,90 ergeben 1,00, und das saehe aus, als stimmte alles.
+     Also stehen die Einzelwerte daneben. */
+  {
+    const si = u.sollIst;
+    if(!si || !si.zahl){
+      htm('ueSoll', '<div class="klein">Noch keine vollst&auml;ndige R&uuml;ckmeldung. ' +
+        'Sobald ein Auftrag mit gefertigter St&uuml;ckzahl und Zeiten zur&uuml;ckgemeldet ist, ' +
+        'steht hier, wie die Kalkulation getroffen hat.</div>');
+    } else {
+      const f = si.faktor;
+      const proz = Math.round((f - 1) * 100);
+      const stufe = Math.abs(proz) <= 5 ? 'gut' : (Math.abs(proz) <= 15 ? 'warn' : 'schlecht');
+      const einzeln = (si.zeilen || []).filter(z => z.faktor != null);
+      htm('ueSoll',
+        '<div class="kacheln">' +
+        ueKachel(Math.abs(proz) + ' %', proz === 0 ? 'wie kalkuliert'
+          : (proz > 0 ? 'länger gebraucht' : 'schneller fertig'),
+          stufe, proz > 0 ? '&#x25B2;' : (proz < 0 ? '&#x25BC;' : '&#x2713;'),
+          'Ist-Zeit gegen Soll-Zeit, ueber ' + si.zahl + ' Auftraege') +
+        ueKachel(si.zahl, 'Aufträge zurückgemeldet', 'still', '&#x25CB;', '') +
+        '</div>' +
+        '<div class="klein">' +
+        (einzeln.length > 1
+          ? 'Einzeln: ' + einzeln.map(z => wEsc(z.nummer || '—') + ' <b>' +
+              (z.faktor > 1 ? '+' : '') + Math.round((z.faktor - 1) * 100) + ' %</b>').join(', ') +
+            '. <b>Der Mittelwert allein verbirgt die Streuung</b> &mdash; zwei Auftr&auml;ge mit ' +
+            '+14 % und &minus;10 % ergeben zusammen null.'
+          : 'Ein einzelner Auftrag ist noch keine Aussage &uuml;ber die Kalkulation.') +
+        ' Die App &auml;ndert davon <b>nichts</b> von selbst; was daraus folgt, entscheidest Du.</div>');
+    }
+  }
+}
+
+/* ---- Beispieldaten ---------------------------------------------------
+   Der Hinweis sagt VORHER, was der Knopf tut - und wenn schon Arbeit da
+   ist, sagt er es deutlich.                                          */
+function wDemoMalen(){
+  const ja = el('btnDemoJa'), nein = el('btnDemoNein');
+  const fragt = !!W.demoFragt;
+  if(ja) ja.hidden = !fragt;
+  if(nein) nein.hidden = !fragt;
+  htm('demoHinweis', fragt
+    ? '<b>Hier liegen ' + wZahl(W.auftraege.length) + ' Auftr&auml;ge.</b> Die Beispieldaten ' +
+      'w&uuml;rden sie <b>ersetzen</b>. Wenn Du sie behalten willst, sichere sie erst ' +
+      '(Karte dar&uuml;ber) &mdash; dann kannst Du jederzeit zur&uuml;ck.'
+    : 'Zehn erfundene Auftr&auml;ge &uuml;ber alle Status, zwei mit R&uuml;ckmeldung, einer ' +
+      'mit zwei Arbeitsg&auml;ngen, ein gerissener Termin, dazu ein freier Tag und zwei ' +
+      'Wartungstage. Damit haben Tafel, Termine und Auswertung etwas zu zeigen. ' +
+      '<b>Alles erfunden</b>, die Teile sind die zehn Musterk&ouml;rper aus <i>muster/</i>.');
+}
+
+/* ---- Die Vorschau vor dem Zurueckholen -------------------------------
+   Sie ist der eigentliche Schutz: erst steht da, WAS kommt und WAS es
+   ersetzt, dann erst gibt es einen Knopf, der es tut.                 */
+function wSicherVorschau(){
+  const v = el('sicherVorschau'); if(!v) return;
+  const d = W.sicherung;
+  v.hidden = !d;
+  const h = el('sicherHinweis');
+  if(!d){
+    if(h) htm('sicherHinweis',
+      'Die Sicherung nimmt <b>Auftr&auml;ge, Maschinen, freie Tage, Wartung, Planungsregeln und ' +
+      'Einstellungen</b> in eine Datei. Nicht mit hinein gehen Filter und zugeklappte Karten &mdash; ' +
+      'das ist Ansicht, keine Auskunft.<br>' +
+      'Alles liegt sonst nur im Browser <b>dieses</b> Ger&auml;ts: ein gel&ouml;schter ' +
+      'Websitespeicher, ein neuer Rechner, und es ist weg.');
+    return;
+  }
+  const z = sicherungZahlen(d);
+  const jetzt = W.auftraege.length;
+  /* "1 freie Tage" stand im Bild - die Mehrzahl gehoert an die Zahl,
+     nicht ans Wort. */
+  const mz = (n, eins, viele) => n + ' ' + (n === 1 ? eins : viele);
+  htm('sicherInhalt',
+    '<b>In der Datei:</b> ' + mz(z.auftraege, 'Auftrag', 'Auftr&auml;ge') + ', ' +
+    mz(z.maschinen, 'Maschine', 'Maschinen') + ', ' +
+    mz(z.freieTage, 'freier Tag', 'freie Tage') + ', ' +
+    mz(z.wartungstage, 'Wartungstag', 'Wartungstage') +
+    (z.rueckmeldungen ? ', davon ' + mz(z.rueckmeldungen, 'Auftrag', 'Auftr&auml;ge') +
+      ' mit R&uuml;ckmeldung' : '') +
+    (z.einstellungen ? ', dazu die Einstellungen' : ', <b>ohne</b> Einstellungen') +
+    (z.gesichert ? '. Gesichert am <b>' + wEsc(z.gesichert) + '</b>' : '') + '.<br>' +
+    '<b>Hier liegen jetzt:</b> ' + mz(jetzt, 'Auftrag', 'Auftr&auml;ge') + ' auf ' +
+    mz(W.maschinen.length, 'Maschine', 'Maschinen') + '.<br>' +
+    '<b>Alles ersetzen</b> wirft den hiesigen Stand weg und setzt den aus der Datei. ' +
+    '<b>Nur Auftr&auml;ge dazuladen</b> l&auml;sst Maschinen und Einstellungen in Ruhe und ' +
+    'h&auml;ngt die Auftr&auml;ge an, die es hier noch nicht gibt.');
 }
 
 /* ---- Planungsregeln --------------------------------------------------
@@ -189,6 +528,25 @@ function wFreiMalen(){
    Wirkung man erst sieht, wenn man drei Karten weiter scrollt, ist eine
    Zumutung - also rechnet die Karte beide Regeln durch und sagt, was
    die andere anders machen wuerde.                                    */
+function wMannMalen(){
+  const f = el('plMann'); if(f) f.value = W.mannStunden;
+  const an = W.mannStunden > 0;
+  /* Was die Maschinen zusammen koennten - die Zahl, die ohne diese
+     Grenze gerechnet wuerde. */
+  const mKap = W.maschinen.filter(m => m.aktiv !== false)
+    .reduce((s2, m) => s2 + (+m.minuten_je_tag || 0) * (m.tage || []).length, 0) / 60;
+  htm('plMannHinweis', an
+    ? 'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b> — das ist Deine Zeit, ' +
+      'nicht die der Maschinen. Die ' + W.maschinen.filter(m => m.aktiv !== false).length +
+      ' aktiven Maschinen k&ouml;nnten zusammen <b>' + wZahl(Math.round(mKap)) + ' h</b>; ' +
+      'solange Du allein einlegst, misst und umspannst, ist Deine Zeit die knappe Gr&ouml;&szlig;e. ' +
+      'Zwei Maschinen gleichzeitig z&auml;hlen deshalb <b>doppelt</b> auf dieses Konto.'
+    : '<b>Keine Grenze gesetzt.</b> Dann rechnet die App jede Maschine f&uuml;r sich — zusammen ' +
+      '<b>' + wZahl(Math.round(mKap)) + ' h die Woche</b>. Das stimmt nur, wenn an jeder Maschine ' +
+      'jemand steht. F&uuml;r eine Werkstatt, in der einer alles macht, sind die Termine damit ' +
+      'deutlich zu fr&uuml;h.');
+}
+
 function wRegelnMalen(){
   const s = el('plRegelWahl'); if(s) s.value = W.regeln.wahl;
   const u = el('plUebergabe'); if(u) u.value = W.regeln.uebergabe;
@@ -740,7 +1098,8 @@ function wPlanRechnen(){
      Oberflaeche hat sie nie uebergeben - also gab es keinen Weg, einen
      Feiertag einzutragen, und der Plan liess am 3. Oktober arbeiten. */
   W.belegung = planBelegen({ auftraege:W.auftraege, maschinen:W.maschinen, ab, tage,
-                             frei:W.frei, uebergabe:W.regeln.uebergabe });
+                             frei:W.frei, uebergabe:W.regeln.uebergabe,
+                             mannStunden:W.mannStunden });
   return W.belegung;
 }
 
@@ -993,7 +1352,10 @@ function wPlanMalen(){
   }
   wFreiMalen();
   wRegelnMalen();
+  wMannMalen();
   wFraesMalen();
+  wStandMalen();
+  wSicherVorschau();
   wMaschinenPruefen();
   const un = W.maschinen.filter(m => m.gepflegt === false).length;
   /* Eine Maschine, die nichts zu tun hat, waehrend eine baugleiche
@@ -1505,6 +1867,140 @@ function wVerdrahten(){
 
   wKartenVerdrahten();
 
+  /* ---- Beispieldaten -------------------------------------------------
+     Zehn erfundene Auftraege ueber alle Status, zwei mit Rueckmeldung,
+     einer mit zwei Gaengen, ein freier Tag und eine Wartung. Genug,
+     damit Tafel, Termine und Auswertung etwas zu zeigen haben.       */
+  const demoLaden = () => {
+    const d = demoWerkstatt(wHeute(), W.maschinen);
+    W.auftraege = d.auftraege;
+    W.frei = planFreiNorm(d.frei);
+    if(d.wartung && d.wartung.maschine){
+      const m = W.maschinen.filter(x => x.id === d.wartung.maschine)[0];
+      if(m) m.wartung = planFreiNorm(d.wartung.tage);
+    }
+    W.gewaehlt = -1;
+    wSichern(); wFreiSichern();
+    wFilterMalen(); wListeMalen(); wPlanMalen(); wFraesMalen(); wStandMalen();
+    blatt('Auf');
+    meldung('<b>Beispiel-Werkstatt geladen:</b> ' + d.auftraege.length + ' Auftr&auml;ge ' +
+      'ueber alle Status, zwei mit R&uuml;ckmeldung, einer mit zwei Arbeitsg&auml;ngen, ' +
+      'dazu ein freier Tag und zwei Wartungstage. <b>Alles erfunden</b> &mdash; die Kunden ' +
+      'hei&szlig;en Musterbau und Beispiel Antriebe, die Teile sind die Musterk&ouml;rper. ' +
+      'Zum Wegr&auml;umen: Sicherung zur&uuml;ckholen oder die Auftr&auml;ge einzeln l&ouml;schen.',
+      'info');
+    wDemoMalen();
+  };
+
+  on('btnDemo', 'click', () => {
+    /* WER SCHON AUFTRAEGE HAT, bekommt sie nicht still ueberschrieben. */
+    if(W.auftraege.length){
+      W.demoFragt = true; wDemoMalen();
+      return;
+    }
+    demoLaden();
+  });
+  on('btnDemoJa', 'click', () => { W.demoFragt = false; demoLaden(); });
+  on('btnDemoNein', 'click', () => { W.demoFragt = false; wDemoMalen(); });
+
+  /* ---- Sicherung ----------------------------------------------------
+     EINE Datei, alles darin. Der zweite Klick ist Absicht: ein Import,
+     der still 40 Auftraege ersetzt, ist die zweite Gelegenheit, Daten zu
+     verlieren.                                                        */
+  on('btnSicherExport', 'click', () => {
+    const d = sicherungBauen({
+      auftraege: W.auftraege, maschinen: W.maschinen, frei: W.frei,
+      regeln: W.regeln, einstellungen: S.V, heute: wHeute()
+    });
+    const n = 'werkstatt-sicherung-' + (wHeute() || 'ohne-datum') + '.json';
+    dateiSichern(n, JSON.stringify(d, null, 1));
+    wStandSchreiben({gesichert: wHeute(), zahl: 0});
+    wStandMalen();
+    const z = d.enthaelt;
+    meldung('Gesichert als <b>' + wEsc(n) + '</b>: ' + z.auftraege + ' Auftr&auml;ge, ' +
+      z.maschinen + ' Maschinen, ' + z.freieTage + ' freie Tage' +
+      (z.rueckmeldungen ? ', ' + z.rueckmeldungen + ' mit R&uuml;ckmeldung' : '') +
+      '. <b>Leg die Datei irgendwohin, wo sie einen Festplattenschaden &uuml;berlebt</b> &mdash; ' +
+      'im Download-Ordner desselben Rechners ist sie keine Sicherung.', 'info');
+  });
+
+  on('btnSicherImport', 'click', () => el('sicherDatei') && el('sicherDatei').click());
+  on('sicherDatei', 'change', () => {
+    const f = el('sicherDatei').files[0]; if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let d = null;
+      try{ d = JSON.parse(String(r.result)); }
+      catch(e){ meldung('Das ist keine lesbare Datei: ' + wEsc(e.message), 'warn'); return; }
+      const f2 = sicherungPruefen(d);
+      if(f2.length){
+        meldungListe('Diese Datei l&auml;sst sich nicht zur&uuml;ckholen:', f2, 'warn');
+        W.sicherung = null; wSicherVorschau();
+        return;
+      }
+      W.sicherung = d;
+      wSicherVorschau();
+    };
+    r.onerror = () => meldung('Die Datei liess sich nicht lesen.', 'warn');
+    r.readAsText(f);
+    el('sicherDatei').value = '';    /* dieselbe Datei zweimal waehlen koennen */
+  });
+
+  on('btnSicherAbbruch', 'click', () => { W.sicherung = null; wSicherVorschau(); });
+
+  on('btnSicherErsetzen', 'click', () => {
+    const d = W.sicherung; if(!d) return;
+    const z = sicherungZahlen(d);
+    W.auftraege = JSON.parse(JSON.stringify(d.auftraege));
+    W.maschinen = JSON.parse(JSON.stringify(d.maschinen));
+    W.frei = planFreiNorm(d.frei);
+    if(d.regeln){
+      const wa = WERKSTATT_MASCHINENWAHL.indexOf(d.regeln.wahl) >= 0 ? d.regeln.wahl : 'last';
+      const ue = isFinite(+d.regeln.uebergabe) ? Math.min(30, Math.max(0, Math.round(+d.regeln.uebergabe))) : 1;
+      W.regeln = {wahl: wa, uebergabe: ue};
+      wRegelnSichern();
+    }
+    /* Die EINSTELLUNGEN gehen durch kalkMerge - eine alte Datei kennt
+       vielleicht nicht jedes heutige Feld, und dann soll der Startwert
+       gelten statt undefined. */
+    if(d.einstellungen){ S.V = kalkMerge(KALK_VORGABEN, d.einstellungen); einSichern(); }
+    W.gewaehlt = -1;
+    wSichern(); wFreiSichern();
+    wStandSchreiben({gesichert: z.gesichert || wHeute(), zahl: 0});
+    W.sicherung = null; wSicherVorschau();
+    wFilterMalen(); wListeMalen(); wPlanMalen(); wFraesMalen(); wStandMalen();
+    meldung('Zur&uuml;ckgeholt: <b>' + z.auftraege + ' Auftr&auml;ge</b>, ' + z.maschinen +
+      ' Maschinen, ' + z.freieTage + ' freie Tage' +
+      (z.einstellungen ? ', dazu die Einstellungen' : '') + '. Der vorherige Stand dieses ' +
+      'Ger&auml;ts ist damit weg.', 'info');
+  });
+
+  on('btnSicherDazu', 'click', () => {
+    const d = W.sicherung; if(!d) return;
+    const v = sicherungVereinen(W.auftraege, d);
+    W.auftraege = v.auftraege;
+    W.gewaehlt = -1;
+    wSichern();
+    W.sicherung = null; wSicherVorschau();
+    wFilterMalen(); wListeMalen(); wPlanMalen(); wFraesMalen(); wStandMalen();
+    /* WAS NICHT PASST, WIRD GENANNT: ein Auftrag, dessen Maschine es
+       hier nicht gibt, faellt still aus der Planung - derselbe Befund
+       wie beim Gang ohne Maschine. */
+    const fremd = sicherungFremdeMaschinen(v.auftraege, W.maschinen);
+    meldung('<b>' + v.dazu + ' Auftr&auml;ge</b> dazugeladen' +
+      (v.uebersprungen.length
+        ? ', <b>' + v.uebersprungen.length + '</b> &uuml;bersprungen (die Nummer gibt es hier schon: ' +
+          wEsc(v.uebersprungen.slice(0, 8).join(', ')) +
+          (v.uebersprungen.length > 8 ? ' …' : '') + ')'
+        : '') + '. Die Maschinen und Einstellungen dieses Ger&auml;ts sind unver&auml;ndert.',
+      v.uebersprungen.length ? 'warn' : 'info');
+    if(fremd.length)
+      meldungListe('Diese Arbeitsg&auml;nge zeigen auf eine Maschine, die es hier nicht gibt &mdash; ' +
+        'sie fallen aus der Planung, bis Du sie umstellst:',
+        fremd.slice(0, 10).map(x => (x.nummer || '(ohne Nummer)') + ' ' + x.teil +
+          ', Gang ' + x.gang + ': ' + x.maschine), 'warn');
+  });
+
   /* Der Fraesanteil. Wer ihn eintraegt, hat ihn gemessen - mehr kann
      die App nicht wissen, und die Marke faellt sichtbar weg. */
   on('einFraesStueck', 'change', () => {
@@ -1526,6 +2022,17 @@ function wVerdrahten(){
     W.regeln.wahl = WERKSTATT_MASCHINENWAHL.indexOf(v) >= 0 ? v : 'last';
     wRegelnSichern(); wPlanMalen();
   });
+  on('plMann', 'change', () => {
+    const v = +(el('plMann') || {}).value;
+    W.mannStunden = isFinite(v) ? Math.min(168, Math.max(0, v)) : 30;
+    wRegelnSichern(); wPlanMalen();
+    meldung(W.mannStunden > 0
+      ? 'Geplant wird mit <b>' + wZahl(W.mannStunden) + ' Stunden je Woche</b>. ' +
+        'Die Termine rechnen sich neu.'
+      : '<b>Keine Zeitgrenze mehr.</b> Jede Maschine rechnet fuer sich — das stimmt nur, ' +
+        'wenn an jeder jemand steht.', 'info');
+  });
+
   on('plUebergabe', 'change', () => {
     const v = +(el('plUebergabe') || {}).value;
     W.regeln.uebergabe = isFinite(v) ? Math.min(30, Math.max(0, Math.round(v))) : 1;
@@ -1587,4 +2094,13 @@ function wVerdrahten(){
   const ab = el('plAb'); if(ab && !ab.value) ab.value = wHeute();
   const tg = el('plTage'); if(tg && !tg.value) tg.value = 60;
   wListeMalen();
+  /* EINMAL BEIM START ZEICHNEN, was nicht auf dem Planungsblatt liegt.
+     Am Bild gefunden: wer beim Oeffnen gleich auf Blatt 5 geht, sah eine
+     LEERE Sicherungskarte - weder Stand noch Erklaerung. Sie wurde nur
+     gezeichnet, wenn man vorher Blatt 4 besucht hatte, also genau dann
+     nicht, wenn man sie braucht. */
+  wStandMalen();
+  wSicherVorschau();
+  wFraesMalen();
+  wDemoMalen();
 }

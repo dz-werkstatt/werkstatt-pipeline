@@ -573,6 +573,12 @@ function fRohteil(teil, rot, form, auf, sechskant){
      nach unten zeigt, obwohl die Flaeche nicht der Boden ist.
    Fraesteil komplex: der Rest. */
 const F_RICHTUNGEN = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+/* Ab welcher Neigung gilt eine Flaeche als AUFLAGE statt als
+   Hinterschnitt? 0,98 entspricht rund 11 Grad - eine Flaeche, die
+   weiter als das aus der Waagerechten kippt, liegt nicht mehr satt auf
+   und ist wirklich ein Problem beim Aufspannen. */
+const F_AUFLAGE = 0.98;
+
 function fHinterschnitt(modell){
   let best = 1, bestR = [0, 0, 1];
   F_RICHTUNGEN.forEach(R => {
@@ -584,8 +590,19 @@ function fHinterschnitt(modell){
       let n = null;
       if(f.art === 'ebene' && f.rahmen) n = fV.mul(fV.norm(f.rahmen.z), f.sinn ? 1 : -1);
       if(!n) return;                        /* gekruemmte Flaechen zaehlen nicht mit */
+      const d = fV.dot(n, R);
+      /* DIE AUFLAGE IST KEIN HINTERSCHNITT. Eine Flaeche, die GENAU
+         entgegen der Spindel zeigt, ist die Seite, auf der das Teil
+         liegt - die bearbeitet man in der zweiten Aufspannung, und
+         dafuer gibt es den Parameter "Seiten". Ohne diese Ausnahme
+         zaehlte jeder Quader seine eigene Rueckseite als Hinterschnitt
+         (Wuerfel: genau ein Sechstel), und die Unterscheidung
+         3ax/komplex griff bei keinem einzigen Teil. */
+      if(d < -F_AUFLAGE) return;
       ganz += f._w.flaeche;
-      if(fV.dot(n, R) < -0.02) schlecht += f._w.flaeche;   /* zeigt von der Spindel weg */
+      /* Uebrig bleibt, was SCHRAEG nach hinten zeigt - das erreicht der
+         Fraeser von oben nicht, und genau darum geht es. */
+      if(d < -0.02) schlecht += f._w.flaeche;
     });
     const q = ganz > 0 ? schlecht / ganz : 1;
     if(q < best){ best = q; bestR = R; }

@@ -235,6 +235,80 @@ td.nw{ white-space:nowrap; }
 .wtage label{ font-size:12px; color:var(--text-blass); white-space:nowrap; }
 .wtage input{ margin:0 2px 0 0; }
 
+/* ---- Uebersicht ------------------------------------------------------
+   Balken statt Prozenttabelle. Die Farbe traegt der Balken, die Zahl
+   daneben bleibt Text - eine eingefaerbte Zahl waere zweimal dieselbe
+   Information und einmal schlechter lesbar.                          */
+.kacheln{ display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 4px; }
+.kachel{
+  flex:1 1 150px; min-width:140px; background:var(--grund);
+  border:1px solid var(--rand-fein); border-radius:10px; padding:10px 12px;
+}
+.kachel .zahl{ font-size:30px; font-weight:700; line-height:1.1; color:var(--text);
+  font-variant-numeric: tabular-nums; }
+.kachel .wort{ font-size:13px; color:var(--text-blass); margin-top:2px; }
+.kachel .zeichen{ font-size:15px; margin-right:5px; }
+/* Der farbige Streifen traegt den Zustand - zusammen mit dem Zeichen
+   und dem Wort, nie allein. */
+.kachel.k-gut{    border-left:4px solid var(--gut); }
+.kachel.k-warn{   border-left:4px solid var(--warn); }
+.kachel.k-schlecht{ border-left:4px solid var(--schlecht); }
+.kachel.k-still{  border-left:4px solid var(--rand); }
+
+.balkenzeile{ display:flex; align-items:center; gap:10px; margin:5px 0; }
+.balkenzeile .bname{ flex:0 0 150px; font-size:13px; color:var(--text); }
+/* display:block ist hier KEIN Schmuck: beides sind <span>, und an
+   einem Inline-Element wirken width und height nicht. Ohne diese Zeile
+   sahen alle vier Wertbalken gleich aus - naemlich wie keiner. */
+.balkenzeile .bbahn{ display:block; flex:1 1 auto; background:var(--rand-fein);
+  border-radius:4px; height:16px; position:relative; overflow:hidden; }
+.balkenzeile .bfuell{ display:block; height:100%; border-radius:4px;
+  background:var(--akzent); min-width:2px; }
+.balkenzeile .bfuell.b-gut{ background:var(--gut); }
+.balkenzeile .bfuell.b-warn{ background:var(--warn); }
+.balkenzeile .bfuell.b-schlecht{ background:var(--schlecht); }
+.balkenzeile .bwert{ flex:0 0 96px; text-align:right; font-size:13px;
+  color:var(--text); font-variant-numeric: tabular-nums; }
+/* Die Wochen einer Maschine nebeneinander, damit man den Verlauf sieht
+   statt vier Zeilen zu vergleichen. */
+.wochenbalken{ display:flex; gap:2px; flex:1 1 auto; }
+.wochenbalken .wb{ display:block; flex:1 1 0; background:var(--rand-fein);
+  border-radius:4px; height:30px; position:relative; }
+/* Jeder Balken traegt seine Zahl - ein Balken ohne Zahl ist ein
+   Gefuehl, keine Auskunft. Bei 21 % waere der Streifen sonst fuenf
+   Pixel hoch und unlesbar. */
+.wochenbalken .wbz{ display:block; font-size:11px; text-align:center;
+  color:var(--text-blass); margin-top:2px; font-variant-numeric: tabular-nums; }
+.wbspalte{ flex:1 1 0; }
+.wochenbalken .wbf{ display:block; position:absolute; left:0; right:0; bottom:0;
+  border-radius:4px; background:var(--akzent); min-height:2px; }
+.wochenbalken .wbf.b-gut{ background:var(--gut); }
+.wochenbalken .wbf.b-warn{ background:var(--warn); }
+.wochenbalken .wbf.b-schlecht{ background:var(--schlecht); }
+.wochenkopf{ display:flex; gap:2px; flex:1 1 auto; }
+.wochenkopf span{ flex:1 1 0; font-size:11px; color:var(--text-blass); text-align:center; }
+
+.terminzeile{ display:flex; align-items:baseline; gap:10px; padding:5px 0;
+  border-bottom:1px solid var(--rand-fein); }
+.terminzeile:last-child{ border-bottom:0; }
+.terminzeile .tnr{ flex:0 0 72px; font-size:13px; color:var(--text-blass); }
+.terminzeile .tteil{ flex:1 1 auto; font-size:14px; color:var(--text); }
+.terminzeile .ttage{ flex:0 0 130px; text-align:right; font-size:13px;
+  font-variant-numeric: tabular-nums; }
+.terminzeile .ttage b{ font-size:15px; }
+.t-gut{ color:var(--gut); }
+.t-warn{ color:var(--warn); }
+.t-schlecht{ color:var(--schlecht); }
+
+@media (max-width: 700px){
+  .kachel{ flex:1 1 110px; min-width:100px; }
+  .kachel .zahl{ font-size:24px; }
+  .balkenzeile .bname{ flex:0 0 96px; font-size:12px; }
+  .balkenzeile .bwert{ flex:0 0 74px; font-size:12px; }
+  .terminzeile .tnr{ flex:0 0 58px; }
+  .terminzeile .ttage{ flex:0 0 96px; }
+}
+
 /* Die freien Tage als Marken - eine Liste mit zwanzig Zeilen waere fuer
    einen Betriebsurlaub die falsche Form. */
 .marken{ display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }

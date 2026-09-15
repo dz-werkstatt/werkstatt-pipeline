@@ -67,7 +67,7 @@ function meldungListe(titel, liste, art){
 
 /* ---- Blaetter ---- */
 function blatt(name){
-  ['Import', 'Kalk', 'Auf', 'Plan', 'Ein'].forEach(n => {
+  ['Ueber', 'Import', 'Kalk', 'Auf', 'Plan', 'Ein'].forEach(n => {
     const b = el('tab' + n), s = el('blatt' + n);
     if(b) b.classList.toggle('an', n === name);
     if(s) s.classList.toggle('an', n === name);
@@ -79,6 +79,7 @@ function blatt(name){
   if(name === 'Auf') wListeMalen();
   if(name === 'Plan') wPlanMalen();
   if(name === 'Ein') einMalen();
+  if(name === 'Ueber') wUebersichtMalen();
 }
 
 /* ---- Dateien annehmen ---------------------------------------------- */

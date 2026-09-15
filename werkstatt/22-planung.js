@@ -156,6 +156,21 @@ function planMinuten(a){
    Beide sind Listen von Tagen im selben Format. Eine Maschine ohne
    `wartung` verhaelt sich wie vorher - gespeicherte Maschinenlisten aus
    der Zeit davor laufen unveraendert weiter.                           */
+/* ---- Wieviel Mensch ist an einem Tag da? -----------------------------
+   Die Wochenzahl wird auf die Arbeitstage verteilt - wer samstags
+   faehrt, verteilt auf sechs. 0 heisst "keine Grenze".
+
+   GERUNDET WIRD NICHT: 30 Stunden auf 5 Tage sind 360 Minuten, auf 6
+   Tage 300. Eine gerundete Tageszahl summiert sich ueber die Woche auf
+   etwas anderes als die Wochenzahl - und dann stimmt genau die Groesse
+   nicht mehr, die jemand eingetragen hat.                          */
+function planMannMinuten(mannStunden, tageProWoche){
+  const w = +mannStunden;
+  if(!isFinite(w) || w <= 0) return null;
+  const n = Math.max(1, Math.round(+tageProWoche || 5));
+  return w * 60 / n;
+}
+
 function planKapazitaet(m, t, frei){
   if(!m || !m.aktiv) return 0;
   const tage = m.tage || [1,2,3,4,5];
@@ -172,7 +187,8 @@ function planKapazitaet(m, t, frei){
    vom Liefertermin: der letzte Gang muss am Liefertag fertig sein, der
    vorige einen Tag frueher, und so weiter bis zum ersten.
 
-   OHNE KAPAZITAETSPRUEFUNG, und das ist Absicht. Ein spaetester Start
+   OHNE KAPAZITAETSPRUEFUNG UND OHNE MANPOWER-GRENZE, und das ist
+   Absicht. Ein spaetester Start
    ist eine FRIST, kein Plan: er sagt, wann es selbst auf einer voellig
    freien Maschine zu spaet waere. Ob die Maschine an diesen Tagen
    wirklich frei ist, beantwortet die Vorwaertsplanung daneben - und die
@@ -264,6 +280,23 @@ function planBelegen(ein){
   const stand = {};
   maschinen.forEach(m => { stand[m.id] = {}; });
 
+  /* MANPOWER: eine Grenze ueber ALLE Maschinen zusammen. Ohne sie
+     rechnet die App vier Maschinen mal acht Stunden - in einer
+     Ein-Mann-Werkstatt gibt es die nicht, und jeder Termin waere zu
+     frueh versprochen. Siehe Kopf des Pakets.
+     Was schon verbraucht ist, steht im BELEGUNGSSTAND - ein zweiter
+     Zaehler liefe frueher oder spaeter auseinander. */
+  const mannStunden = +e.mannStunden;
+  const mannAn = isFinite(mannStunden) && mannStunden > 0;
+  const mannFrei = (m, tag) => {
+    if(!mannAn) return Infinity;
+    const proTag = planMannMinuten(mannStunden, (m.tage || [1,2,3,4,5]).length);
+    if(proTag === null) return Infinity;
+    let schon = 0;
+    maschinen.forEach(x => { schon += (stand[x.id] && stand[x.id][tag]) || 0; });
+    return Math.max(0, proTag - schon);
+  };
+
   const bloecke = [], ergebnis = [], unplanbar = [];
   /* Der Horizont als DATUM statt als Schrittzaehler: mehrere Gaenge
      hintereinander duerfen zusammen nicht weiter reichen als die eine
@@ -298,7 +331,11 @@ function planBelegen(ein){
       while(rest > 0.0001 && tag <= grenze){
         const kap = planKapazitaet(m, tag, frei);
         const belegt = stand[m.id][tag] || 0;
-        const frei_min = kap - belegt;
+        /* Das KLEINERE aus "was die Maschine koennte" und "was von der
+           Manpower noch uebrig ist". Legt ein anderer Auftrag die
+           Person heute schon auf eine andere Maschine, bleibt hier
+           weniger - genau das ist der Punkt. */
+        const frei_min = Math.min(kap - belegt, mannFrei(m, tag));
         if(frei_min > 0.0001){
           const nimm = Math.min(frei_min, rest);
           stand[m.id][tag] = belegt + nimm;
@@ -386,6 +423,9 @@ function planBelegen(ein){
   });
 
   return { bloecke, auftraege:ergebnis, unplanbar,
+           /* Womit gerechnet wurde, gehoert ins Ergebnis - sonst steht
+              eine Terminkette da, deren Grundlage niemand sieht. */
+           mannStunden: mannAn ? mannStunden : null,
            horizont, ab:planText(ab), bis:planText(planPlus(ab, horizont - 1)) };
 }
 
@@ -724,10 +764,139 @@ function planSollIst(auftraege, maschinen, von, bis){
   };
 }
 
+/* ---- Die Uebersicht --------------------------------------------------
+   Fasst zusammen, was die Planung ohnehin gerechnet hat. Siehe Kopf des
+   Pakets: rechnet NICHTS neu, sonst gaebe es zwei Wahrheiten.
+
+   `e` ist dasselbe Eingabeobjekt wie bei planBelegen, plus `wochen`
+   (wieviele Wochen die Auslastung zeigen soll).                     */
+function planUebersicht(e){
+  const E = e || {};
+  const auftraege = E.auftraege || [];
+  const maschinen = E.maschinen || [];
+  const heute = planTag(E.ab) || planTag(planText(Date.now()));
+  const b = E.belegung || planBelegen(E);
+  const wochenZahl = Math.max(1, Math.round(+E.wochen || 4));
+
+  /* ---- 1. Termine: was ist ueberfaellig, was wird eng? ----
+     UEBERFAELLIG heisst: der Liefertag ist vorbei und das Teil ist
+     nicht draussen. Das ist eine Tatsache, kein Rechenergebnis - und
+     deshalb steht es an erster Stelle.
+     GERISSEN heisst: der Plan sagt, es wird nicht mehr rechtzeitig
+     fertig. Das ist eine Vorhersage, und sie kann sich noch aendern. */
+  const offen = auftraege.filter(a => a.status !== 'geliefert' && a.status !== 'angeboten');
+  const ueberfaellig = [], gerissen = [], eng = [];
+  const zeilen = [];
+  (b.auftraege || []).forEach(z => {
+    const a = z.auftrag;
+    const soll = planTag(a.liefertermin);
+    const ueber = soll !== null && soll < heute && a.status !== 'geliefert';
+    const zeile = {
+      nummer:String(a.nummer || ''), teil:String(a.teil || ''), kunde:String(a.kunde || ''),
+      status:a.status, termin:a.liefertermin || '', start:z.start, ende:z.ende,
+      puffer:z.puffer, grundVerzug:z.grundVerzug || null,
+      maschinen:(z.gaenge || []).map(g => g.maschine),
+      ueberfaellig:ueber,
+      /* Wieviele Arbeitstage bis zum Termin - das ist die Zahl, die man
+         wirklich liest, nicht das Datum. */
+      tageBis: soll === null ? null : Math.round((soll - heute) / 86400000)
+    };
+    zeilen.push(zeile);
+    if(ueber) ueberfaellig.push(zeile);
+    else if(z.puffer !== null && z.puffer < 0) gerissen.push(zeile);
+    else if(z.puffer !== null && z.puffer <= 2) eng.push(zeile);
+  });
+  /* Auftraege, die gar nicht in den Plan passen, sind der schlimmste
+     Fall - sie tauchen in keiner Tafel auf. */
+  const unplanbar = (b.unplanbar || []).map(u => ({
+    nummer:String(u.auftrag.nummer || ''), teil:String(u.auftrag.teil || ''),
+    grund:u.grund
+  }));
+
+  /* ---- 2. Was laeuft, was wartet ---- */
+  const nachStatus = {};
+  auftraege.forEach(a => { nachStatus[a.status] = (nachStatus[a.status] || 0) + 1; });
+
+  /* ---- 3. Auslastung, auf die naechsten Wochen gekuerzt ----
+     Neun Spalten, von denen acht leer sind, sind keine Auskunft. */
+  const ausl = planAuslastung(b, maschinen, E.frei);
+  /* DIE EIGENE ZEIT ist fuer eine Ein-Mann-Werkstatt die Zahl, die
+     zaehlt. Vier Maschinen zu je 20 % sehen leer aus und sind in
+     Wahrheit die volle Woche. Gerechnet aus denselben Bloecken wie die
+     Maschinenauslastung - keine zweite Wahrheit. */
+  const mann = (function(){
+    const w = +E.mannStunden;
+    if(!isFinite(w) || w <= 0) return null;
+    const jeWoche = {};
+    (b.bloecke || []).forEach(x => {
+      const wo = planText(planWochenanfang(x.tag));
+      jeWoche[wo] = (jeWoche[wo] || 0) + x.minuten;
+    });
+    return { stunden:w, jeWoche };
+  })();
+  const wochen = [...new Set(ausl.map(w => w.woche))].sort().slice(0, wochenZahl);
+  const last = maschinen.map(m => ({
+    id:m.id, name:m.name, art:m.art,
+    wochen: wochen.map(w => {
+      const z = ausl.filter(x => x.maschine === m.id && x.woche === w)[0];
+      return { woche:w, belegt:z ? z.belegt : 0, kapazitaet:z ? z.kapazitaet : 0,
+               anteil:z && z.kapazitaet > 0 ? z.belegt / z.kapazitaet : 0,
+               angebrochen:!!(z && z.angebrochen) };
+    })
+  }));
+
+  /* ---- 4. Wert: was steht offen ----
+     Getrennt nach dem, was verbindlich ist, und dem, was noch ein
+     Angebot ist - das sind zwei verschiedene Zahlen, und sie in eine zu
+     werfen waere die haeufigste Art, sich reich zu rechnen. */
+  const wert = (liste) => liste.reduce((s, a) => s + (+a.preis || 0) * Math.max(1, +a.stueck || 1), 0);
+  const werte = {
+    angeboten: wert(auftraege.filter(a => a.status === 'angeboten')),
+    beauftragt: wert(auftraege.filter(a => ['beauftragt', 'freigegeben'].indexOf(a.status) >= 0)),
+    inArbeit: wert(auftraege.filter(a => a.status === 'laeuft')),
+    fertig: wert(auftraege.filter(a => a.status === 'fertig')),
+    geliefert: wert(auftraege.filter(a => a.status === 'geliefert'))
+  };
+  werte.offen = werte.beauftragt + werte.inArbeit + werte.fertig;
+
+  /* ---- 5. Soll gegen Ist ---- */
+  const si = planSollIst(auftraege);
+
+  return {
+    heute: planText(heute),
+    zahlen: {
+      gesamt: auftraege.length,
+      offen: offen.length,
+      ueberfaellig: ueberfaellig.length,
+      gerissen: gerissen.length,
+      eng: eng.length,
+      unplanbar: unplanbar.length,
+      laeuft: nachStatus.laeuft || 0,
+      wartet: (nachStatus.beauftragt || 0) + (nachStatus.freigegeben || 0),
+      fertig: nachStatus.fertig || 0
+    },
+    nachStatus, ueberfaellig, gerissen, eng, unplanbar, zeilen,
+    last, wochen, werte, sollIst: si,
+    /* null heisst: keine Grenze gesetzt, es gilt die Maschinenrechnung. */
+    mann: mann ? {
+      stunden: mann.stunden,
+      wochen: wochen.map(w => {
+        const belegt = (mann.jeWoche[w] || 0) / 60;
+        return { woche:w, belegt, kapazitaet:mann.stunden,
+                 anteil: mann.stunden > 0 ? belegt / mann.stunden : 0 };
+      })
+    } : null,
+    /* Die naechsten fuenf nach Termin - das ist die Liste, die man
+       morgens ansieht. */
+    naechste: zeilen.filter(z => z.tageBis !== null)
+      .sort((p, q) => p.tageBis - q.tageBis).slice(0, 5)
+  };
+}
+
 if(typeof module !== 'undefined' && module.exports){
   module.exports = { planTag, planText, planPlus, planWochentag, planWochenanfang,
                      planMinuten, planKapazitaet, planBelegen, planAuslastung,
                      planSpaetester, planVerschieben, planRangLoeschen, planVerteilen,
                      planZettel, planFreiBereich, planFreiNorm, planFreiWirkung,
-                     planImFenster, planAuswertung, planSollIst };
+                     planImFenster, planAuswertung, planSollIst, planUebersicht };
 }

@@ -3,14 +3,14 @@
   "_stand": "2026-09-13",
   "version": "1.0",
 
-  "_saetze_hinweis": "PLATZHALTER, bewusst runde Zahlen. Entscheid vom 13.09.2026: dieses Repo ist oeffentlich, und die Stundensaetze und die Marge eines Lohnfertigers gehen niemanden etwas an. Die echten Werte traegt der Bediener im Blatt ein; sie liegen dann im Speicher seines Geraets, nie hier. Damit daraus keine Falle wird, ist gepflegt false: das Blatt zeigt einen Hinweis und die Felder tragen eine Marke, bis sie einmal gestellt sind.",
+  "_saetze_hinweis": "BRANCHENUEBLICHE WERTE, keine Betriebszahlen (Ansage 15.09.2026). Was ein Lohnfertiger fuer eine Dreh- oder Fraesstunde verlangen kann, ist Branchenwissen und kein Geschaeftsgeheimnis - Drehen 50 bis 60, dreiachsiges Fraesen 60 bis 70 Euro. Hier steht die Mitte. Wer andere Zahlen hat, traegt sie im Blatt ein; sie liegen dann im Speicher seines Geraets und nie in dieser Datei. Deshalb steht gepflegt auf true: die Rechnung ist brauchbar, ohne dass jemand erst etwas eintragen muss. Runde 50/50/50 waeren KEINE Vorsicht gewesen, sondern eine Zahl, die niemandem hilft.",
   "saetze": {
-    "drehen": 50,
-    "fraesen": 50,
-    "handarbeit": 50,
+    "drehen": 55,
+    "fraesen": 65,
+    "handarbeit": 45,
     "ruesten_wie_maschine": true,
-    "ruesten": 50,
-    "gepflegt": false
+    "ruesten": 55,
+    "gepflegt": true
   },
 
   "werkstoffe": [
@@ -40,10 +40,10 @@
     "toleranz_mittel": 1.0,
     "toleranz_fein": 1.4,
     "oberflaeche_fein": 1.3,
-    "_gewinn_hinweis": "Gewinn und Mindestauftrag sind wie die Stundensaetze PLATZHALTER — s. _saetze_hinweis.",
+    "_gewinn_hinweis": "Wie die Stundensaetze BRANCHENUEBLICH: 15 Prozent Gewinnaufschlag und 100 Euro Mindestauftragswert liegen im ueblichen Rahmen der Lohnfertigung. Wer anders rechnet, traegt es im Blatt ein.",
     "gewinn": 0.15,
     "mindestauftrag": 100,
-    "gepflegt": false
+    "gepflegt": true
   },
 
   "zeiten": {

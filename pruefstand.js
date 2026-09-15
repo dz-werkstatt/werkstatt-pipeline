@@ -258,7 +258,7 @@ console.log('\n6) Kalkulation, Handbeispiel');
   nahe('Stueckzeit', r.zeiten.stueckzeit, (40 / 60) * 1.25 + 1.2 + 2 + 1, 1e-9);
   nahe('Rohteilgewicht', r.preise.gewicht_kg, 0.785, 1e-9);
   nahe('Material', r.preise.material, 0.785 * 2.2 * 1.1, 1e-9);
-  nahe('Ruesten je Stueck', r.preise.ruesten, 20 / 60 * 50 / 10, 1e-9);
+  nahe('Ruesten je Stueck', r.preise.ruesten, 20 / 60 * 55 / 10, 1e-9);
   nahe('Verpackung je Stueck', r.preise.verpackung, 0.5 + 0.8, 1e-9);
   nahe('Versand je Stueck', r.preise.versand, 1.2, 1e-9);
   const soll = (r.preise.material + r.preise.bearbeitung + r.preise.ruesten + 1.3 + 1.2) * 1.15;
@@ -329,17 +329,42 @@ console.log('\n8) Oberflaeche');
   else bad('Akzentfarbe #1858a0 fehlt');
   /* Startwerte kommen aus defaults.json, nicht aus dem Code */
   const V = KALK_VORGABEN;
-  if(V && V.saetze && V.saetze.drehen === 50) ok('Startwerte aus defaults.json sind eingebettet');
+  if(V && V.saetze && V.saetze.drehen === 55) ok('Startwerte aus defaults.json sind eingebettet');
   else bad('Startwerte fehlen oder weichen ab');
-  /* PLATZHALTER-WACHE (13.09.2026). Dieses Repo ist oeffentlich, deshalb
-     stehen in defaults.json runde Zahlen statt den echten Saetzen. Das darf
-     keine stille Falle werden: die Gruppen tragen gepflegt:false, das Blatt
-     sagt es in einem Hinweis, und wer einen Wert stellt, loescht die Marke.
-     Geprueft wird alles drei — sonst waere die Neutralisierung ein
-     Datenschutzgewinn und ein Kalkulationsrisiko zugleich. */
-  if(V.saetze && V.saetze.gepflegt === false && V.zuschlaege && V.zuschlaege.gepflegt === false)
-    ok('Stundensaetze und Zuschlaege sind als Platzhalter gekennzeichnet');
-  else bad('die Betriebswerte tragen kein Platzhalter-Kennzeichen');
+  /* WERTE-WACHE, neue Fassung (15.09.2026). Bis dahin standen in
+     defaults.json runde 50/50/50 mit Platzhalter-Marke. Ansage des Bedieners:
+     was ein Lohnfertiger fuer eine Dreh- oder Fraesstunde verlangt, ist
+     BRANCHENWISSEN und kein Geschaeftsgeheimnis - und eine runde 50 ist
+     keine Vorsicht, sondern eine Zahl, die niemandem hilft.
+
+     DIE LINIE, in beide Richtungen geprueft:
+       Branchenwerte  realistisch besetzt, KEINE Marke, keine Warnung.
+       Betriebswerte  bleiben markiert - die kann die App nicht wissen.
+     Ohne die zweite Haelfte waere das Umstellen ein Freibrief, auch den
+     Rest still zu besetzen. */
+  if(V.saetze && V.saetze.gepflegt === true && V.zuschlaege && V.zuschlaege.gepflegt === true)
+    ok('Stundensaetze und Zuschlaege sind besetzt, nicht markiert');
+  else bad('die Branchenwerte tragen noch eine Platzhalter-Marke');
+  if(V.saetze && V.saetze.drehen >= 45 && V.saetze.drehen <= 65 &&
+     V.saetze.fraesen >= 55 && V.saetze.fraesen <= 80)
+    ok('  und sie liegen im branchenueblichen Rahmen (' + V.saetze.drehen +
+       ' / ' + V.saetze.fraesen + ' Euro/h)');
+  else bad('die Stundensaetze liegen ausserhalb des branchenueblichen Rahmens');
+  if(V.saetze.fraesen > V.saetze.drehen)
+    ok('  Fraesen kostet mehr als Drehen');
+  else bad('Fraesen kostet nicht mehr als Drehen - das ist in der Lohnfertigung verkehrt');
+  /* Die BETRIEBSWERTE dagegen behalten ihre Marke. */
+  {
+    const ungepflegt = (hole('WERKSTATT_MASCHINEN') || []).filter(m => m.gepflegt === false).length;
+    if(ungepflegt > 0) ok('die Maschinenwerte bleiben als Platzhalter gekennzeichnet (' + ungepflegt + ')');
+    else bad('auch die Maschinenwerte gelten jetzt als gepflegt - die kann die App nicht wissen');
+    const fa = V.fraesanteil || {};
+    if(fa.gepflegt === false) ok('  und der Fraesanteil an der Stueckzeit ebenso');
+    else bad('der Fraesanteil gilt als gepflegt - er ist eine Annahme');
+    const w = (V.werkstoffe || []).filter(x => x.gepflegt === false).length;
+    if(w > 0) ok('  und die Materialpreise (' + w + ' von ' + (V.werkstoffe || []).length + ')');
+    else bad('die Materialpreise gelten als gepflegt - Einkaufspreise kann die App nicht wissen');
+  }
   {
     const einP = {
       teil: {klasse:'drehteil_einfach', volumen_cm3:60, bohrungen:[], kanten:10},
@@ -349,8 +374,15 @@ console.log('\n8) Oberflaeche');
     const rP = kalkRechnen(einP);
     const sagtSatz = rP.hinweise.filter(h => /Stundensaetze sind Platzhalter/.test(h)).length;
     const sagtZu = rP.hinweise.filter(h => /Gewinnaufschlag und Mindestauftragswert sind Platzhalter/.test(h)).length;
-    if(sagtSatz === 1 && sagtZu === 1) ok('das Blatt weist beide Platzhalter-Gruppen im Klartext aus');
-    else bad('das Blatt schweigt zu den Platzhaltern (Satz ' + sagtSatz + ', Zuschlaege ' + sagtZu + ')');
+    /* KEINE DAUERWARNUNG MEHR fuer die Branchenwerte - ein Hinweis, der
+       bei jeder Rechnung steht, wird nach dem dritten Mal nicht mehr
+       gelesen, und dann ueberliest man auch den, der zaehlt. */
+    if(sagtSatz === 0 && sagtZu === 0) ok('das Blatt warnt nicht mehr vor den Branchenwerten');
+    else bad('das Blatt warnt weiter vor den Branchenwerten (Satz ' + sagtSatz + ', Zuschlaege ' + sagtZu + ')');
+    /* Der Materialhinweis BLEIBT: Einkaufspreise sind betriebsspezifisch. */
+    const sagtMat = rP.hinweise.filter(h => /Materialpreis/.test(h)).length;
+    if(sagtMat === 1) ok('  aber weiter vor dem ungepflegten Materialpreis');
+    else bad('der Materialhinweis fehlt (' + sagtMat + ')');
     /* Gegenprobe: gepflegt:true laesst den Hinweis verschwinden — sonst
        stuende er fuer immer da und niemand liest ihn mehr. */
     const V2 = JSON.parse(JSON.stringify(KALK_VORGABEN));
@@ -2846,8 +2878,19 @@ console.log('\n24) Freie Tage');
       if(typeof hole(nm) === 'function') ok('Funktion vorhanden: ' + nm);
       else bad('Funktion fehlt: ' + nm);
     });
-    [['planBelegen', /ab, tage,\s*\n?\s*frei:W\.frei/],
-     ['planAuslastung', /planAuslastung\(b, W\.maschinen, W\.frei\)/],
+    /* JEDER Aufruf, nicht irgendeiner. Die alte Fassung suchte das
+       Muster irgendwo im Quelltext - seit es das Dashboard gibt, ruft
+       die Oberflaeche die Planung an zwei Stellen, und die Wache fand
+       die zweite, auch wenn an der ersten das Durchreichen fehlte. */
+    {
+      const rufe = quelltext.match(/plan(?:Belegen|Uebersicht)\(\{[\s\S]{0,400}?\}\)/g) || [];
+      const ohne = rufe.filter(r => r.indexOf('frei:W.frei') < 0 && r.indexOf('frei:') < 0);
+      if(rufe.length >= 2 && !ohne.length)
+        ok('alle ' + rufe.length + ' Planungsaufrufe bekommen die freien Tage');
+      else if(!rufe.length) bad('kein einziger Planungsaufruf gefunden - die Wache misst nichts');
+      else bad(ohne.length + ' von ' + rufe.length + ' Planungsaufrufen bekommen die freien Tage NICHT');
+    }
+    [['planAuslastung', /planAuslastung\(b, W\.maschinen, W\.frei\)/],
      ['planZettel', /planZettel\(b, W\.maschinen, mid, tage, W\.frei\)/]].forEach(([nm, re]) => {
       if(re.test(quelltext)) ok(nm + ' bekommt die freien Tage');
       else bad(nm + ' bekommt die freien Tage NICHT - die Mechanik bliebe unerreichbar');
@@ -3487,6 +3530,623 @@ console.log('\n28) Stundensatz je Maschine');
     if(/Das Angebot bleibt davon unber&uuml;hrt/.test(quelltext))
       ok('und die Karte sagt, dass das Angebot unberuehrt bleibt');
     else bad('die Karte verschweigt, dass das Angebot unberuehrt bleibt');
+  }
+}
+
+/* --- 29. Die Sicherung -----------------------------------------------
+   DER BEFUND, der dieses Paket ausgeloest hat: die Werkstattdaten lagen
+   in sieben Browser-Speicherplaetzen, und sichern liess sich davon
+   NICHTS. Ein geloeschter Websitespeicher, ein neues Geraet - und der
+   ganze Auftragsbestand ist weg. Solange das so war, konnte die App
+   nicht ernsthaft benutzt werden.
+
+   DER TRAGENDE TEST IST DER RUNDLAUF: sichern, alles wegwerfen,
+   zurueckholen, den GANZEN Bestand vergleichen. Einzelne Felder zu
+   pruefen findet genau das nicht, was beim naechsten Feld vergessen
+   wird. Im Browser zusaetzlich am laufenden Bild gefahren (1366 px):
+   Bestand vorher und nachher zeichengleich, zwischendrin wirklich leer.
+
+   DABEI GEFUNDEN: die Zaehlung der Rueckmeldungen war falsch -
+   istZahl(0) ist WAHR, und jeder Auftrag traegt ein leeres
+   Rueckmeldefeld. Die Datei behauptete "3 mit Rueckmeldung", wo eine
+   war. Genau die Zahl, der man beim Zurueckholen glaubt.            */
+console.log('\n29) Die Sicherung');
+{
+  const neuerAuftrag = hole('neuerAuftrag'), istSetzen = hole('istSetzen');
+  const sicherungBauen = hole('sicherungBauen'), sicherungPruefen = hole('sicherungPruefen');
+  const sicherungZahlen = hole('sicherungZahlen'), sicherungVereinen = hole('sicherungVereinen');
+  const sicherungFremdeMaschinen = hole('sicherungFremdeMaschinen');
+  const hatRueckmeldung = hole('hatRueckmeldung');
+  const gangAnhaengen = hole('gangAnhaengen'), auftragGaenge = hole('auftragGaenge');
+  const V = hole('KALK_VORGABEN'), M0 = hole('WERKSTATT_MASCHINEN');
+
+  ['sicherungBauen', 'sicherungPruefen', 'sicherungZahlen', 'sicherungVereinen',
+   'sicherungFremdeMaschinen', 'hatRueckmeldung'].forEach(nm => {
+    if(typeof hole(nm) === 'function') ok('vorhanden: ' + nm);
+    else bad('fehlt: ' + nm);
+  });
+
+  const bauAuftrag = (nr, teil, masch) => {
+    const a = neuerAuftrag();
+    a.nummer = nr; a.teil = teil; a.kunde = 'Kunde ' + nr; a.stueck = 7;
+    a.status = 'beauftragt'; a.klasse = 'drehteil_einfach'; a.gattung = 'drehen';
+    a.maschine = masch || 'm1000'; a.zeiten = {ruestzeit:40, stueckzeit:6.4};
+    a.masse = {dmax:80, laenge:400, x:0, y:0, z:0};
+    a.liefertermin = '2026-10-09';
+    return a;
+  };
+
+  /* (1) Was in die Datei gehoert - und was nicht. */
+  {
+    const a = bauAuftrag('A-1', 'Welle');
+    gangAnhaengen(a, 'Fraesen', 'fr1');
+    a.gaenge[1].ruestzeit = 10;
+    istSetzen(a, 1, 'ruestzeit', 45);
+    a.rueckmeldung.gefertigt = 7;
+    const M = JSON.parse(JSON.stringify(M0));
+    M.filter(x => x.id === 'm1500')[0].satz = 80;
+    M.filter(x => x.id === 'm1000')[0].wartung = ['2026-09-21'];
+
+    const d = sicherungBauen({auftraege:[a], maschinen:M, frei:['2026-10-03'],
+                              regeln:{wahl:'klein', uebergabe:3}, einstellungen:V,
+                              heute:'2026-09-15'});
+    gleich('die Datei traegt ihre Kennung', d.kennung, 'werkstatt-pipeline-sicherung');
+    gleich('  und eine Version', typeof d.version === 'string' && d.version.length > 0, true);
+    gleich('  und das Datum', d.gesichert, '2026-09-15');
+    gleich('Auftraege sind drin', d.auftraege.length, 1);
+    gleich('  samt Gaengen', d.auftraege[0].gaenge.length, 2);
+    gleich('  samt Rueckmeldung', d.auftraege[0].rueckmeldung.gaenge[0].ruestzeit, 45);
+    gleich('Maschinen sind drin', d.maschinen.length, M.length);
+    gleich('  samt Stundensatz', d.maschinen.filter(x => x.id === 'm1500')[0].satz, 80);
+    gleich('  samt Wartung', d.maschinen.filter(x => x.id === 'm1000')[0].wartung.join(','), '2026-09-21');
+    gleich('freie Tage sind drin', d.frei.join(','), '2026-10-03');
+    gleich('Regeln sind drin', d.regeln.wahl + '/' + d.regeln.uebergabe, 'klein/3');
+    gleich('Einstellungen sind drin', !!d.einstellungen, true);
+    /* ANSICHTSZUSTAND GEHOERT NICHT HINEIN - er ist Sache des Geraets,
+       und beim Zurueckholen bekaeme man die Ansicht eines anderen. */
+    gleich('kein Filter in der Datei', d.filter === undefined, true);
+    gleich('keine zugeklappten Karten', d.karten === undefined, true);
+
+    /* Die Datei ist eine KOPIE - wer danach den Auftrag aendert, aendert
+       nicht die Sicherung. */
+    a.teil = 'geaendert';
+    gleich('die Datei ist eine Kopie, kein Zeiger', d.auftraege[0].teil, 'Welle');
+  }
+
+  /* (2) DIE ZAEHLUNG, die falsch war. */
+  {
+    const leer = bauAuftrag('A-2', 'Buchse');
+    gleich('ein leeres Rueckmeldefeld ist KEINE Rueckmeldung', hatRueckmeldung(leer), false);
+    const g = bauAuftrag('A-3', 'Bolzen'); g.rueckmeldung.gefertigt = 5;
+    gleich('gefertigte Stueck sind eine', hatRueckmeldung(g), true);
+    const aus = bauAuftrag('A-4', 'Ring'); aus.rueckmeldung.ausschuss = 2;
+    gleich('Ausschuss auch', hatRueckmeldung(aus), true);
+    const dat = bauAuftrag('A-5', 'Scheibe'); dat.rueckmeldung.datum = '2026-09-20';
+    gleich('ein Datum auch', hatRueckmeldung(dat), true);
+    const zt = bauAuftrag('A-6', 'Flansch'); istSetzen(zt, 1, 'stueckzeit', 6.9);
+    gleich('eine zurueckgemeldete Zeit auch', hatRueckmeldung(zt), true);
+    const d = sicherungBauen({auftraege:[leer, g, aus, dat, zt], maschinen:M0, frei:[]});
+    gleich('gezaehlt werden nur die echten', d.enthaelt.rueckmeldungen, 4);
+    gleich('  und die Zahlen stimmen mit den Listen ueberein',
+           sicherungZahlen(d).rueckmeldungen, d.enthaelt.rueckmeldungen);
+  }
+
+  /* (3) Was NICHT zurueckgeholt wird. */
+  {
+    gleich('kein Objekt', sicherungPruefen(null).length > 0, true);
+    gleich('fremde Datei ohne Kennung',
+           sicherungPruefen({auftraege:[], maschinen:M0, frei:[]}).length > 0, true);
+    const alt = sicherungBauen({auftraege:[], maschinen:M0, frei:[]});
+    alt.version = '9.0';
+    if(sicherungPruefen(alt).some(f => /Version/.test(f))) ok('eine kuenftige Version wird erkannt');
+    else bad('eine kuenftige Version rutscht durch');
+    const ohneM = sicherungBauen({auftraege:[], maschinen:[], frei:[]});
+    if(sicherungPruefen(ohneM).some(f => /Maschine/.test(f))) ok('eine Datei ohne Maschinen wird bemaengelt');
+    else bad('eine Datei ohne Maschinen rutscht durch');
+    const gut = sicherungBauen({auftraege:[], maschinen:M0, frei:[]});
+    gleich('eine saubere Datei wird nicht bemaengelt', sicherungPruefen(gut).length, 0);
+    /* Die ZAHLEN kommen aus den Listen, nicht aus dem Kopf - ein Kopf
+       laesst sich von Hand aendern. */
+    const gelogen = sicherungBauen({auftraege:[bauAuftrag('A-7', 'Welle')], maschinen:M0, frei:[]});
+    gelogen.enthaelt.auftraege = 999;
+    gleich('die Vorschau zaehlt die Liste, nicht den Kopf',
+           sicherungZahlen(gelogen).auftraege, 1);
+  }
+
+  /* (4) DAZULADEN: der vorhandene Auftrag gewinnt. */
+  {
+    const hier = [bauAuftrag('A-1', 'Welle'), bauAuftrag('A-2', 'Buchse')];
+    hier[0].rueckmeldung.gefertigt = 7;      /* traegt eine Rueckmeldung */
+    const datei = sicherungBauen({
+      auftraege:[bauAuftrag('A-1', 'Welle ANDERS'), bauAuftrag('A-9', 'Neu')],
+      maschinen:M0, frei:[]});
+    const v = sicherungVereinen(hier, datei);
+    gleich('einer kommt dazu', v.dazu, 1);
+    gleich('  einer wird uebersprungen', v.uebersprungen.join(','), 'A-1');
+    gleich('  und zwar bleibt der HIESIGE', v.auftraege[0].teil, 'Welle');
+    gleich('  mit seiner Rueckmeldung', v.auftraege[0].rueckmeldung.gefertigt, 7);
+    gleich('zusammen drei', v.auftraege.length, 3);
+    /* Ein Auftrag OHNE Nummer laesst sich nicht abgleichen - er kommt
+       dazu. Lieber einer zuviel, den man sieht. */
+    const ohneNr = bauAuftrag('', 'Namenlos');
+    const d2 = sicherungBauen({auftraege:[ohneNr, ohneNr], maschinen:M0, frei:[]});
+    gleich('zwei ohne Nummer kommen beide dazu', sicherungVereinen([], d2).dazu, 2);
+  }
+
+  /* (5) Der Befund, der STILL schadet: ein Gang auf einer Maschine, die
+     es hier nicht gibt, faellt aus der Planung. */
+  {
+    const fremd = bauAuftrag('A-8', 'Welle', 'm9999');
+    const raus = sicherungFremdeMaschinen([fremd], M0);
+    gleich('eine unbekannte Maschine wird gefunden', raus.length, 1);
+    gleich('  mit Auftrag und Gang', raus[0].nummer + '/' + raus[0].gang + '/' + raus[0].maschine,
+           'A-8/1/m9999');
+    gleich('bekannte Maschinen sind still',
+           sicherungFremdeMaschinen([bauAuftrag('A-1', 'Welle')], M0).length, 0);
+  }
+
+  /* (6) DER RUNDLAUF, DOM-frei: bauen, lesen, vergleichen. */
+  {
+    const a = bauAuftrag('R-1', 'Welle');
+    gangAnhaengen(a, 'Fraesen', 'fr1');
+    a.gaenge[1].ruestzeit = 10;
+    istSetzen(a, 2, 'stueckzeit', 7.1);
+    const M = JSON.parse(JSON.stringify(M0));
+    M.filter(x => x.id === 'm1500')[0].satz = 72;
+    const vorher = JSON.stringify({a:[a], m:M, f:['2026-10-03']});
+    const d = JSON.parse(JSON.stringify(sicherungBauen({
+      auftraege:[a], maschinen:M, frei:['2026-10-03'], einstellungen:V, heute:'2026-09-15'})));
+    const nachher = JSON.stringify({a:d.auftraege, m:d.maschinen, f:d.frei});
+    gleich('RUNDLAUF: was hineingeht, kommt heraus', nachher, vorher);
+  }
+
+  /* (7) Oberflaeche. */
+  {
+    ['btnSicherExport', 'btnSicherImport', 'sicherDatei', 'sicherVorschau',
+     'sicherInhalt', 'btnSicherErsetzen', 'btnSicherDazu', 'btnSicherAbbruch',
+     'sicherStand'].forEach(id => {
+      if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id);
+      else bad('Bedienelement fehlt: ' + id);
+    });
+    ['wSicherVorschau', 'wStandLesen', 'wStandSchreiben', 'wStandZaehlen', 'wStandMalen'].forEach(nm => {
+      if(typeof hole(nm) === 'function') ok('Funktion vorhanden: ' + nm);
+      else bad('Funktion fehlt: ' + nm);
+    });
+    /* DER ZWEITE KLICK ist der Schutz: die Vorschau steht VOR dem
+       Ersetzen, nicht daneben. */
+    if(/v\.hidden = !d;/.test(quelltext) && /W\.sicherung = d;\s*\n\s*wSicherVorschau\(\);/.test(quelltext))
+      ok('eine gewaehlte Datei oeffnet die Vorschau, sie ersetzt nicht sofort');
+    else bad('die Datei ersetzt ohne Vorschau - das ist die zweite Gelegenheit, Daten zu verlieren');
+    /* Und der Zaehler, ohne den niemand an die Sicherung denkt. */
+    if(/wStandZaehlen\(\);\s*\n\}/.test(quelltext))
+      ok('jede Aenderung erhoeht den Zaehler');
+    else bad('der Zaehler laeuft nicht mit - der Hinweis bliebe stehen');
+    if(/Zeit f&uuml;r eine neue Sicherung/.test(quelltext))
+      ok('und ab zwanzig Aenderungen wird er deutlich');
+    else bad('der Hinweis wird nie deutlich');
+  }
+}
+
+/* --- 30. Musterteile und Hinterschnitt -------------------------------
+   ZEHN ERZEUGTE STEP-DATEIEN in muster/ - selbst gebaut aus denselben
+   Bausteinen wie die Pruefkoerper, damit es Material zum Ausprobieren
+   gibt, ohne dass ein Kundenmodell das Repo sieht. Jedes Mass steht in
+   muster-bauen.js im Klartext, also ist jedes Volumen von Hand
+   nachrechenbar - und genau das tut dieser Abschnitt.
+
+   DER BEFUND, den diese zehn Teile aufgedeckt haben: JEDES Fraesteil
+   kam als fraesteil_komplex heraus, auch ein massiver Wuerfel. Die
+   Hinterschnitt-Erkennung zaehlte die AUFLAGE mit - bei einem Quader
+   immer die Rueckseite, beim Wuerfel exakt ein Sechstel. Die Schwelle
+   stand bei 0,001, die erreicht kein Teil dieser Welt. Eine Regel, die
+   immer dasselbe sagt, ist keine Regel.
+
+   WAS DIE MUSTERTEILE NICHT KOENNEN: einen echten Hinterschnitt. Die
+   Bausteine erzeugen nur Quader und Drehteile. Deshalb steht der Fall
+   hier als SYNTHETISCHES Modell mit von Hand gesetzten Normalen - sonst
+   waere nur die eine Haelfte der Regel geprueft, und eine Regel, die
+   alles als 3ax einstuft, ist genauso blind wie die alte.          */
+console.log('\n30) Musterteile und Hinterschnitt');
+{
+  const fGeometrie = hole('fGeometrie'), fStepModell = hole('fStepModell');
+  const fKoerperWerte = hole('fKoerperWerte'), fHinterschnitt = hole('fHinterschnitt');
+  const P = Math.PI, zyl = (d, l) => P * (d/2)*(d/2) * l;
+
+  /* (1) Die zehn Musterteile: gelesen, und das Volumen von Hand. */
+  {
+    const ORD = path.join(ORDNER, 'muster');
+    const SOLL = {
+      'welle-glatt.step':         zyl(40,200),
+      'welle-gestuft.step':       zyl(50,40) + zyl(40,120) + zyl(30,40),
+      'buchse.step':              zyl(60,45) - zyl(30,45),
+      'lagerbuchse-gestuft.step': zyl(80,25) + zyl(60,35) - zyl(40,60),
+      'flansch.step':             zyl(120,18) + zyl(70,22) - zyl(35,40),
+      'platte-flach.step':        200*120*12,
+      'platte-mit-bohrung.step':  160*100*15 - zyl(25,15),
+      'lagerbock.step':           120*80*60 - zyl(40,60),
+      'deckel.step':              90*90*10 - zyl(20,10),
+      'klotz-massiv.step':        80*80*80
+    };
+    if(!fs.existsSync(ORD)){
+      bad('der Ordner muster/ fehlt - "node muster-bauen.js" laeuft nicht');
+    } else {
+      const da = fs.readdirSync(ORD).filter(n => /\.step$/i.test(n));
+      gleich('zehn Musterteile liegen bereit', da.length, 10);
+      let schief = 0, klassen = {};
+      Object.keys(SOLL).forEach(n => {
+        const p = path.join(ORD, n);
+        if(!fs.existsSync(p)){ bad('Musterteil fehlt: ' + n); schief++; return; }
+        let d = null;
+        try{ d = fGeometrie(fs.readFileSync(p, 'utf8'), n); }catch(e){}
+        if(!d || !d.teil){ bad('Musterteil nicht lesbar: ' + n); schief++; return; }
+        const ist = +d.teil.volumen_cm3 || 0, soll = SOLL[n] / 1000;
+        if(Math.abs(ist - soll) / soll > 0.01){
+          bad(n + ': Volumen ' + ist.toFixed(2) + ' cm3, von Hand ' + soll.toFixed(2));
+          schief++;
+        }
+        klassen[d.teil.klasse] = (klassen[d.teil.klasse] || 0) + 1;
+      });
+      if(!schief) ok('alle zehn gelesen, jedes Volumen auf 1 % der Handrechnung');
+      /* DIE UNTERSCHEIDUNG MUSS GREIFEN: fuenf Drehteile, fuenf
+         Fraesteile - und kein einziges "komplex", denn keines DIESER
+         Teile ist komplex. */
+      gleich('fuenf gelten als Drehteil', klassen.drehteil_einfach || 0, 5);
+      gleich('fuenf als einfaches Fraesteil', klassen.fraesteil_3ax || 0, 5);
+      gleich('  und keines als komplex', klassen.fraesteil_komplex || 0, 0);
+    }
+  }
+
+  /* (2) DER FALL, DEN DIE MUSTERTEILE NICHT KOENNEN: ein echter
+     Hinterschnitt. Synthetisches Modell, Normalen von Hand.
+     Aufbau: ein Boden (zeigt nach -Z, die AUFLAGE), ein Deckel (+Z)
+     und eine schraege Flaeche, die nach hinten unten zeigt - die
+     erreicht der Fraeser von oben nicht. */
+  {
+    const fl = (nx, ny, nz, flaeche) => ({
+      art:'ebene', sinn:true,
+      /* fV rechnet mit ARRAYS. Eine Fixture mit {x,y,z} liefert NaN,
+         und dann ist jeder Vergleich falsch und alles kommt als 0
+         heraus - so sah es aus, als waere die Erkennung blind. */
+      rahmen:{z:[nx, ny, nz]},
+      _w:{flaeche:flaeche}
+    });
+    const wurzel = Math.sqrt(0.5);
+
+    /* Ohne Schraege: Boden ist Auflage, Deckel zeigt zur Spindel. */
+    const glatt = {flaechen:[fl(0,0,1,100), fl(0,0,-1,100),
+                             fl(1,0,0,40), fl(-1,0,0,40)]};
+    gleich('Quader ohne Schraege: kein Hinterschnitt',
+           fHinterschnitt(glatt).anteil, 0);
+
+    /* EINE einzelne Schraege ist KEIN Hinterschnitt - dieses Teil
+       fraest man von der Seite, und genau die Richtung findet die
+       Funktion. Mein erster Testfall erwartete hier faelschlich einen
+       Befund; der Code hatte recht. */
+    const eineSchraege = {flaechen:[fl(0,0,1,100), fl(0,0,-1,100),
+                                    fl(1,0,0,40), fl(-1,0,0,40),
+                                    fl(wurzel,0,-wurzel,20)]};
+    gleich('eine einzelne Schraege: von der Seite erreichbar',
+           fHinterschnitt(eineSchraege).anteil, 0);
+
+    /* DER EHRLICHE FALL: eine Form, die aus JEDER Richtung etwas
+       verdeckt. Ein Oktaeder - acht Flaechen mit den Normalen
+       (+-0,577, +-0,577, +-0,577); aus jeder Achsrichtung zeigen genau
+       vier davon weg, also die Haelfte. Im Kopf nachrechenbar. */
+    const d3 = 1 / Math.sqrt(3);
+    const okta = {flaechen:[]};
+    [-1, 1].forEach(sx => [-1, 1].forEach(sy => [-1, 1].forEach(sz => {
+      okta.flaechen.push(fl(sx * d3, sy * d3, sz * d3, 10));
+    })));
+    gleich('Oktaeder: aus jeder Richtung die Haelfte hinten',
+           Math.round(fHinterschnitt(okta).anteil * 1000) / 1000, 0.5);
+
+    /* DIE GRENZE, benannt statt versteckt: gemessen werden NORMALEN,
+       nicht Verdeckungen. Eine Nut mit Ueberhang traegt eine Decke, die
+       nach unten zeigt wie die Auflage - beide sind so nicht zu
+       unterscheiden. Fuer die Ruestzeitklasse reicht das; fuer eine
+       Bahnplanung reichte es nicht, und das steht hier, damit es
+       niemand fuer mehr haelt, als es ist. */
+    const mitDecke = {flaechen:[fl(0,0,1,100), fl(0,0,-1,100),
+                                fl(1,0,0,40), fl(-1,0,0,40),
+                                fl(0,0,-1,5)]};   /* die "Decke" der Nut */
+    gleich('ein Ueberhang mit senkrechter Decke faellt durch (bekannte Grenze)',
+           fHinterschnitt(mitDecke).anteil, 0);
+
+    /* Und sie fuehrt zur anderen Klasse. */
+    const fKlasse = hole('fKlasse');
+    if(typeof fKlasse === 'function'){
+      gleich('ohne Hinterschnitt: einfaches Fraesteil',
+             fKlasse({ja:false}, [], {anteil:0}, glatt), 'fraesteil_3ax');
+      gleich('mit Hinterschnitt: komplex',
+             fKlasse({ja:false}, [], {anteil:0.2}, okta), 'fraesteil_komplex');
+    } else warn('fKlasse ist nicht erreichbar - die Klassenprobe entfaellt');
+  }
+
+  /* (3) Die Vorbedingung, an der ich selbst gescheitert bin: _w
+     entsteht erst in fKoerperWerte. Wer fHinterschnitt ohne sie ruft,
+     misst NICHTS und haelt die Erkennung fuer tot. */
+  {
+    const roh = fStepModell(fs.readFileSync(path.join(ORDNER, 'muster', 'klotz-massiv.step'), 'utf8'));
+    gleich('ohne fKoerperWerte traegt keine Flaeche ihr Mass',
+           roh.flaechen.filter(f => f._w).length, 0);
+    fKoerperWerte(roh);
+    gleich('  danach jede', roh.flaechen.filter(f => f._w).length, roh.flaechen.length);
+  }
+}
+
+/* --- 31. Die Beispiel-Werkstatt --------------------------------------
+   WOZU: leere Tabellen sagen nichts, und wer die App ausprobieren will,
+   sollte nicht erst eine halbe Stunde tippen muessen.
+
+   EIN DEMOBESTAND, IN DEM ALLES GUT AUSSIEHT, VERBIRGT GENAU DAS,
+   WOFUER DIE APP DA IST. Also stecken absichtlich Befunde darin: ein
+   gerissener Termin, zwei Rueckmeldungen in beide Richtungen (einmal
+   schneller, einmal langsamer als kalkuliert), ein Auftrag mit zwei
+   Arbeitsgaengen, ein freier Tag und eine Wartung. Das prueft dieser
+   Abschnitt - nicht, dass Daten da sind, sondern dass sie etwas
+   ZEIGEN.
+
+   Im Browser bei 1366 px nachgefahren: 10 Auftraege, 7 geplant, 0
+   unplanbar, einer mit Verzug, kleinster Puffer -4 Tage.            */
+console.log('\n31) Die Beispiel-Werkstatt');
+{
+  const demoWerkstatt = hole('demoWerkstatt');
+  const planBelegen = hole('planBelegen'), planSollIst = hole('planSollIst');
+  const auftragGaenge = hole('auftragGaenge'), hatRueckmeldung = hole('hatRueckmeldung');
+  const auftragPruefen = hole('auftragPruefen');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+  const STATUS = hole('WERKSTATT_STATUS');
+
+  if(typeof demoWerkstatt === 'function') ok('vorhanden: demoWerkstatt');
+  else bad('fehlt: demoWerkstatt');
+
+  const d = demoWerkstatt('2026-09-15', M0);
+
+  /* (1) Der Bestand selbst. */
+  gleich('zehn Auftraege', d.auftraege.length, 10);
+  {
+    const kaputt = [];
+    d.auftraege.forEach(a => {
+      const f = auftragPruefen(a);
+      if(f.length) kaputt.push(a.nummer + ': ' + f[0]);
+    });
+    if(!kaputt.length) ok('jeder Auftrag besteht die Wache');
+    else bad('Beispielauftraege sind fehlerhaft: ' + kaputt.slice(0, 3).join(' | '));
+  }
+  {
+    const da = {};
+    d.auftraege.forEach(a => { da[a.status] = (da[a.status] || 0) + 1; });
+    /* JEDER STATUS KOMMT VOR - sonst zeigt der Filter eine leere Stufe,
+       und man haelt sie fuer kaputt. */
+    const fehlt = STATUS.filter(s => !da[s]);
+    if(!fehlt.length) ok('jeder der sechs Status kommt vor');
+    else bad('diese Status fehlen im Beispiel: ' + fehlt.join(', '));
+  }
+  {
+    const mehr = d.auftraege.filter(a => auftragGaenge(a).length > 1);
+    gleich('einer hat zwei Arbeitsgaenge', mehr.length, 1);
+    gleich('  und zwar auf zwei verschiedenen Maschinen',
+           new Set(auftragGaenge(mehr[0]).map(g => g.maschine)).size, 2);
+  }
+  gleich('zwei tragen eine Rueckmeldung', d.auftraege.filter(hatRueckmeldung).length, 2);
+  gleich('ein freier Tag', d.frei.length, 1);
+  gleich('und eine Maschine in Wartung', d.wartung.tage.length, 2);
+
+  /* (2) DIE BEFUNDE, die darin stecken sollen. */
+  {
+    const M = JSON.parse(JSON.stringify(M0));
+    const m = M.filter(x => x.id === d.wartung.maschine)[0];
+    if(m) m.wartung = d.wartung.tage;
+    const b = planBelegen({auftraege:JSON.parse(JSON.stringify(d.auftraege)),
+                           maschinen:M, ab:'2026-09-15', tage:60, frei:d.frei});
+    gleich('alles laesst sich einplanen', b.unplanbar.length, 0);
+    if(b.auftraege.length >= 5) ok('  ' + b.auftraege.length + ' Auftraege binden Kapazitaet');
+    else bad('zu wenige Auftraege in der Planung: ' + b.auftraege.length);
+    /* EIN GERISSENER TERMIN gehoert dazu - eine Tafel, auf der alles
+       gruen ist, zeigt nie, wie Verzug aussieht. */
+    const eng = b.auftraege.filter(z => z.puffer !== null && z.puffer < 0);
+    if(eng.length >= 1) ok('mindestens ein Termin ist nicht zu halten (Puffer ' +
+                           Math.min.apply(null, eng.map(z => z.puffer)) + ' Tage)');
+    else bad('kein einziger Termin ist eng - der Bestand zeigt keinen Verzug');
+    /* Und die Arbeit liegt NICHT auf einer einzigen Maschine. */
+    const belegt = {};
+    b.auftraege.forEach(z => (z.gaenge || []).forEach(g => { belegt[g.maschine] = 1; }));
+    if(Object.keys(belegt).length >= 2) ok('  und sie verteilt sich auf ' +
+      Object.keys(belegt).length + ' Maschinen');
+    else bad('alle Arbeit liegt auf einer Maschine - die Tafel zeigt nichts');
+  }
+
+  /* (3) SOLL UND IST: einmal schneller, einmal langsamer. Ein Bestand,
+     in dem alles genau aufgeht, zeigt die Rechnung als sinnlos. */
+  {
+    const si = planSollIst(d.auftraege);
+    if(si && si.zahl >= 2) ok('zwei Auftraege liefern einen Soll-Ist-Vergleich');
+    else bad('der Soll-Ist-Vergleich bekommt keine Daten');
+    const faktoren = (si.zeilen || []).map(z => z.faktor).filter(f => f != null);
+    if(faktoren.some(f => f > 1.02) && faktoren.some(f => f < 0.98))
+      ok('  und zwar in beide Richtungen (' + faktoren.map(f => f.toFixed(2)).join(' / ') + ')');
+    else bad('alle Faktoren zeigen in dieselbe Richtung: ' + faktoren.join(', '));
+  }
+
+  /* (4) Die Termine haengen am uebergebenen HEUTE, nicht an einem
+     festen Datum - sonst waere der Bestand in drei Wochen Geschichte. */
+  {
+    const spaet = demoWerkstatt('2027-03-01', M0);
+    const alle = spaet.auftraege.map(a => a.liefertermin).join(' ');
+    if(/2027-0[23]/.test(alle) && !/2026/.test(alle))
+      ok('die Termine wandern mit dem Tag mit');
+    else bad('die Termine kleben an einem festen Datum: ' + alle.slice(0, 60));
+  }
+
+  /* (5) Kein Name, der eine echte Firma treffen koennte. */
+  {
+    const kunden = hole('DEMO_KUNDEN') || [];
+    const erfunden = kunden.filter(k => /Muster|Beispiel|Demo|Probe/i.test(k)).length;
+    gleich('jeder Beispielkunde ist als erfunden erkennbar', erfunden, kunden.length);
+  }
+
+  /* (6) Oberflaeche. */
+  {
+    ['btnDemo', 'btnDemoJa', 'btnDemoNein', 'demoHinweis'].forEach(id => {
+      if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id);
+      else bad('Bedienelement fehlt: ' + id);
+    });
+    if(typeof hole('wDemoMalen') === 'function') ok('Funktion vorhanden: wDemoMalen');
+    else bad('Funktion fehlt: wDemoMalen');
+    /* WER SCHON AUFTRAEGE HAT, bekommt sie nicht still ueberschrieben. */
+    if(/if\(W\.auftraege\.length\)\{\s*\n\s*W\.demoFragt = true;/.test(quelltext))
+      ok('bei vorhandenen Auftraegen fragt der Knopf erst');
+    else bad('die Beispieldaten ueberschreiben ohne Rueckfrage');
+  }
+}
+
+/* --- 32. Mannstunden und Uebersicht ----------------------------------
+   DER BEFUND AM MODELL (Ansage 15.09.2026): die App rechnete
+   jede Maschine fuer sich. Vier Maschinen mal 480 Minuten mal fuenf
+   Tage sind 160 Stunden die Woche - in einer Werkstatt, in der einer
+   alles macht, gibt es die nicht. JEDER TERMIN war damit zu frueh
+   versprochen.
+
+   Im Browser gemessen, Beispiel-Werkstatt, 30 h die Woche: aus "3 wird
+   knapp" wurde "5 Termin in Gefahr", und die eigene Zeit steht bei
+   80 und 87 Prozent, wo die Maschinen 21 und 54 zeigen.
+
+   DIE UEBERSICHT rechnet NICHTS neu. Sie fasst zusammen, was
+   planBelegen und planAuslastung ohnehin geliefert haben - sonst gaebe
+   es zwei Wahrheiten ueber denselben Plan.                          */
+console.log('\n32) Mannstunden und Uebersicht');
+{
+  const planMannMinuten = hole('planMannMinuten');
+  const planBelegen = hole('planBelegen'), planUebersicht = hole('planUebersicht');
+  const demoWerkstatt = hole('demoWerkstatt');
+  const M0 = hole('WERKSTATT_MASCHINEN');
+
+  ['planMannMinuten', 'planUebersicht'].forEach(nm => {
+    if(typeof hole(nm) === 'function') ok('vorhanden: ' + nm);
+    else bad('fehlt: ' + nm);
+  });
+
+  /* (1) Die Wochenzahl auf Tage. NICHT GERUNDET - eine gerundete
+     Tageszahl summiert sich ueber die Woche auf etwas anderes als die
+     Wochenzahl, und dann stimmt die eingetragene Groesse nicht mehr. */
+  {
+    gleich('30 h auf 5 Tage sind 360 min', planMannMinuten(30, 5), 360);
+    gleich('30 h auf 6 Tage sind 300 min', planMannMinuten(30, 6), 300);
+    gleich('  krumm bleibt krumm', planMannMinuten(30, 7), 30 * 60 / 7);
+    gleich('0 heisst keine Grenze', planMannMinuten(0, 5), null);
+    gleich('  Unsinn ebenso', planMannMinuten('viel', 5), null);
+    gleich('  und negativ auch', planMannMinuten(-5, 5), null);
+    /* Die Summe ueber die Woche MUSS die Wochenzahl ergeben - das ist
+       der ganze Sinn der Zahl. */
+    nahe('fuenf Tage ergeben wieder 30 Stunden', planMannMinuten(30, 5) * 5 / 60, 30, 1e-9);
+    nahe('  sechs Tage auch', planMannMinuten(30, 6) * 6 / 60, 30, 1e-9);
+  }
+
+  /* (2) DIE GRENZE WIRKT - und zwar ueber Maschinen hinweg. Das ist der
+     Kern: zwei Maschinen gleichzeitig kosten doppelt. */
+  {
+    const bau = (nr, masch, min) => {
+      const a = hole('neuerAuftrag')();
+      a.nummer = nr; a.teil = 'Teil ' + nr; a.stueck = 1; a.status = 'beauftragt';
+      a.klasse = masch === 'fr1' ? 'fraesteil_3ax' : 'drehteil_einfach';
+      a.gattung = masch === 'fr1' ? 'fraesen' : 'drehen';
+      a.maschine = masch; a.zeiten = {ruestzeit:min, stueckzeit:0};
+      a.masse = masch === 'fr1' ? {dmax:0, laenge:0, x:100, y:100, z:50}
+                                : {dmax:60, laenge:200, x:0, y:0, z:0};
+      return a;
+    };
+    /* Zwei Auftraege zu je 360 Minuten auf ZWEI verschiedenen Maschinen.
+       Ohne Grenze laufen beide am selben Tag; mit 30 h die Woche
+       (= 360 min am Tag) passt nur einer. */
+    const zwei = () => [bau('M-1', 'm1000', 360), bau('M-2', 'fr1', 360)];
+    const ohne = planBelegen({auftraege:zwei(), maschinen:M0, ab:'2026-09-14', tage:30});
+    gleich('ohne Grenze laufen beide am Montag',
+           ohne.auftraege.map(z => z.ende).join(' '), '2026-09-14 2026-09-14');
+    const mit = planBelegen({auftraege:zwei(), maschinen:M0, ab:'2026-09-14', tage:30,
+                             mannStunden:30});
+    gleich('mit 30 h die Woche muss der zweite warten',
+           mit.auftraege.map(z => z.ende).join(' '), '2026-09-14 2026-09-15');
+    gleich('  und das Ergebnis sagt, womit gerechnet wurde', mit.mannStunden, 30);
+    gleich('  ohne Grenze sagt es das auch', ohne.mannStunden, null);
+
+    /* Die Grenze darf die MASCHINENgrenze nicht aufheben: 600 Minuten
+       an einem Tag gehen auch mit viel Manpower nicht, wenn die
+       Maschine nur 480 kann. */
+    const viel = planBelegen({auftraege:[bau('M-3', 'm1000', 600)], maschinen:M0,
+                              ab:'2026-09-14', tage:30, mannStunden:100});
+    gleich('die Maschinengrenze gilt weiter',
+           viel.auftraege[0].start + '..' + viel.auftraege[0].ende, '2026-09-14..2026-09-15');
+  }
+
+  /* (3) Die Uebersicht fasst zusammen, sie rechnet nicht neu. */
+  {
+    const M = JSON.parse(JSON.stringify(M0));
+    const d = demoWerkstatt('2026-09-15', M);
+    const e = {auftraege:d.auftraege, maschinen:M, ab:'2026-09-15', tage:60,
+               frei:d.frei, mannStunden:30, wochen:4};
+    const b = planBelegen(e);
+    const u = planUebersicht(Object.assign({}, e, {belegung:b}));
+
+    gleich('die Uebersicht nimmt die uebergebene Belegung',
+           u.zahlen.gesamt, d.auftraege.length);
+    gleich('  und zaehlt dieselben Auftraege wie die Planung',
+           u.zeilen.length, b.auftraege.length);
+    if(u.zahlen.ueberfaellig >= 1) ok('der ueberfaellige Auftrag steht in der Uebersicht');
+    else bad('die Uebersicht kennt keinen ueberfaelligen Auftrag');
+    gleich('vier Wochen Auslastung', u.wochen.length, 4);
+    gleich('  je Maschine eine Zeile', u.last.length, M.length);
+
+    /* DIE EIGENE ZEIT ist die Zahl, die zaehlt. */
+    if(u.mann && u.mann.stunden === 30) ok('die eigene Zeit steht in der Uebersicht');
+    else bad('die Uebersicht kennt die eigene Zeit nicht');
+    if(u.mann && u.mann.wochen[0].anteil > 0.5)
+      ok('  und sie ist deutlich hoeher als jede einzelne Maschine (' +
+         Math.round(u.mann.wochen[0].anteil * 100) + ' % gegen ' +
+         Math.max.apply(null, u.last.map(m => Math.round(m.wochen[0].anteil * 100))) + ' %)');
+    else bad('die eigene Zeit liegt nicht ueber den Maschinen - dann rechnet sie falsch');
+    /* Ohne Grenze gibt es die Zeile nicht - und das ist richtig. */
+    const ohneM = planUebersicht(Object.assign({}, e, {mannStunden:0, belegung:null}));
+    gleich('ohne Grenze keine Zeile fuer die eigene Zeit', ohneM.mann, null);
+
+    /* Der Wert: Angebot und Auftrag GETRENNT. Sie in eine Zahl zu
+       werfen ist die haeufigste Art, sich reich zu rechnen. */
+    if(u.werte.angeboten > 0) ok('Angebote sind beziffert');
+    else bad('keine Angebote im Beispiel');
+    gleich('und sie zaehlen NICHT zum Offenen',
+           u.werte.offen < u.werte.offen + u.werte.angeboten, true);
+  }
+
+  /* (4) Oberflaeche. */
+  {
+    ['tabUeber', 'blattUeber', 'ueAmpel', 'ueTermine', 'ueLast', 'ueWert', 'ueSoll',
+     'plMann', 'plMannHinweis'].forEach(id => {
+      if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id);
+      else bad('Bedienelement fehlt: ' + id);
+    });
+    ['wUebersichtMalen', 'wMannMalen', 'ueStufe', 'ueKachel'].forEach(nm => {
+      if(typeof hole(nm) === 'function') ok('Funktion vorhanden: ' + nm);
+      else bad('Funktion fehlt: ' + nm);
+    });
+    /* DURCHREICHEN - dreimal in diesem Projekt war eine Mechanik im Kern
+       vorhanden und von aussen unerreichbar. */
+    if(/mannStunden:W\.mannStunden, wochen:4/.test(quelltext))
+      ok('die Uebersicht bekommt die eigene Zeit');
+    else bad('die Uebersicht bekommt die eigene Zeit NICHT - die Zeile bliebe leer');
+    if(/mannStunden:W\.mannStunden \}\);/.test(quelltext))
+      ok('und die Planung ebenso');
+    else bad('die Planung bekommt die eigene Zeit NICHT - die Termine blieben zu frueh');
+    /* STATUSFARBE NIE ALLEIN: jede Kachel traegt Zeichen und Wort. */
+    if(/<span class="zeichen">/.test(quelltext) && /class="wort"/.test(quelltext))
+      ok('jede Kachel traegt Zeichen und Wort, nicht nur Farbe');
+    else bad('die Kacheln tragen die Auskunft in der Farbe allein');
+    /* JEDER BALKEN TRAEGT SEINE ZAHL. */
+    if(/class="wbz"/.test(quelltext))
+      ok('jeder Wochenbalken traegt seine Zahl');
+    else bad('die Wochenbalken tragen keine Zahl - ein Balken ohne Zahl ist ein Gefuehl');
+    /* Und die Inline-Falle, die im Bild vier gleiche Balken erzeugte. */
+    if(/\.balkenzeile \.bfuell\{ display:block;/.test(quelltext))
+      ok('die Fuellstaende sind Bloecke - sonst wirkt die Breite nicht');
+    else bad('die Fuellstaende sind inline - width wirkt dort nicht, alle Balken saehen gleich aus');
   }
 }
 

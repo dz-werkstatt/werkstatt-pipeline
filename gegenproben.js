@@ -139,6 +139,93 @@ const faelle = [
     erwartet:['der Grund nennt die Querflaechen nicht']
   },
   {
+    /* DER KERN: die Grenze gilt ueber Maschinen hinweg. Zaehlt sie nur
+       je Maschine, ist sie wirkungslos - zwei Maschinen gleichzeitig
+       kosten dann nichts extra. */
+    name:'Die eigene Zeit zaehlt je Maschine statt gemeinsam',
+    suche:'    maschinen.forEach(x => { schon += (stand[x.id] && stand[x.id][tag]) || 0; });',
+    ersatz:'    schon = (stand[m.id] && stand[m.id][tag]) || 0;',
+    erwartet:['mit 30 h die Woche muss der zweite warten']
+  },
+  {
+    /* Und sie darf die Maschinengrenze nicht aufheben. */
+    name:'Die Maschinengrenze faellt weg',
+    suche:'        const frei_min = Math.min(kap - belegt, mannFrei(m, tag));',
+    ersatz:'        const frei_min = mannAn ? mannFrei(m, tag) : (kap - belegt);',
+    erwartet:['die Maschinengrenze gilt weiter']
+  },
+  {
+    /* Ein Demobestand ohne Verzug zeigt nie, wie Verzug aussieht. */
+    name:'Beispieldaten ohne gerissenen Termin',
+    suche:"'laeuft',     tag(-1),  216],",
+    ersatz:"'laeuft',     tag(40),  216],",
+    erwartet:['kein einziger Termin ist eng - der Bestand zeigt keinen Verzug']
+  },
+  {
+    /* Und einer, in dem alles genau aufgeht, zeigt die Soll-Ist-
+       Rechnung als sinnlos. */
+    name:'Beispiel-Rueckmeldungen zeigen alle in dieselbe Richtung',
+    suche:"    istSetzen(w2, 1, 'stueckzeit', 2.6);      /* 10 % schneller */",
+    ersatz:"    istSetzen(w2, 1, 'stueckzeit', 3.4);",
+    erwartet:['alle Faktoren zeigen in dieselbe Richtung']
+  },
+  {
+    /* Die Auflage darf nicht als Hinterschnitt zaehlen - sonst ist
+       JEDES Fraesteil komplex, und die Unterscheidung greift nie. */
+    name:'Die Auflage zaehlt wieder als Hinterschnitt',
+    suche:'      if(d < -F_AUFLAGE) return;',
+    ersatz:'      if(false) return;',
+    /* An den ECHTEN Musterteilen gemessen, nicht am synthetischen
+       Quader: der hat keine Flaeche in y-Richtung und bleibt auch ohne
+       den Ausschluss bei 0. */
+    erwartet:['fuenf als einfaches Fraesteil']
+  },
+  {
+    /* Und die Schraege MUSS zaehlen - sonst ist alles 3ax, genauso
+       blind wie vorher, nur andersherum. */
+    name:'Schraege Flaechen zaehlen nicht mehr',
+    suche:'      if(d < -0.02) schlecht += f._w.flaeche;',
+    ersatz:'      if(d < -0.999) schlecht += f._w.flaeche;',
+    erwartet:['Oktaeder: aus jeder Richtung die Haelfte hinten']
+  },
+  {
+    /* DIE ZAEHLUNG, die falsch WAR: istZahl(0) ist wahr, und jeder
+       Auftrag traegt ein leeres Rueckmeldefeld. */
+    name:'Leeres Rueckmeldefeld zaehlt als Rueckmeldung',
+    suche:'  if(+r.gefertigt > 0 || +r.ausschuss > 0) return true;',
+    ersatz:'  if(istZahl(r.gefertigt) || istZahl(r.ausschuss)) return true;',
+    erwartet:['ein leeres Rueckmeldefeld ist KEINE Rueckmeldung']
+  },
+  {
+    /* Die Datei muss eine KOPIE sein. Ein Zeiger auf die lebenden
+       Auftraege hiesse: wer nach dem Sichern etwas aendert, aendert die
+       Sicherung mit - und merkt es nie. */
+    name:'Die Sicherung zeigt auf die lebenden Daten',
+    suche:'  const auftraege = Array.isArray(e.auftraege) ? kopie(e.auftraege) : [];',
+    ersatz:'  const auftraege = Array.isArray(e.auftraege) ? e.auftraege : [];',
+    erwartet:['die Datei ist eine Kopie, kein Zeiger']
+  },
+  {
+    /* Beim Dazuladen gewinnt der VORHANDENE - er traegt vielleicht
+       Rueckmeldungen, die in der Datei noch nicht stehen. */
+    name:'Beim Dazuladen gewinnt die Datei',
+    suche:'    if(n && kennt[n]){ uebersprungen.push(n); return; }',
+    ersatz:'    if(n && kennt[n]){ uebersprungen.push(n); }',
+    /* Ohne das return wird der Auftrag uebersprungen GEZAEHLT und
+       trotzdem angehaengt - es faellt also die Zahl der dazugekommenen,
+       nicht die der uebersprungenen. */
+    erwartet:['einer kommt dazu']
+  },
+  {
+    /* Die Vorschau zaehlt die LISTEN. Ein Kopf laesst sich von Hand
+       aendern, und dann stuende eine Zahl da, die nichts mit dem Inhalt
+       zu tun hat. */
+    name:'Die Vorschau glaubt dem Kopf der Datei',
+    suche:'function sicherungZahlen(o){\n  const a = (o && Array.isArray(o.auftraege)) ? o.auftraege : [];',
+    ersatz:'function sicherungZahlen(o){\n  if(o && o.enthaelt) return Object.assign({gesichert:o.gesichert||\'\'}, o.enthaelt);\n  const a = (o && Array.isArray(o.auftraege)) ? o.auftraege : [];',
+    erwartet:['die Vorschau zaehlt die Liste, nicht den Kopf']
+  },
+  {
     /* Der Satz von aussen muss WIRKEN - sonst ist die ganze Spalte
        Schein. */
     name:'Der Satz von aussen wird ignoriert',
@@ -271,9 +358,11 @@ const faelle = [
        ganze Mechanik im Kern vorhanden und von aussen unerreichbar -
        genau der Zustand vor diesem Paket. */
     name:'Freie Tage werden nicht durchgereicht',
-    suche:'frei:W.frei, uebergabe:W.regeln.uebergabe });',
-    ersatz:'uebergabe:W.regeln.uebergabe });',
-    erwartet:['planBelegen bekommt die freien Tage']
+    /* Einzeiliger Anker; der Einzug von 29 Leerzeichen macht ihn
+       eindeutig - in wUebersichtMalen steht dieselbe Folge mit vier. */
+    suche:'                             frei:W.frei, uebergabe:W.regeln.uebergabe,',
+    ersatz:'                             uebergabe:W.regeln.uebergabe,',
+    erwartet:['1 von 2 Planungsaufrufen bekommen die freien Tage NICHT']
   },
   {
     /* Ein Zeitraum ueber ein Jahr ist ein Vertipper und wuerde die Liste
