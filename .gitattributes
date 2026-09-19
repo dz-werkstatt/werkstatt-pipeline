@@ -1,0 +1,25 @@
+# Keine Zeilenende-Umwandlung. Der Bau ist eine BYTE-Verkettung, und
+# "node bauen.js --pruefe" vergleicht Byte fuer Byte. Wuerde Git beim
+# Auschecken LF in CRLF wandeln, faende ein frisch geklontes Verzeichnis
+# seine eigene gebaute Datei falsch.
+* -text
+
+# ---------------------------------------------------------------------
+# WAS NICHT NACH DRAUSSEN GEHT.
+# veroeffentlichen.ps1 spiegelt "git archive HEAD" in den oeffentlichen
+# Klon. Alles hier Genannte faellt dabei weg - im Arbeitsverzeichnis und
+# in der privaten Sicherung (Remote backup) bleibt es vollstaendig.
+#
+# DIE LINIE: oeffentlich ist die APP. Die Werkstatt ist es nicht.
+# Die Berichte beschreiben Maschinen, Arbeitsweise und offene
+# Entscheidungen; die Bilder zeigen echte Auftragsdaten; der Ordner versuche
+# rechnet auf echten Dateien; CLAUDE.md ist die Arbeitsgrundlage und
+# nennt Namen. Nichts davon muss jemand lesen koennen, der die App
+# benutzt - und was einmal im Netz stand, ist dort auch nach dem
+# Loeschen noch eine Weile zu finden.
+# ---------------------------------------------------------------------
+CLAUDE.md          export-ignore
+MORGENBERICHT-*.md export-ignore
+ERP-ENTWURF.md     export-ignore
+bilder/            export-ignore
+versuche/          export-ignore

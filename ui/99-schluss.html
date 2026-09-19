@@ -1,0 +1,37 @@
+
+/* ---- Start ----------------------------------------------------------
+   Alles ist geladen; jetzt werden die Startwerte geholt, die Knoepfe
+   verdrahtet und die leeren Blaetter gemalt. Ein Fehler hier darf die
+   Seite nicht stumm lassen — er steht dann im Meldungsfeld. */
+function start(){
+  try{
+    einLaden();
+    bedienungVerdrahten();
+    vorschauVerdrahten();
+    angebotVerdrahten();
+    wVerdrahten();
+    werkstoffWahlMalen();
+    kalkMalen();
+    vorschauMalen();
+    /* Die Uebersicht ist das erste Blatt - sie wurde bisher erst beim Reiterwechsel
+       gemalt (Bild P-00: fuenf leere Karten statt des Leerzustands). */
+    if(typeof wUebersichtMalen === 'function') wUebersichtMalen();
+    if(typeof standMalen === 'function') standMalen();
+    /* PWA-Offline: nur ueber einen Server (https oder localhost) - die Datei zum
+       Doppelklicken bleibt unberuehrt. Der Worker liegt neben index.html in docs/. */
+    if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+      addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+      if(typeof standPruefen === 'function') standPruefen();
+    }
+  }catch(e){
+    const m = document.getElementById('meldungen');
+    if(m) m.innerHTML = '<div class="meldung fehler">Die App konnte nicht starten: ' +
+      String(e && e.message) + '</div>';
+    if(typeof console !== 'undefined') console.error(e);
+  }
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+else start();
+</script>
+</body>
+</html>

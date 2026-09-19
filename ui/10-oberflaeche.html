@@ -1,0 +1,598 @@
+<header>
+  <!-- Kopfzeile wie die Schwestern (19.09.2026): Emblem, Titel, Chip mit Teil und Kunde, die Blaetter als
+       Reiter mit Glyphe, rechts der Stand dieser Fassung, Dunkelmodus und Anleitung. -->
+  <span class="emblem" title="Werkstatt-Pipeline"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--akzent)" stroke-width="4"/><path d="M16 16.5 H32 L16 31.5 H32" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="miter"/></svg><span class="titel">Werkstatt-Pipeline</span></span>
+  <span class="chip" id="kopfChip" title="Geladenes Teil und Kunde"></span>
+  <nav class="schritt" aria-label="Bl&auml;tter">
+    <button id="tabUeber" class="an" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>&Uuml;bersicht</button>
+    <button id="tabImport" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8 14 5v6l-6 3.2L2 11V5z"/><path d="M2 5l6 3.2L14 5M8 8.2v6"/></svg>1 Teil</button>
+    <button id="tabKalk" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.2"/><path d="M10.6 5.6a3.1 3.1 0 1 0 0 4.8M4.4 7.1h4.4M4.4 8.9h4.4"/></svg>2 Angebot</button>
+    <button id="tabAuf" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5.2 4h8.6M5.2 8h8.6M5.2 12h8.6"/><circle cx="2.3" cy="4" r=".9" fill="currentColor" stroke="none"/><circle cx="2.3" cy="8" r=".9" fill="currentColor" stroke="none"/><circle cx="2.3" cy="12" r=".9" fill="currentColor" stroke="none"/></svg>3 Auftr&auml;ge</button>
+    <button id="tabPlan" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 6.6h12M5.2 1.8v2.6M10.8 1.8v2.6"/></svg>4 Planung</button>
+    <button id="tabEin" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.3"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M3.6 12.4 5 11M11 5l1.4-1.4"/></svg>5 Einstellungen</button>
+  </nav>
+  <span class="rechts"><span class="stand" id="kopfStand" title="Stand dieser Fassung"></span><button id="dunkelBtn" type="button" title="Dunkelmodus ein/aus">&#x263E;</button><button id="baBtn" type="button" title="Anleitung">?</button></span>
+</header>
+
+<main>
+
+<!-- ============ UEBERSICHT ============================================
+     Die Frage, die man morgens hat: wo stehe ich? In dieser
+     Reihenfolge - erst was brennt, dann was laeuft, dann wie voll. -->
+<section class="blatt an" id="blattUeber">
+  <div class="karte" id="ueLeer" hidden>
+    <h2>Noch keine Auftr&auml;ge</h2>
+    <div class="klein" id="ueLeerText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteAmpel">
+    <h2>Wo stehe ich?</h2>
+    <div class="kacheln" id="ueAmpel"></div>
+    <div class="klein" id="ueAmpelText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteTermine">
+    <h2>Als N&auml;chstes f&auml;llig</h2>
+    <div id="ueTermine"></div>
+  </div>
+
+  <div class="karte" id="ueKarteLast">
+    <h2>Wie voll bin ich?</h2>
+    <div id="ueLast"></div>
+    <div class="klein" id="ueLastText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteWert">
+    <h2>Was steht offen</h2>
+    <div id="ueWert"></div>
+    <div class="klein" id="ueWertText"></div>
+  </div>
+
+  <div class="karte" id="ueKarteSoll">
+    <h2>Stimmen die Zeiten?</h2>
+    <div id="ueSoll"></div>
+  </div>
+</section>
+
+<!-- ================= 1 TEIL ================= -->
+<section class="blatt" id="blattImport">
+
+  <div class="karte">
+    <div id="ablage">
+      <div class="gross">STEP-Datei hierher ziehen oder antippen</div>
+      <div class="klein">.step / .stp (AP203, AP214, AP242) &middot; auch .dxf (2D) und .pdf (nur ablegen)</div>
+      <input type="file" id="datei" accept=".step,.stp,.STEP,.STP,.dxf,.DXF,.pdf,.PDF" multiple hidden>
+    </div>
+    <div id="laden" style="margin-top:10px">
+      <div class="balken"><i id="ladenBalken"></i></div>
+      <div class="klein" id="ladenText" style="color:var(--text-blass);font-size:13px;margin-top:4px"></div>
+    </div>
+    <div id="meldungen"></div>
+  </div>
+
+  <div class="zwei" id="teilBereich" style="display:none">
+    <div>
+      <div class="karte">
+        <h2>Vorschau</h2>
+        <div id="vorschau">
+          <canvas id="vorschauCv"></canvas>
+          <div class="knopfzeile kein-druck">
+            <button class="knopf" id="vsRohteil">Rohteil</button>
+            <button class="knopf" id="vsZuruck">Ansicht</button>
+          </div>
+          <div class="hinweis">ziehen = drehen &middot; Rad / zwei Finger = zoomen</div>
+        </div>
+      </div>
+
+      <div class="karte">
+        <h2>Teil und Rohteil</h2>
+        <div class="feld"><label for="teilName">Benennung</label><input type="text" id="teilName"></div>
+        <div class="feld"><label for="teilZnr">Zeichnungsnummer</label><input type="text" id="teilZnr"></div>
+        <div class="feld"><label for="teilRev">Revision</label><input type="text" id="teilRev"></div>
+        <div class="feld"><label for="teilKlasse" data-ba="ba-03">Klasse</label>
+          <select id="teilKlasse">
+            <option value="drehteil_einfach">Drehteil einfach</option>
+            <option value="drehteil_fraes">Drehteil mit Fr&auml;santeil</option>
+            <option value="fraesteil_3ax">Fr&auml;steil 3-Achs</option>
+            <option value="fraesteil_komplex">Fr&auml;steil komplex</option>
+          </select>
+          <span class="marke" id="klasseMarke"></span>
+        </div>
+        <div class="feld"><label for="rohForm" data-ba="ba-03">Rohteilform</label>
+          <select id="rohForm">
+            <option value="rund">Rund</option>
+            <option value="flach">Flach / Vierkant</option>
+            <option value="sechskant">Sechskant</option>
+            <option value="rohr">Rohr</option>
+          </select>
+        </div>
+        <div id="rohMasse"></div>
+        <div class="feld"><label for="aufD" data-ba="ba-03">Aufma&szlig; Durchmesser</label><input type="number" id="aufD" step="any"><span class="einheit">mm</span></div>
+        <div class="feld"><label for="aufL">Aufma&szlig; L&auml;nge</label><input type="number" id="aufL" step="any"><span class="einheit">mm</span></div>
+        <!-- Drehkontur fuer die Dreh-App (19.09.2026): nur bei einem Drehteil mit geladenem Modell sichtbar. -->
+        <div class="knopfzeile" id="drehkonturZeile" style="margin-top:8px" hidden>
+          <button class="knopf" id="btnDrehkontur" title="Au&szlig;en- und Innenkontur aus dem Modell als Programm der Dreh-App sichern (Konturen und Rohteil, keine Zyklen)">Drehkontur f&uuml;r die Dreh-App sichern</button>
+          <span class="klein" id="drehkonturHinweis" style="color:var(--text-blass);font-size:13px">in der Dreh-App: Programme &rarr; Importieren</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="karte">
+        <h2>Geometrie</h2>
+        <div class="tabellenrahmen"><table id="geoTab"></table></div>
+      </div>
+      <div class="karte" id="bohrKarte" style="display:none">
+        <h2>Bohrungen</h2>
+        <div class="tabellenrahmen"><table id="bohrTab"></table></div>
+      </div>
+      <div class="karte" id="quelleKarte" style="display:none">
+        <h2>Unterlagen</h2>
+        <div id="quelleListe"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2 ANGEBOT ================= -->
+<section class="blatt" id="blattKalk">
+  <div class="karte kein-druck kachelig">
+    <h2>Vorgaben</h2>
+    <div class="feld"><label for="kWerkstoff" data-ba="ba-04">Werkstoff</label><select id="kWerkstoff"></select><span class="marke pflege" id="kPreisMarke"></span></div>
+    <div class="feld"><label for="kToleranz" data-ba="ba-04">Toleranz</label>
+      <select id="kToleranz"><option value="mittel">mittel (IT8&ndash;IT10)</option><option value="fein">fein (&le; IT7 / Passungen)</option></select></div>
+    <div class="feld"><label for="kOberflaeche">Oberfl&auml;che</label>
+      <select id="kOberflaeche"><option value="normal">normal</option><option value="fein">Ra &le; 0,8</option></select></div>
+    <div class="feld"><label for="kSeiten" data-ba="ba-04">Bearbeitungsseiten</label><input type="number" id="kSeiten" step="1" min="1"><span class="einheit"></span></div>
+    <div class="feld"><label for="kStueck" data-ba="ba-04">St&uuml;ckzahl</label><input type="number" id="kStueck" step="1" min="1"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="kVersandArt">Versand</label>
+      <select id="kVersandArt"><option value="versand">Versand</option><option value="abholung">Abholung</option></select></div>
+  </div>
+
+  <!-- Zeiten aus dem CAM (19.09.2026, Luecke 1): die Dreh- und die Fraes-App kennen die echten
+       Zeiten aus den NC-Bahnen; hier werden sie zu ueberschriebenen Posten mit Herkunft. -->
+  <div class="karte kein-druck" id="camKarte">
+    <h2>Zeiten aus dem CAM</h2>
+    <div class="knopfzeile">
+      <button class="knopf" id="btnCamLaden" title="Zeit-Datei aus DZ CAM Drehen oder Fr&auml;sen (dort der Knopf Zeit an die Pipeline)">Zeit aus DZ CAM laden</button>
+      <button class="knopf" id="btnCamWeg" hidden>CAM-Zeiten verwerfen</button>
+      <input type="file" id="camDatei" accept=".json,.JSON" hidden>
+    </div>
+    <div class="klein" id="camStand" style="color:var(--text-blass);font-size:13px;margin-top:6px">Noch keine CAM-Zeit geladen &mdash; die Hauptzeit kommt aus dem Spanvolumen-Modell.</div>
+  </div>
+
+  <div class="karte">
+    <h2>Aufschl&uuml;sselung</h2>
+    <div class="meldung info kein-druck" style="margin-top:0">
+      Jeder Wert l&auml;sst sich &uuml;berschreiben. &Uuml;berschriebene Werte sind
+      <span style="color:var(--geaendert)">gelb umrandet</span>; der Knopf setzt sie zur&uuml;ck.
+    </div>
+    <div class="tabellenrahmen"><table id="kalkTab"></table></div>
+    <div class="knopfzeile kein-druck" style="margin-top:10px">
+      <button class="knopf" id="kalkZuruck">&Uuml;berschreibungen zur&uuml;cknehmen</button>
+    </div>
+  </div>
+
+  <div class="karte">
+    <h2>Staffelpreise</h2>
+    <div class="staffel" id="staffel"></div>
+    <div class="feld kein-druck" style="margin-top:10px"><label for="kStaffel">Staffel</label><input type="text" id="kStaffel" style="width:220px"></div>
+  </div>
+
+  <div class="karte kein-druck">
+    <h2>Angebot</h2>
+    <div class="feld"><label for="aKunde">Kunde</label><input type="text" id="aKunde"></div>
+    <div class="feld"><label for="aNummer">Angebotsnummer</label><input type="text" id="aNummer"></div>
+    <div class="feld"><label for="aLieferzeit">Lieferzeit</label><input type="text" id="aLieferzeit"></div>
+    <!-- Was die Planung dazu sagt. Die Lieferzeit war bis dahin ein
+         freies Textfeld mit der Vorgabe "nach Vereinbarung" - dabei
+         weiss die App, was auf den Maschinen liegt. -->
+    <div id="aLieferVorschlag"></div>
+    <div class="feld"><label for="aIstzeit" data-ba="ba-04">Ist-Zeit je St&uuml;ck (sp&auml;ter)</label><input type="number" id="aIstzeit" step="any"><span class="einheit">min</span></div>
+    <div id="istVergleich"></div>
+    <div class="knopfzeile" style="margin-top:10px">
+      <button class="knopf haupt" id="btnPdf">Angebot drucken / PDF</button>
+      <button class="knopf" id="btnJson">Angebot sichern (JSON)</button>
+      <button class="knopf" id="btnJsonLaden">Angebot laden</button>
+      <input type="file" id="jsonDatei" accept=".json,.JSON" hidden>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3 EINSTELLUNGEN ================= -->
+<!-- ================= 4 AUFTRAEGE ================= -->
+<section class="blatt" id="blattAuf">
+
+  <div class="karte kein-druck">
+    <h2>Auftr&auml;ge</h2>
+    <div class="meldung info" style="margin-top:0" id="aufHinweis"></div>
+    <div class="knopfzeile">
+      <button class="knopf haupt" id="aufNeuAusAngebot">Aus dem Angebot anlegen</button>
+      <button class="knopf" id="aufNeuLeer">Leerer Auftrag</button>
+      <button class="knopf" id="aufSichern">Als Datei sichern</button>
+      <button class="knopf" id="aufLaden">Aus Datei laden</button>
+      <input type="file" id="aufDatei" accept=".json,.JSON" hidden>
+    </div>
+    <div class="filterzeile kein-druck">
+      <select id="aufFStatus" title="Status"></select>
+      <input type="search" id="aufFText" placeholder="Nummer, Kunde, Teil &hellip;">
+      <select id="aufFSort" title="Sortierung"></select>
+      <button class="knopf" id="aufFWeg" hidden>Filter zur&uuml;cksetzen</button>
+    </div>
+    <div class="tabellenrahmen"><table id="aufTab"></table></div>
+  </div>
+
+  <div class="karte kein-druck" id="aufMaske" hidden>
+    <h2 id="aufMaskeTitel">Auftrag</h2>
+    <div class="feld"><label for="afNummer">Auftragsnummer</label><input type="text" id="afNummer"></div>
+    <div class="feld"><label for="afKunde">Kunde</label><input type="text" id="afKunde"></div>
+    <div class="feld"><label for="afTeil">Teil</label><input type="text" id="afTeil"></div>
+    <div class="feld"><label for="afZeichnung">Zeichnungsnr.</label><input type="text" id="afZeichnung"></div>
+    <div class="feld"><label for="afWerkstoff">Werkstoff</label><input type="text" id="afWerkstoff"></div>
+    <div class="feld"><label for="afStueck">St&uuml;ckzahl</label><input type="number" id="afStueck" step="1" min="1"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="afRuest" data-ba="ba-05">R&uuml;stzeit</label><input type="number" id="afRuest" step="any"><span class="einheit">min</span></div>
+    <div class="feld"><label for="afStueckzeit" data-ba="ba-05">St&uuml;ckzeit</label><input type="number" id="afStueckzeit" step="any"><span class="einheit">min</span></div>
+    <div class="feld"><label for="afPreis">Preis gesamt</label><input type="number" id="afPreis" step="any"><span class="einheit">&euro;</span></div>
+    <!-- Woher der Preis kommt, und was dieselbe Rechnung heute ergaebe.
+         Der Auftrag behaelt seinen Preis; das Uebernehmen ist ein Knopf. -->
+    <div class="klein" id="afGrundlage"></div>
+    <div class="knopfzeile" id="afNeuZeile" hidden style="margin:4px 0 8px">
+      <button class="knopf" id="afNeuRechnen">Preis und Zeiten neu &uuml;bernehmen</button>
+    </div>
+    <!-- Arbeitsgaenge: die Maschine wird HIER gewaehlt, je Gang. Ein
+         Drehteil mit Fraesanteil laeuft erst auf der Drehbank und dann auf
+         der Fraese; mit einem Maschinenfeld je Auftrag waere das nicht
+         abzubilden. -->
+    <div class="unterkarte" id="afGaengeKarte">
+      <h3>Arbeitsg&auml;nge</h3>
+      <div class="tabellenrahmen"><table id="afGaenge"></table></div>
+      <div class="klein" id="afGangSumme"></div>
+      <div class="meldung info" id="afGangHinweis" hidden></div>
+      <div id="afMaschinenHinweis" class="meldung warn" hidden></div>
+      <div class="knopfzeile" style="margin-top:8px">
+        <button class="knopf" id="afGangPlus">+ Arbeitsgang</button>
+        <!-- Nur bei drehteil_fraes sichtbar: die Klasse weiss, dass
+             gefraest wird, und seit dem Fraesanteil auch ungefaehr,
+             wie lange. -->
+        <button class="knopf" id="afGangVorschlag" hidden>Arbeitsg&auml;nge vorschlagen</button>
+      </div>
+    </div>
+    <div class="feld"><label for="afStatus">Status</label><select id="afStatus"></select></div>
+    <div class="feld"><label for="afTermin">Liefertermin</label><input type="date" id="afTermin"></div>
+    <div class="feld"><label for="afGefertigt">gefertigt</label><input type="number" id="afGefertigt" step="1" min="0"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="afAusschuss">Ausschuss</label><input type="number" id="afAusschuss" step="1" min="0"><span class="einheit">St.</span></div>
+    <div class="feld"><label for="afGeliefert">geliefert am</label><input type="date" id="afGeliefert"></div>
+    <!-- Was die Werkstatt auf der Laufkarte notiert hat. Die Ist-Zeiten
+         aendern die Kalkulation NIE - sie stehen daneben. -->
+    <div class="unterkarte" id="afIstKarte">
+      <h3>R&uuml;ckmeldung aus der Werkstatt</h3>
+      <div class="tabellenrahmen"><table id="afIst"></table></div>
+      <div class="klein" id="afIstSumme"></div>
+    </div>
+    <div class="feld"><label for="afBemerkung">Bemerkung</label><input type="text" id="afBemerkung"></div>
+    <div class="knopfzeile" style="margin-top:10px">
+      <button class="knopf haupt" id="afOk">&Uuml;bernehmen</button>
+      <button class="knopf" id="afAb">Abbrechen</button>
+      <button class="knopf" id="afPapier">Laufkarte drucken</button>
+      <button class="knopf" id="afLieferschein">Lieferschein</button>
+      <button class="knopf gefahr" id="afWeg">L&ouml;schen</button>
+    </div>
+  </div>
+
+  <!-- Die Laufkarte: im Blatt versteckt, nur beim Drucken sichtbar.
+       Der Maschinenzettel steht im Planungsblatt und teilt sich mit ihr
+       den Druckweg - es darf immer nur EINES gefuellt sein. -->
+  <div class="karte nur-druck" id="laufkarte"></div>
+</section>
+
+<!-- ================= 5 PLANUNG ================= -->
+<section class="blatt" id="blattPlan">
+
+  <div class="karte kein-druck kachelig" id="plKarteKap">
+    <h2>Kapazit&auml;t</h2>
+    <div class="feld"><label for="plAb" data-ba="ba-06">Planung ab</label><input type="date" id="plAb"></div>
+    <div class="feld"><label for="plTage">Horizont</label><input type="number" id="plTage" step="1" min="7"><span class="einheit">Tage</span></div>
+    <!-- DIE KNAPPE GROESSE ist nicht die Maschine, sondern die Zeit des
+         Menschen davor. Ohne diese Zahl rechnet die App vier Maschinen
+         mal acht Stunden. -->
+    <div class="feld"><label for="plMann" data-ba="ba-06">Deine Zeit je Woche</label>
+      <input type="number" id="plMann" step="1" min="0" max="168"><span class="einheit">h</span></div>
+    <div class="klein" id="plMannHinweis"></div>
+    <!-- Freie Tage: Feiertage, Betriebsurlaub. Die Belegung kennt sie
+         seit jeher, nur gab es kein Feld dafuer. -->
+    <div class="unterkarte" id="plFreiKarte">
+      <h3>Freie Tage und Wartung</h3>
+      <div class="filterzeile">
+        <select id="plFreiWer" title="Gilt der Tag f&uuml;r alle oder f&uuml;r eine Maschine?"></select>
+        <input type="date" id="plFreiVon" title="Tag oder Beginn">
+        <input type="date" id="plFreiBis" title="Ende (leer = ein Tag)">
+        <button class="knopf" id="plFreiPlus">eintragen</button>
+        <button class="knopf" id="plFreiWeg" hidden>alle entfernen</button>
+      </div>
+      <div id="plFreiListe"></div>
+      <div class="klein" id="plFreiHinweis"></div>
+    </div>
+    <!-- Die zwei Regeln, nach denen geplant wird. Sie standen als Punkt 7
+         und 8 auf der Entscheidungsliste; als Schalter beantwortet man
+         sie durch Ausprobieren. -->
+    <div class="unterkarte" id="plRegelKarte">
+      <h3>Planungsregeln</h3>
+      <div class="feld"><label for="plRegelWahl">Maschinenwahl</label>
+        <select id="plRegelWahl">
+          <option value="last">die Maschine mit der wenigsten Arbeit</option>
+          <option value="klein">die kleinste passende Maschine</option>
+        </select></div>
+      <div class="feld"><label for="plUebergabe" data-ba="ba-06">Abstand zwischen zwei Arbeitsg&auml;ngen</label>
+        <input type="number" id="plUebergabe" step="1" min="0" max="30"><span class="einheit">Tage</span></div>
+      <div class="feld"><label for="plZuschlag">Zuschlag auf den Liefertermin</label>
+        <input type="number" id="plZuschlag" step="1" min="0" max="60"><span class="einheit">Arbeitstage</span></div>
+      <div class="klein" id="plRegelHinweis"></div>
+    </div>
+    <div id="plMeldung"></div>
+  </div>
+
+  <div class="karte" id="plKarteAusl">
+    <h2>Auslastung je Maschine und Woche</h2>
+    <div class="tabellenrahmen"><table id="plTafel"></table></div>
+    <div class="klein" id="plLegende"></div>
+  </div>
+
+  <div class="karte" id="plKarteTermine">
+    <h2>Termine</h2>
+    <div class="tabellenrahmen"><table id="plTermine"></table></div>
+    <div class="klein" id="plRangHinweis"></div>
+    <div class="knopfzeile" style="margin-top:6px">
+      <button class="knopf" id="plVerteilen">Auf die Maschinen verteilen</button>
+      <button class="knopf" id="plRangWeg" hidden>Reihenfolge zur&uuml;cksetzen</button>
+    </div>
+    <div class="klein" id="plVerteilenHinweis"></div>
+  </div>
+
+  <div class="karte" id="plKarteAusw">
+    <h2>Auswertung</h2>
+    <div class="tabellenrahmen"><table id="plAusw"></table></div>
+  </div>
+
+  <div class="karte" id="plKarteSollIst">
+    <h2>Soll und Ist</h2>
+    <div class="tabellenrahmen"><table id="plSollIst"></table></div>
+    <div class="klein" id="plSollIstHinweis"></div>
+  </div>
+
+  <div class="karte kein-druck" id="plKarteZettel">
+    <h2>Zettel f&uuml;r die Maschine</h2>
+    <div class="feld"><label for="plZettelM">Maschine</label><select id="plZettelM"></select></div>
+    <div class="feld"><label for="plZettelTage">Zeitraum</label><input type="number" id="plZettelTage" step="1" min="1" max="60"><span class="einheit">Tage</span></div>
+    <div class="knopfzeile" style="margin-top:6px">
+      <button class="knopf haupt" id="plZettelDruck">Zettel drucken</button>
+    </div>
+    <div class="klein" id="plZettelHinweis"></div>
+  </div>
+  <div class="karte nur-druck" id="zettel"></div>
+
+  <div class="karte kein-druck" id="plKarteMasch">
+    <h2>Maschinen</h2>
+    <div class="meldung warn" style="margin-top:0" id="plMaschHinweis"></div>
+    <div class="meldung warn" id="plMaschFehler" hidden></div>
+    <div class="tabellenrahmen"><table id="plMaschinen"></table></div>
+    <div class="klein" id="plMaschSaetze"></div>
+    <div class="knopfzeile" style="margin-top:8px">
+      <button class="knopf" id="plMaschPlus" data-art="drehen">+ Drehmaschine</button>
+      <button class="knopf" id="plMaschPlusF" data-art="fraesen">+ Fr&auml;smaschine</button>
+      <button class="knopf" id="plMaschPlusH" data-art="handarbeit">+ Arbeitsplatz</button>
+    </div>
+  </div>
+</section>
+
+<section class="blatt" id="blattEin">
+  <div class="karte">
+    <h2>Drehteil mit Fr&auml;santeil</h2>
+    <div class="feld"><label for="einFraesStueck" data-ba="ba-07">Anteil Fr&auml;sen an der St&uuml;ckzeit</label>
+      <input type="number" id="einFraesStueck" step="5" min="0" max="95"><span class="einheit">%</span></div>
+    <div class="klein" id="einFraesHinweis"></div>
+  </div>
+
+  <div class="karte">
+    <h2>Stundens&auml;tze</h2>
+    <div id="einSaetze" class="kachelig"></div>
+  </div>
+  <div class="karte">
+    <h2>Werkstoffe</h2>
+    <div class="meldung warn" style="margin-top:0">Die Preise sind <b>Platzhalter</b> und noch zu pflegen. Bis dahin ist jeder Materialposten nur eine Gr&ouml;&szlig;enordnung.</div>
+    <div class="tabellenrahmen"><table id="einWerkstoffe"></table></div>
+    <div class="knopfzeile" style="margin-top:8px"><button class="knopf" id="btnWstNeu">Werkstoff hinzuf&uuml;gen</button><button class="knopf" id="btnWstExport" title="Name, Gruppe, Dichte, Preis je kg und Faktor als Datei &mdash; die Dreh-App liest daraus ihre Materialpreise (Kalkulation, Betriebswerte)">F&uuml;r die Dreh-App sichern</button></div>
+  </div>
+  <div class="karte">
+    <h2>Zerspanleistung</h2>
+    <div class="meldung warn" style="margin-top:0">Erste N&auml;herung. Mit den ersten echten Zeiten kalibrieren &mdash; bis dahin <span class="marke schaetz">Sch&auml;tzwert</span>.</div>
+    <div class="tabellenrahmen"><table id="einLeistung"></table></div>
+  </div>
+  <div class="karte">
+    <h2>Zuschl&auml;ge, Zeiten, Nebenkosten</h2>
+    <div id="einRest" class="kachelig"></div>
+  </div>
+  <div class="karte">
+    <h2>Firmendaten f&uuml;r das Angebot</h2>
+    <div id="einFirma" class="kachelig"></div>
+  </div>
+  <!-- DIE SICHERUNG. Sie steht VOR der Einstellungs-Sicherung, weil sie
+       der Hauptweg ist: eine Datei, alles darin. -->
+  <div class="karte" id="einSicherKarte">
+    <h2>Sicherung</h2>
+    <div class="meldung warn" id="sicherStand"></div>
+    <div class="knopfzeile">
+      <button class="knopf haupt" id="btnSicherExport">Alles als Datei sichern</button>
+      <button class="knopf" id="btnSicherImport">Sicherung zur&uuml;ckholen</button>
+      <input type="file" id="sicherDatei" accept=".json,.JSON" hidden>
+    </div>
+    <div id="sicherVorschau" hidden>
+      <div class="meldung info" id="sicherInhalt"></div>
+      <div class="knopfzeile">
+        <button class="knopf gefahr" id="btnSicherErsetzen">Alles ersetzen</button>
+        <button class="knopf" id="btnSicherDazu">Nur Auftr&auml;ge dazuladen</button>
+        <button class="knopf" id="btnSicherAbbruch">Abbrechen</button>
+      </div>
+    </div>
+    <div class="klein" id="sicherHinweis"></div>
+  </div>
+
+  <!-- Zum Ausprobieren. Steht neben der Sicherung, weil beide den
+       ganzen Bestand anfassen und beide vorher fragen muessen. -->
+  <div class="karte" id="einDemoKarte">
+    <h2>Beispieldaten</h2>
+    <div class="knopfzeile">
+      <button class="knopf" id="btnDemo">Beispiel-Werkstatt laden</button>
+      <button class="knopf gefahr" id="btnDemoJa" hidden>Ja, vorhandene ersetzen</button>
+      <button class="knopf" id="btnDemoNein" hidden>Abbrechen</button>
+    </div>
+    <div class="klein" id="demoHinweis"></div>
+  </div>
+
+  <div class="karte">
+    <h2>Nur die Einstellungen</h2>
+    <div class="knopfzeile">
+      <button class="knopf" id="btnEinExport">Als Datei sichern</button>
+      <button class="knopf" id="btnEinImport">Aus Datei laden</button>
+      <input type="file" id="einDatei" accept=".json,.JSON" hidden>
+      <button class="knopf" id="btnEinReset">Auf Startwerte zur&uuml;cksetzen</button>
+    </div>
+    <div class="klein" style="color:var(--text-blass);font-size:13px;margin-top:8px">
+      Nur Stundens&auml;tze, Werkstoffe und Zuschl&auml;ge &mdash; <b>ohne</b> Auftr&auml;ge und Maschinen.
+      Daf&uuml;r ist die <b>Sicherung</b> dar&uuml;ber da. Diese kleine Datei ist f&uuml;r den Fall,
+      dass nur die Rechenwerte auf ein anderes Ger&auml;t sollen.
+    </div>
+  </div>
+</section>
+
+</main>
+<!-- ===== ANLEITUNG (19.09.2026, Design-Punkt 5): Kapitel je Blatt, Inhaltsverzeichnis wird aus den h2
+     erzeugt (baTocBauen), Sprung aus den Feldern ueber label[data-ba]. Kein Name, keine Anschrift - das Repo
+     ist oeffentlich. ===== -->
+<div id="baPanel" class="kein-druck" aria-label="Anleitung">
+  <div class="ba-kopf"><b>Anleitung &mdash; Werkstatt-Pipeline</b><span class="ba-stand" id="baStand"></span>
+    <span class="knopfzeile"><button class="knopf mini" id="baInhaltBtn" type="button">Inhalt</button><button class="knopf mini" id="baZu" type="button">&#x2715;</button></span></div>
+  <div class="ba-inhalt" id="baScroll"><div class="ba-text" id="baText">
+<h2 id="ba-inhalt">Inhalt</h2><div id="baToc"></div>
+
+<h2 id="ba-01">1 &nbsp;Was diese App ist</h2>
+<p>Der Weg von der Anfrage zur Werkstatt: <b>Teil</b> einlesen (STEP, DXF, PDF nur ablegen), daraus ein <b>Angebot</b> mit
+Staffelpreisen, aus dem Angebot ein <b>Auftrag</b> mit Arbeitsg&auml;ngen, aus den Auftr&auml;gen die <b>Planung</b> auf den Maschinen &mdash;
+bis zur Laufkarte, dem Maschinenzettel und dem Lieferschein. Eine einzige Datei, l&auml;uft offline: am Laptop per Doppelklick,
+am Handy &uuml;ber die Verkn&uuml;pfung auf dem Home-Bildschirm.</p>
+<p><b>Wer rechnet was (Entscheid vom 19.09.2026):</b> die Pipeline ist die Quelle des <b>Preises</b>. Die beiden CAM-Apps
+(DZ CAM Drehen und Fr&auml;sen) kennen die <b>echten Zeiten</b> aus den NC-Bahnen und geben sie als Datei her&uuml;ber (Kap.&nbsp;8);
+die Kalkulation der Dreh-App bleibt eine Grobrechnung f&uuml;r das Gegenst&uuml;ck. Zwei Preise f&uuml;r dasselbe Teil w&auml;ren einer zu viel.</p>
+
+<h2 id="ba-02">2 &nbsp;&Uuml;bersicht</h2>
+<p>Die Frage, die man morgens hat: <i>wo stehe ich?</i> Solange kein Auftrag da ist, steht hier eine Karte mit drei Wegen
+(Beispiel-Werkstatt laden, STEP importieren, Auftrag anlegen). Danach: <b>Wo stehe ich</b> (&uuml;berf&auml;llig, in Gefahr, l&auml;uft,
+wartet), <b>Als N&auml;chstes f&auml;llig</b>, <b>Wie voll bin ich</b> (je Maschine und Woche, dazu Deine eigene Zeit), <b>Was steht offen</b>
+(Auftragswert nach Status) und <b>Stimmen die Zeiten</b> (Soll gegen R&uuml;ckmeldung). Alles gerechnet aus den Auftr&auml;gen &mdash; nichts
+davon wird gesondert gepflegt.</p>
+
+<h2 id="ba-03">3 &nbsp;Blatt 1 &mdash; Teil</h2>
+<dl>
+<dt>Datei ablegen</dt><dd>STEP (AP203, AP214, AP242) oder DXF hineinziehen oder antippen; eine PDF-Zeichnung wird nur abgelegt und
+im Angebot genannt, nicht ausgewertet. Die App liest die Fl&auml;chen selbst (kein Fremdkern): H&uuml;llquader, Volumen, Oberfl&auml;che,
+Rotationsachse, Bohrungen, Fl&auml;chen und Kanten. Wo Freiformfl&auml;chen im Spiel sind, n&auml;hert sie und <b>sagt es</b> mit dem Anteil.</dd>
+<dt>Klasse</dt><dd>Drehteil einfach, Drehteil mit Fr&auml;santeil, Fr&auml;steil 3-Achs, Fr&auml;steil komplex &mdash; automatisch erkannt, von Hand
+&auml;nderbar. An der Klasse h&auml;ngen Maschine, R&uuml;stzeit und die Zerspanleistung.</dd>
+<dt>Rohteil und Aufma&szlig;</dt><dd>Rund, Flach, Sechskant oder Rohr, vorgeschlagen aus der Geometrie mit dem Aufma&szlig; aus Blatt 5. Die Ma&szlig;e
+bestimmen das Volumen, das Volumen den Span und der Span die Zeit &mdash; wer ein Ma&szlig; &auml;ndert, sieht sofort den neuen Preis.</dd>
+<dt>Bohrungen</dt><dd>Zylinderfl&auml;chen mit Boden oder durchgehend. Ein Loch, dessen Durchmesser <b>genau</b> ein Regelkernloch ist
+(M5 bis M20, z.&nbsp;B. &empty;&nbsp;8,5 f&uuml;r M10), gilt als <b>Kernloch f&uuml;r ein Gewinde</b> und bekommt in der Kalkulation seinen eigenen
+Zeitposten. Das ist aus dem Durchmesser geschlossen &mdash; die Tabelle sagt es dazu.</dd>
+<dt>Drehkontur f&uuml;r die Dreh-App</dt><dd>Bei einem Drehteil schreibt der Knopf <b>Drehkontur f&uuml;r die Dreh-App sichern</b> die Au&szlig;en- und
+Innenkontur aus dem Modell als Datei im Programmformat der Dreh-App (Kap.&nbsp;8). Dort l&auml;dt <b>Programme &rarr; Importieren</b> sie als
+neues Programm mit den Konturen und dem Rohteil; die Zyklen legt man dort an.</dd>
+</dl>
+
+<h2 id="ba-04">4 &nbsp;Blatt 2 &mdash; Angebot</h2>
+<dl>
+<dt>Vorgaben</dt><dd>Werkstoff (Dichte, Preis, Bearbeitbarkeit aus Blatt 5), Toleranz und Oberfl&auml;che (Faktoren auf die Zeit),
+<b>Bearbeitungsseiten</b> (jede weitere Seite kostet Nebenzeit), St&uuml;ckzahl, Versand oder Abholung.</dd>
+<dt>Aufschl&uuml;sselung</dt><dd>Jeder Posten steht einzeln da und l&auml;sst sich <b>&uuml;berschreiben</b>; &uuml;berschriebene Werte sind gelb umrandet,
+der Knopf nimmt alle zur&uuml;ck. Auch die <b>R&uuml;stzeit</b> ist ein solcher Posten. Das Zeitmodell dahinter (Spanvolumen durch Zerspanleistung,
+Nebenzeit als Anteil plus je Bohrung, Gewinde und Seite) ist eine erste N&auml;herung &mdash; Sch&auml;tzwerte tragen ihre Marke.</dd>
+<dt>Zeiten aus dem CAM</dt><dd>Der Knopf <b>Zeit aus DZ CAM laden</b> liest die Zeit-Datei, die die Dreh- oder Fr&auml;s-App aus dem fertigen
+Programm schreibt (Kap.&nbsp;8). Daraus wird die <b>Hauptzeit</b> &uuml;berschrieben (die Laufzeit des Programms mit Werkzeugwechseln), die
+<b>R&uuml;stzeit</b> aus der Zahl der Werkzeuge gerechnet (Grundzeit plus Minuten je Werkzeug, beides in Blatt 5) und die <b>Bearbeitungsseiten</b>
+aus den Aufspannungen gesetzt. Jeder dieser Werte tr&auml;gt danach die Marke <i>aus DZ CAM</i> und die Herkunft steht unter der Tabelle;
+die Nebenzeit rechnet weiter nach Formel &mdash; Spannen und Messen stehen in keinem NC-Programm.</dd>
+<dt>Staffel und Lieferbar ab</dt><dd>Die Staffel zeigt, wie R&uuml;stumlage und Auftragskosten mit der St&uuml;ckzahl fallen. <b>Lieferbar ab</b> kommt
+aus der Planung von Blatt 4: der Probeauftrag wird hinten angestellt und einmal belegt.</dd>
+<dt>Angebot sichern</dt><dd>Drucken/PDF &uuml;ber den Browser; <b>Angebot sichern (JSON)</b> schreibt alles (Geometrie, Parameter, Ergebnis,
+CAM-Zeiten), <b>Angebot laden</b> holt es zur&uuml;ck. Ist-Zeit je St&uuml;ck: sp&auml;ter eintragen, die Abweichung steht daneben.</dd>
+</dl>
+
+<h2 id="ba-05">5 &nbsp;Blatt 3 &mdash; Auftr&auml;ge</h2>
+<dl>
+<dt>Aus dem Angebot anlegen</dt><dd>R&uuml;stzeit, St&uuml;ckzeit, St&uuml;ckzahl, Preis und Maschinenart kommen <b>unver&auml;ndert</b> aus der Kalkulation;
+die Maschine schl&auml;gt die App aus dem Arbeitsraum und der Auslastung vor. Der Liefertermin kommt aus der Planung.</dd>
+<dt>Arbeitsg&auml;nge</dt><dd>Ein Auftrag ohne G&auml;nge ist einer mit einem Gang. G&auml;nge <b>teilen</b> die kalkulierte Zeit auf, sie erzeugen keine:
+der erste bekommt, was &uuml;brig bleibt. Je Gang: Name, Maschine, R&uuml;sten, St&uuml;ckzeit &mdash; und das <b>NC-Programm</b> (O-Nummer der Monforts oder
+Name des Klartext-Programms). Das Programm steht danach auf Laufkarte und Maschinenzettel; wer aus einer CAM-Zeitdatei kalkuliert hat,
+bekommt es vorbelegt.</dd>
+<dt>R&uuml;ckmeldung</dt><dd>Gefertigt, Ausschuss, Liefertag und die Ist-Zeiten je Gang. Sie &auml;ndern die Kalkulation <b>nie</b> &mdash; sie stehen daneben,
+damit die n&auml;chste Rechnung besser wird.</dd>
+<dt>Papiere</dt><dd><b>Laufkarte</b> (Auftrag, G&auml;nge, Programme, geplante Tage, R&uuml;ckmeldefelder), <b>Lieferschein</b> (eigenes Fenster mit Firmenkopf).
+Der Maschinenzettel steht in Blatt 4.</dd>
+</dl>
+
+<h2 id="ba-06">6 &nbsp;Blatt 4 &mdash; Planung</h2>
+<dl>
+<dt>Kapazit&auml;t</dt><dd>Planung ab, Horizont und <b>Deine Zeit je Woche</b> &mdash; die knappe Gr&ouml;&szlig;e ist der Mensch vor den Maschinen, nicht die
+Maschine. Freie Tage und Wartung gelten f&uuml;r alle oder f&uuml;r eine Maschine.</dd>
+<dt>Regeln</dt><dd>Maschinenwahl (die mit der wenigsten Arbeit oder die kleinste passende), Abstand zwischen zwei G&auml;ngen, Zuschlag auf den
+Liefertermin. Vorw&auml;rts eingeplant, nach Liefertermin sortiert, kein Optimierer &mdash; jede Belegung ist in einer Zeile nachzurechnen.
+Von Hand umsortiert hei&szlig;t: markiert, nicht versteckt.</dd>
+<dt>Tafel, Termine, Auswertung</dt><dd>Auslastung je Maschine und Woche (gr&uuml;n unter 85&nbsp;%, gelb ab 85, rot &uuml;ber 100), Termine mit Puffer
+oder Verzug, Auswertung mit Umsatz, Bestand und Termintreue, Soll gegen Ist.</dd>
+<dt>Zettel f&uuml;r die Maschine</dt><dd>Was mache ich heute &mdash; je Maschine und Zeitraum, mit Auftrag, Teil, Gang, St&uuml;ck, Werkstoff, Zeit,
+Termin, dem <b>NC-Programm</b> und dem Weg dorthin (Programm aus der Ablage des DNC-K&auml;stchens in die Maschine laden).</dd>
+<dt>Maschinen</dt><dd>Name, Art, Arbeitsraum, Kapazit&auml;t je Tag, Arbeitstage, Wartung. Ein Arbeitsraum als Platzhalter wird gesagt.</dd>
+</dl>
+
+<h2 id="ba-07">7 &nbsp;Blatt 5 &mdash; Einstellungen</h2>
+<dl>
+<dt>Stunden&shy;s&auml;tze, Zuschl&auml;ge, Zeiten, Nebenkosten</dt><dd>Jeder Startwert steht in <code>kalkulation/defaults.json</code>, nicht im Code;
+ge&auml;ndert wird im Blatt, der Wert liegt dann im Speicher dieses Ger&auml;ts. Sch&auml;tzwerte und Platzhalter tragen ihre Marke. Neu seit dem
+19.09.2026: <b>Nebenzeit je Gewinde</b>, <b>R&uuml;stzeit Grundwert</b> und <b>je Werkzeug</b> (f&uuml;r die CAM-Zeiten).</dd>
+<dt>Werkstoffe</dt><dd>Name, Gruppe, Dichte, Preis je kg, Faktor. <b>F&uuml;r die Dreh-App sichern</b> schreibt die Liste als Datei; die Dreh-App
+liest daraus ihre Materialpreise (Kap.&nbsp;8). So gibt es eine Quelle statt zwei Listen.</dd>
+<dt>Sicherung</dt><dd><b>Alles als Datei sichern</b> ist der Hauptweg: Auftr&auml;ge, Maschinen, Einstellungen in einer Datei; <b>Sicherung zur&uuml;ckholen</b>
+ersetzt oder l&auml;dt nur Auftr&auml;ge dazu. Die kleine Datei <i>Nur die Einstellungen</i> tr&auml;gt nur die Rechenwerte.</dd>
+<dt>Beispieldaten</dt><dd>Zehn erfundene Auftr&auml;ge &uuml;ber alle Status. Alles erfunden &mdash; zum Ausprobieren, zum Wegr&auml;umen die Sicherung zur&uuml;ckholen.</dd>
+</dl>
+
+<h2 id="ba-08">8 &nbsp;Austausch mit DZ CAM</h2>
+<p>Drei Dateien, alle JSON, alle mit <code>format</code> und <code>version</code> im Kopf &mdash; damit die Gegenseite eine falsche Datei erkennt,
+statt stumm Unsinn zu rechnen:</p>
+<table><tr><th>Datei</th><th>Richtung</th><th>Inhalt</th></tr>
+<tr><td><code>dz-cam-zeit</code></td><td>CAM &rarr; Pipeline</td><td>Programm (Name, Maschine, Quelle drehen/fr&auml;sen), Zeiten (komplett mit Werkzeugwechseln,
+Schnittzeit, Zahl der Werkzeuge und Wechsel), Aufspannungen. Knopf <i>Zeit an die Pipeline</i> in der Kalkulation der Dreh-App und in der Simulation der Fr&auml;s-App.</td></tr>
+<tr><td><code>wp-werkstoffe</code></td><td>Pipeline &rarr; Dreh-App</td><td>Die Werkstoffliste aus Blatt 5. Die Dreh-App ordnet sie ihren sechs Werkstoffgruppen zu
+(S235 &rarr; Baustahl, C45/42CrMo4 &rarr; Verg&uuml;tungsstahl, 1.4301/1.4571 &rarr; Edelstahl, AlMg/AlMgSi &rarr; Alu) und &uuml;bernimmt die Preise je kg.</td></tr>
+<tr><td><code>euroturn-cam-programm</code></td><td>Pipeline &rarr; Dreh-App</td><td>Die Drehkontur aus dem STEP-Modell als Programm der Dreh-App (Konturen Au&szlig;en und Innen,
+Rohteil aus den Rohteilma&szlig;en, keine Zyklen). Dort <i>Programme &rarr; Importieren</i>.</td></tr></table>
+<p>Es gibt keinen Server dazwischen: die Datei geht &uuml;ber Downloads, Teilen-Blatt oder die Ablage des DNC-K&auml;stchens &mdash; wie das NC-Programm selbst.</p>
+
+<h2 id="ba-09">9 &nbsp;Fassung, Offline, Dunkelmodus</h2>
+<p>Der <b>Stand</b> dieser Fassung steht oben rechts und im Kopf dieser Anleitung (Datum, Uhrzeit, Pr&uuml;fsumme); die Datei zum Doppelklicken
+zeigt denselben Stand, eine Arbeitskopie sagt <i>Arbeitskopie</i>. &Uuml;ber den Server geladen pr&uuml;ft die App beim Start, ob dort ein neuerer Stand liegt,
+und sagt es &mdash; sie l&auml;dt <b>nicht</b> von selbst neu, weil das geladene Teil und die &Uuml;berschreibungen nur im Speicher der Seite leben.
+Ein Service-Worker h&auml;lt die App offline vor; sein Cache tr&auml;gt den Stand im Namen, jede Ver&ouml;ffentlichung erneuert ihn (die Lehre der
+Schwester-App vom 15.09.2026: mit festem Namen blieb dort wochenlang die alte Kopie).</p>
+<p><b>Dunkelmodus</b>: der Mond-Knopf im Kopf, gemerkt auf diesem Ger&auml;t. Dieselben Farb-Token mit anderen Werten; die 3D-Vorschau bleibt hell,
+gedruckt wird immer hell. <b>Kachelfelder</b>: Vorgaben, Kapazit&auml;t und Einstellungen zeigen ihre Felder als Kacheln (Beschriftung oben, Wert gro&szlig;),
+dasselbe Muster wie die Zyklusmasken der CAM-Apps.</p>
+
+<h2 id="ba-10">10 &nbsp;Was fehlt (ehrlich)</h2>
+<ul><li>Zeichnungen (PDF) werden nicht ausgewertet: Toleranzen und Oberfl&auml;chen w&auml;hlt man in den Vorgaben.</li>
+<li>Kein Rechnungsdruck, kein Sammellieferschein, kein Auftrag aus mehreren Teilen.</li>
+<li>Der Soll/Ist-Faktor wird gezeigt, aber nicht als Vorschlag in die n&auml;chste Kalkulation &uuml;bernommen.</li>
+<li>Die Aufspannung (welche Seite nach unten) rechnet die Fr&auml;s-App; die Pipeline &uuml;bernimmt nur die Zahl der Aufspannungen aus deren Zeit-Datei.</li>
+<li>Taschen, Nuten und Konturen erkennt die Geometrie nicht als eigene Posten &mdash; sie stecken im Spanvolumen.</li></ul>
+</div></div>
+</div>
+<script>
