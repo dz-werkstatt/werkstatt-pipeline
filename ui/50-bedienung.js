@@ -120,6 +120,22 @@ function kopfChipMalen(){
   c.textContent = t ? (t + (k ? ' \u00b7 ' + k : '')) : '';
 }
 
+/* ---- Erklaertexte hinter dem i-Knopf (26.09.2026, Paket C) ----------
+   Jede Karte, die einen .klein.erk traegt, bekommt in ihrer Ueberschrift
+   einen i-Knopf; er klappt den Absatz auf und zu. Was NICHT Erklaerung
+   ist (Hinweise aus Daten, Rueckfragen), bleibt sichtbar wie bisher. */
+function erklaerungenVerdrahten(){
+  const karten = document.querySelectorAll ? document.querySelectorAll('.karte') : [];
+  Array.prototype.forEach.call(karten, k => {
+    if(!k.querySelector('.klein.erk')) return;
+    const h = k.querySelector(':scope > h2'); if(!h || h.querySelector('.erkbtn')) return;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'erkbtn'; b.textContent = 'i'; b.title = 'Erkl\u00e4rung ein/aus';
+    b.addEventListener('click', (e) => { e.stopPropagation(); k.classList.toggle('erkauf'); });
+    h.appendChild(b);
+  });
+}
+
 /* ---- Blaetter ---- */
 function blatt(name){
   ['Ueber', 'Import', 'Kalk', 'Auf', 'Plan', 'Ein'].forEach(n => {

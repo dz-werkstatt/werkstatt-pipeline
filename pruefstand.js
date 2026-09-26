@@ -4991,6 +4991,18 @@ console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus,
   });
   gleich('Ordner-Karte ist bis zur Verfuegbarkeit versteckt (hidden im Markup)', /<div class="karte" id="einOrdnerKarte" hidden>/.test(quelltext), true);
   gleich('Angebot laden ist EINE Stelle (Dialog und Ordner rufen angebotAusText)', (quelltext.match(/angebotAusText\(/g) || []).length >= 3, true);
+  /* (4) PAKET C - Fussleiste und Design (Freigabe "Mit Fussleiste") */
+  gleich('Fussleiste: die nav der Blaetter steht fest am unteren Rand, Kacheln 46 px, aktiv auf dem Akzent, Platz darunter im main',
+    [/header \.schritt\{ position:fixed; left:0; right:0; bottom:0;/.test(quelltext), /header \.schritt button\{ flex:1 1 100px; min-height:46px; display:flex; flex-direction:column;/.test(quelltext), /header \.schritt button\.an\{ background:var\(--akzent\); color:#fff;/.test(quelltext), /main\{ padding: 14px 14px 78px;/.test(quelltext)].join(','), 'true,true,true,true');
+  gleich('  im Dunkelmodus eigene Toene fuer die Fussleiste', /body\.dunkel header \.schritt button\{ background:hsl\(var\(--ton\), 16%, 22%\);/.test(quelltext), true);
+  gleich('Karten mit Tiefe (Radius 14, Schatten), Kacheln Radius 12, Primaerknopf mit Schatten, Grundschrift 14 px',
+    [/\.karte\{\n  background: var\(--flaeche\); border:1px solid var\(--rand-fein\); border-radius:14px;/.test(quelltext), /box-shadow:0 1px 2px hsla\(var\(--ton\), 30%, 20%, \.05\), 0 10px 24px -18px/.test(quelltext), /border-radius:12px; padding:10px 12px;\n  box-shadow/.test(quelltext), /\.knopf\.haupt\{[^}]*box-shadow:0 4px 12px -6px/.test(quelltext), /font: 14px\/1\.45 -apple-system/.test(quelltext)].join(','), 'true,true,true,true,true');
+  gleich('Tabellenfelder rahmenlos auf dem Token (auch dunkel), Zahlen rechts in Tabellenziffern',
+    [/td input, td select\{ font:inherit; color:var\(--text\); background:transparent; border:0;/.test(quelltext), /td\.z input\{ text-align:right; font-variant-numeric:tabular-nums; \}/.test(quelltext)].join(','), 'true,true');
+  gleich('Leerzustand: drei Karten mit Untertitel (leerkarten mit small je Karte)', (quelltext.match(/<button id="ueLeer(Demo|Step|Auftrag)" type="button"><span class="ic">[^<]*<\/span><span>[^<]*<small>/g) || []).length, 3);
+  gleich('Erklaertexte: drei Absaetze in Blatt 5 hinter dem i-Knopf, der Knopf wird beim Start gesetzt',
+    [(quelltext.match(/class="klein erk"/g) || []).length, /\.karte \.klein\.erk\{ display:none; \}/.test(quelltext), /erklaerungenVerdrahten\(\);/.test(quelltext), /b\.className = 'erkbtn'/.test(quelltext)].join(','), '3,true,true,true');
+  gleich('Anleitung: Fussleiste in Kap. 9', /<h3 id="ba-09-fussleiste">/.test(quelltext), true);
   gleich('Anleitung: Werkstatt-Absatz in Kap. 8, Projektordner und gemeinsamer Dunkelmodus in Kap. 9',
     [/<h3 id="ba-08-werkstatt">/.test(quelltext), /<p><b>Projektordner<\/b> \(seit 26\.09\.2026, Blatt 5\)/.test(quelltext), /Seit dem 26\.09\.2026 ist die Einstellung <b>gemeinsam<\/b>/.test(quelltext)].join(','), 'true,true,true');
 }

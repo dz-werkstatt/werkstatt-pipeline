@@ -306,10 +306,12 @@ function wUebersichtMalen(){
     htm('ueLeerText',
       'Sobald der erste Auftrag angelegt ist, steht hier, wo Du stehst: was &uuml;berf&auml;llig ' +
       'ist, was als N&auml;chstes f&auml;llig wird, wie voll die Maschinen sind und was offen ist.' +
-      '<div class="knopfzeile" style="margin-top:10px">' +
-      '<button class="knopf haupt" id="ueLeerDemo" type="button">Beispiel-Werkstatt laden</button>' +
-      '<button class="knopf" id="ueLeerStep" type="button">STEP importieren</button>' +
-      '<button class="knopf" id="ueLeerAuftrag" type="button">Auftrag anlegen</button></div>');
+      /* Drei KARTEN mit Untertitel statt drei Knoepfe (26.09.2026, Paket C) - wie das Startbild der CAM-Apps. */
+      '<div class="leerkarten">' +
+      '<button id="ueLeerDemo" type="button"><span class="ic">&#x2630;</span><span>Beispiel-Werkstatt laden<small>Zehn Auftr&auml;ge, drei Maschinen &mdash; zum Ansehen, alles erfunden</small></span></button>' +
+      '<button id="ueLeerStep" type="button"><span class="ic">&#x21F2;</span><span>STEP importieren<small>H&uuml;llquader, Volumen, Rohteil, Angebot</small></span></button>' +
+      '<button id="ueLeerAuftrag" type="button"><span class="ic">&#x271B;</span><span>Auftrag anlegen<small>Kunde, Teil, St&uuml;ckzahl, Termin</small></span></button>' +
+      '</div>');
     on('ueLeerDemo', 'click', () => { blatt('Ein'); const b = el('btnDemo'); if(b) b.click(); const k = el('einDemoKarte'); if(k && k.scrollIntoView){ try{ k.scrollIntoView({block:'start'}); }catch(e){} } });
     on('ueLeerStep', 'click', () => blatt('Import'));
     on('ueLeerAuftrag', 'click', () => { blatt('Auf'); const b = el('aufNeuLeer'); if(b) b.click(); });

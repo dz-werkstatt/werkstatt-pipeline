@@ -65,7 +65,7 @@ body.dunkel td.bal.voll{ background-image:linear-gradient(hsl(0,45%,42%),hsl(0,4
 *{ box-sizing: border-box; }
 html,body{ margin:0; padding:0; }
 body{
-  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;   /* 15 -> 14 (26.09.2026, Paket C) */
   color: var(--text); background: var(--grund);
   -webkit-text-size-adjust: 100%;
 }
@@ -155,14 +155,65 @@ body.dunkel #wblende{ background:hsla(var(--ton), 14%, 12%, .88); }
 .po-zeile .po-art{ font-size:11px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--text-blass); min-width:70px; }
 .po-zeile .po-name{ font-weight:600; flex:1 1 200px; overflow:hidden; text-overflow:ellipsis; }
 
+/* ---- DIE FUSSLEISTE (26.09.2026, Paket C - Freigabe "Mit Fussleiste", Entwurf Bilder 16-20):
+   die fuenf Blaetter stehen unten wie Werkzeuge / Programme / Simulation in den CAM-Apps -
+   gleiche Kacheln, gleiche Hoehe, gleiche Schatten, aktiv blau. Das Markup bleibt die nav im
+   Kopf (Pruefstand 37 zaehlt dort die Reiter); die feste Lage holt sie an den unteren Rand.
+   Beim Drucken ist der ganze Kopf aus (Regel oben), die Leiste damit auch. */
+header .schritt{ position:fixed; left:0; right:0; bottom:0; margin:0; display:flex; flex-wrap:wrap; gap:4px; padding:5px;
+  background:var(--flaeche); border-top:1px solid var(--rand); z-index:40; order:0;
+  box-shadow:0 -1px 0 var(--rand-fein), 0 -8px 22px -18px hsla(var(--ton), 30%, 20%, .45); }
+header .schritt button{ flex:1 1 100px; min-height:46px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  background:hsl(var(--ton), 45%, 95.5%); border:1px solid hsl(var(--ton), 16.9%, 69.8%); border-radius:10px; padding:4px 6px;
+  font-size:11px; font-weight:700; color:hsl(var(--ton), 22%, 14%); white-space:nowrap; cursor:pointer;
+  box-shadow:0 1px 2px hsla(var(--ton), 30%, 20%, .05), 0 6px 14px -10px hsla(var(--ton), 30%, 20%, .3);
+  transition:background .06s, transform .15s ease, box-shadow .15s ease; }
+header .schritt button svg{ width:18px; height:18px; }
+header .schritt button:hover{ color:hsl(var(--ton), 22%, 14%); background:hsl(var(--ton), 45%, 93%); transform:translateY(-1px);
+  box-shadow:0 2px 4px hsla(var(--ton), 30%, 20%, .08), 0 10px 20px -12px hsla(var(--ton), 30%, 20%, .4); }
+header .schritt button.an{ background:var(--akzent); color:#fff; border-color:var(--akzent); font-weight:700; box-shadow:0 10px 22px -10px hsla(var(--ton), 74%, 36%, .65); }
+body.dunkel header .schritt{ background:hsl(var(--ton), 14%, 15%); border-top-color:hsl(var(--ton), 14%, 26%); box-shadow:0 -1px 0 hsl(var(--ton), 14%, 22%), 0 -8px 22px -16px rgba(0,0,0,.8); }
+body.dunkel header .schritt button{ background:hsl(var(--ton), 16%, 22%); color:hsl(var(--ton), 20%, 88%); border-color:hsl(var(--ton), 16%, 32%); }
+body.dunkel header .schritt button:hover{ background:hsl(var(--ton), 16%, 26%); color:hsl(var(--ton), 20%, 92%); }
+body.dunkel header .schritt button.an{ background:hsl(var(--ton), 60%, 38%); color:#fff; border-color:hsl(var(--ton), 60%, 38%); }
+header .rechts{ margin-left:auto; }
+/* TABELLENFELDER (Werkstoffe, Zerspanleistung, Arbeitsgaenge, Maschinen): rahmenlose, ruhige
+   Felder in Tabellenziffern - und auf dem Token, nicht weiss: im Dunkelmodus blieben sie hell
+   (Entwurf Bild 18, ein Fehler, keine Absicht). */
+td input, td select{ font:inherit; color:var(--text); background:transparent; border:0; border-bottom:1px solid var(--rand-fein); border-radius:0; padding:3px 4px; }
+td.z input{ text-align:right; font-variant-numeric:tabular-nums; }
+td input:focus, td select:focus{ outline:none; border-bottom-color:var(--akzent); box-shadow:0 2px 0 var(--akzent); }
+body.dunkel td select option{ background:hsl(var(--ton), 14%, 17%); }
+/* LEERZUSTAND als drei Karten mit Untertitel (Entwurf Bild 16) - wie das CAM-Startbild. */
+.leerkarten{ display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin:10px 0 4px; }
+.leerkarten button{ display:flex; align-items:center; gap:12px; text-align:left; min-height:78px; padding:14px 16px; font:inherit; font-size:15px; font-weight:700;
+  background:hsl(var(--ton), 45%, 95.5%); border:1px solid hsl(var(--ton), 16.9%, 69.8%); border-radius:12px; color:hsl(var(--ton), 22%, 14%); cursor:pointer;
+  box-shadow:0 1px 2px hsla(var(--ton), 30%, 20%, .05), 0 8px 18px -14px hsla(var(--ton), 30%, 20%, .4); }
+.leerkarten button:hover{ transform:translateY(-1px); }
+.leerkarten .ic{ font-size:20px; opacity:.8; flex:0 0 auto; }
+.leerkarten small{ display:block; font-weight:400; font-size:12px; color:var(--text-blass); margin-top:2px; }
+body.dunkel .leerkarten button{ background:hsl(var(--ton), 16%, 22%); color:hsl(var(--ton), 20%, 88%); border-color:hsl(var(--ton), 16%, 32%); }
+@media (max-width: 700px){ .leerkarten{ grid-template-columns:1fr; } }
+/* ERKLAERTEXTE hinter dem i-Knopf der Karte (Paket C): der Absatz steht in der Karte, aber
+   erst auf Tipp - die Erklaerung selbst wohnt in der Anleitung. */
+.karte .klein.erk{ display:none; }
+.karte.erkauf .klein.erk{ display:block; }
+.karte > h2 .erkbtn{ float:right; width:22px; height:22px; margin:-2px 0 0 8px; border:1px solid var(--rand); border-radius:50%; background:var(--flaeche);
+  color:var(--akzent); font:600 12px/1 Georgia, serif; font-style:italic; cursor:pointer; padding:0; }
+.karte.erkauf > h2 .erkbtn{ background:var(--akzent); color:#fff; border-color:var(--akzent); }
+
 /* ---- Seitenaufbau ---- */
-main{ padding: 14px; max-width: 1400px; margin: 0 auto; }
+main{ padding: 14px 14px 78px; max-width: 1400px; margin: 0 auto; }   /* unten Platz fuer die Fussleiste */
 .blatt{ display:none; }
 .blatt.an{ display:block; }
+/* KARTEN MIT TIEFE (26.09.2026, Paket C, Entwurf Bild 16): Radius 14 und ein weicher
+   Schatten statt des 1-px-Rands - dieselbe Bildsprache wie die Startkarten der CAM-Apps. */
 .karte{
-  background: var(--flaeche); border:1px solid var(--rand); border-radius:8px;
+  background: var(--flaeche); border:1px solid var(--rand-fein); border-radius:14px;
   padding: 14px; margin-bottom: 14px;
+  box-shadow:0 1px 2px hsla(var(--ton), 30%, 20%, .05), 0 10px 24px -18px hsla(var(--ton), 30%, 20%, .45);
 }
+body.dunkel .karte{ box-shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 24px -18px rgba(0,0,0,.8); }
 .karte > h2{ margin:0 0 10px; font-size:15px; font-weight:600; color: var(--akzent); }
 .karte > h3{ margin:14px 0 6px; font-size:14px; font-weight:600; }
 .zwei{ display:grid; grid-template-columns: 1fr; gap:14px; }
@@ -181,10 +232,10 @@ main{ padding: 14px; max-width: 1400px; margin: 0 auto; }
 button{ font: inherit; color: var(--akzent); }
 .knopf{
   background: var(--flaeche); color: var(--akzent);
-  border:1px solid var(--rand); border-radius:6px; padding:8px 14px; cursor:pointer;
+  border:1px solid var(--rand); border-radius:8px; padding:8px 14px; cursor:pointer;
 }
 .knopf:active{ background: var(--rand-fein); }
-.knopf.haupt{ background: var(--akzent); color:#fff; border-color: var(--akzent); font-weight:600; }
+.knopf.haupt{ background: var(--akzent); color:#fff; border-color: var(--akzent); font-weight:600; box-shadow:0 4px 12px -6px hsla(var(--ton), 74%, 36%, .6); }
 .knopf.haupt:active{ background: hsl(var(--ton), 74%, 28%); }
 .knopf[disabled]{ opacity:.45; cursor:default; }
 .knopfzeile{ display:flex; flex-wrap:wrap; gap:8px; }
@@ -401,7 +452,8 @@ tr.lage-gut   > td:first-child{ box-shadow: inset 3px 0 0 var(--gut); }
 .kacheln{ display:flex; flex-wrap:wrap; gap:10px; margin:6px 0 4px; }
 .kachel{
   flex:1 1 150px; min-width:140px; background:var(--grund);
-  border:1px solid var(--rand-fein); border-radius:10px; padding:10px 12px;
+  border:1px solid var(--rand-fein); border-radius:12px; padding:10px 12px;
+  box-shadow:0 1px 2px hsla(var(--ton), 30%, 20%, .06);
 }
 .kachel .zahl{ font-size:30px; font-weight:700; line-height:1.1; color:var(--text);
   font-variant-numeric: tabular-nums; }

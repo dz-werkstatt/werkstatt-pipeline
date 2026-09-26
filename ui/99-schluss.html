@@ -21,6 +21,7 @@ function start(){
        Projektordner-Karte in Blatt 5 (ui/54-ordner.js). */
     if(typeof huelleStart === 'function') huelleStart({programm: wHuelleName});
     if(typeof poPipelineVerdrahten === 'function'){ poPipelineVerdrahten(); poPipelineStart(); }
+    if(typeof erklaerungenVerdrahten === 'function') erklaerungenVerdrahten();
     /* PWA-Offline: nur ueber einen Server (https oder localhost) - die Datei zum
        Doppelklicken bleibt unberuehrt. Der Worker liegt neben index.html in docs/. */
     if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){

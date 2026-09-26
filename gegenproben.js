@@ -50,6 +50,18 @@ const TMP = path.join(ORDNER, '.gegenprobe.html');
 
 const faelle = [
   {
+    name:'Leerzustand wieder drei Knoepfe ohne Untertitel',
+    suche:"<span>STEP importieren<small>H&uuml;llquader, Volumen, Rohteil, Angebot</small></span>",
+    ersatz:"<span>STEP importieren</span>",
+    erwartet:['Leerzustand: drei Karten mit Untertitel']
+  },
+  {
+    name:'Tabellenfelder wieder mit hartem Weiss (Dunkelmodus)',
+    suche:"td input, td select{ font:inherit; color:var(--text); background:transparent; border:0;",
+    ersatz:"td input, td select{ font:inherit; color:var(--text); background:#fff; border:0;",
+    erwartet:['Tabellenfelder rahmenlos auf dem Token']
+  },
+  {
     name:'Dunkelmodus liest nur noch den alten Schluessel (nicht mehr den gemeinsamen etDunkel)',
     suche:"const d = localStorage.getItem('etDunkel'); if(d === '1' || (d === null && localStorage.getItem('wp_dunkel') === '1')) document.body.classList.add('dunkel');",
     ersatz:"if(localStorage.getItem('wp_dunkel') === '1') document.body.classList.add('dunkel');",

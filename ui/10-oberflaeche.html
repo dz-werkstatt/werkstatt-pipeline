@@ -433,7 +433,7 @@
         <button class="knopf" id="btnSicherAbbruch">Abbrechen</button>
       </div>
     </div>
-    <div class="klein" id="sicherHinweis"></div>
+    <div class="klein erk" id="sicherHinweis"></div>
   </div>
 
   <!-- PROJEKTORDNER (26.09.2026, Huelle der drei Apps): derselbe Ordner wie in DZ CAM
@@ -441,7 +441,7 @@
        Laptop (Edge/Chrome); bis poVerfuegbar() ja sagt, bleibt die Karte versteckt. -->
   <div class="karte" id="einOrdnerKarte" hidden>
     <h2>Projektordner</h2>
-    <div class="klein">Derselbe Ordner wie in DZ CAM Drehen und Fr&auml;sen: einmal gew&auml;hlt, gilt er in allen drei Apps. Die Sicherung und das
+    <div class="klein erk">Derselbe Ordner wie in DZ CAM Drehen und Fr&auml;sen: einmal gew&auml;hlt, gilt er in allen drei Apps. Die Sicherung und das
       Angebot gehen als Datei dorthin statt in die Downloads; die Liste zeigt, was von dieser App dort liegt (<code>.wp.json</code>).</div>
     <div class="meldung info" id="poStatus"></div>
     <div class="knopfzeile">
@@ -474,7 +474,7 @@
       <input type="file" id="einDatei" accept=".json,.JSON" hidden>
       <button class="knopf" id="btnEinReset">Auf Startwerte zur&uuml;cksetzen</button>
     </div>
-    <div class="klein" style="color:var(--text-blass);font-size:13px;margin-top:8px">
+    <div class="klein erk" style="color:var(--text-blass);font-size:13px;margin-top:8px">
       Nur Stundens&auml;tze, Werkstoffe und Zuschl&auml;ge &mdash; <b>ohne</b> Auftr&auml;ge und Maschinen.
       Daf&uuml;r ist die <b>Sicherung</b> dar&uuml;ber da. Diese kleine Datei ist f&uuml;r den Fall,
       dass nur die Rechenwerte auf ein anderes Ger&auml;t sollen.
@@ -621,6 +621,13 @@ was von dieser App dort liegt (Endung <code>.wp.json</code>; die Programme der C
 Vorschau (dann wie beim Zur&uuml;ckholen entscheiden) bzw. ein Angebot ins Blatt 2. Beim n&auml;chsten Start fragt der Browser einmal nach der Erlaubnis
 (<i>Zugriff erlauben</i>). Safari am iPhone kennt das nicht &mdash; dort bleibt alles, wie es war.</p>
 
+<h3 id="ba-09-fussleiste">Die f&uuml;nf Bl&auml;tter als Fu&szlig;leiste (26.09.2026)</h3>
+<p>Die Bl&auml;tter &Uuml;bersicht, Teil, Angebot, Auftr&auml;ge, Planung und Einstellungen stehen seit dem 26.09.2026 als <b>Fu&szlig;leiste</b> am unteren
+Rand &mdash; dieselben Kacheln wie Werkzeuge, Programme und Simulation in DZ CAM, das aktive Blatt blau. Damit sehen die drei Apps aus wie eine.
+Karten tragen Tiefe statt Rand, der Leerzustand der &Uuml;bersicht bietet drei Karten (Beispiel-Werkstatt, STEP, Auftrag), die Tabellenfelder in
+Blatt&nbsp;5 sind rahmenlos und rechtsb&uuml;ndig in Tabellenziffern &mdash; auch im Dunkelmodus (bis dahin blieben sie dort wei&szlig;). Erkl&auml;rende
+Abs&auml;tze in den Karten von Blatt&nbsp;5 stehen hinter dem <b>i-Knopf</b> in der Kartenzeile; die Erkl&auml;rung selbst steht in Kap.&nbsp;7.
+Die Grundschrift ist 14 px wie in den Schwestern.</p>
 <h2 id="ba-10">10 &nbsp;Was fehlt (ehrlich)</h2>
 <ul><li>Zeichnungen (PDF) werden nicht ausgewertet: Toleranzen und Oberfl&auml;chen w&auml;hlt man in den Vorgaben.</li>
 <li>Kein Rechnungsdruck, kein Sammellieferschein, kein Auftrag aus mehreren Teilen.</li>
