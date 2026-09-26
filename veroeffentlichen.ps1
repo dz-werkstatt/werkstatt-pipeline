@@ -87,8 +87,20 @@ Get-ChildItem -Path $pub -Force | Where-Object { $_.Name -ne '.git' } | Remove-I
 $tar = Join-Path $env:TEMP 'wp-pub.tar'
 & git archive -o $tar HEAD
 if ($LASTEXITCODE -ne 0) { Write-Output "git archive fehlgeschlagen."; exit 1 }
-& tar -x -f $tar -C $pub
+# tar mit VOLLEM Pfad: aus der Git-Bash gestartet stand /usr/bin/tar vorn im Pfad, der
+# "C:\..." als Rechnernamen las ("Cannot connect to C: resolve failed") - der Spiegel
+# blieb leer und wurde am 19.09.2026 trotzdem committet und gepusht.
+$tarExe = Join-Path $env:SystemRoot 'System32\tar.exe'
+if (-not (Test-Path $tarExe)) { $tarExe = 'tar' }
+& $tarExe -x -f $tar -C $pub
+$tarRc = $LASTEXITCODE
 Remove-Item $tar -ErrorAction SilentlyContinue
+$gespiegelt = @(Get-ChildItem -Path $pub -Recurse -File -Force | Where-Object { $_.FullName -notmatch '\\\.git\\' }).Count
+if ($tarRc -ne 0 -or $gespiegelt -lt 5) {
+  Write-Output "ABBRUCH - der Spiegel ist leer oder unvollstaendig ($gespiegelt Dateien, tar $tarRc). Nichts committet, nichts gepusht."
+  Write-Output "  Der Klon .pub braucht jetzt 'git checkout -- .' oder den naechsten erfolgreichen Lauf."
+  exit 4
+}
 
 # 3b) NAMENSWACHE - der letzte Halt vor dem Netz.
 # Der erste Umbenennungslauf der Schwester-App prueffte case-sensitive

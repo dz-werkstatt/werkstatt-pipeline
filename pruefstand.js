@@ -4848,7 +4848,7 @@ console.log('\n37) Design-Uebertragung und CAM-Anbindung');
     if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id); else bad('Bedienelement fehlt: ' + id);
   });
   gleich('Dunkelmodus: die Token stehen an body.dunkel', /body\.dunkel\{[^}]*--grund:[^}]*--flaeche:[^}]*--text:/.test(quelltext), true);
-  gleich('Dunkelmodus: der Merker wird schon im Kopf der Seite gelesen', /localStorage\.getItem\('wp_dunkel'\) === '1'\) document\.body\.classList\.add\('dunkel'\)/.test(quelltext), true);
+  gleich('Dunkelmodus: der Merker wird schon im Kopf der Seite gelesen (der gemeinsame Schluessel etDunkel, wp_dunkel nur als Rueckfall)', /const d = localStorage\.getItem\('etDunkel'\); if\(d === '1' \|\| \(d === null && localStorage\.getItem\('wp_dunkel'\) === '1'\)\) document\.body\.classList\.add\('dunkel'\)/.test(quelltext), true);
   gleich('Felder ohne hartes Weiss: .feld input auf dem Token', /\.feld input, \.feld select\{[^}]*background:var\(--flaeche\)/.test(quelltext), true);
   gleich('Kachelfelder: Regel vorhanden und an fuenf Stellen angewandt', /\.kachelig\{ display:grid/.test(quelltext) && (quelltext.match(/class="[^"]*kachelig/g) || []).length >= 5, true);
   gleich('Anleitung: zehn Kapitel', (quelltext.match(/<h2 id="ba-\d\d">/g) || []).length, 10);
@@ -4932,6 +4932,67 @@ console.log('\n37) Design-Uebertragung und CAM-Anbindung');
     gleich('der Zettel nennt den Weg ueber das DNC-Kaestchen', /Ablage des DNC-K&auml;stchens dieser Maschine/.test(quelltext), true);
     gleich('die Maske hat das Feld je Gang und liest es', /data-gp=/.test(quelltext) && /g\.programm = String\(pg\.value/.test(quelltext), true);
   }
+}
+
+/* --- 38. Drei Dateien, eine Oberflaeche (26.09.2026) --------------------
+   Entwurf der CAM-Apps (ENTWURF-HUELLE.md, Pakete A+B), Freigabe am 26.09.2026:
+   dieselbe Werkstatt-Kopfzeile in allen drei Apps, der Wechsel mit Blende und
+   Ruecksprung ueber den gemeinsamen Schluessel dz_werkstatt, EIN Dunkelmodus
+   (etDunkel), der Projektordner auch hier. Die Bausteine sind KOPIEN aus dem
+   CAM-Repo - der Haken haelt sie byteidentisch, sobald der Nachbar da ist.
+   GEGENPROBEN in gegenproben.js: etDunkel nicht gelesen, Angebotsdatei nicht
+   erkannt, Pipeline nicht am Pfad erkannt.                                */
+console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus, Projektordner');
+{
+  const huelleHier = hole('huelleHier'), huelleZiel = hole('huelleZiel'), huelleKopfHtml = hole('huelleKopfHtml');
+  const huelleRueck = hole('huelleRueck'), huelleAnkunft = hole('huelleAnkunft');
+  const poPipelineArt = hole('poPipelineArt'), poPipelineSicherungName = hole('poPipelineSicherungName'), poPipelineAngebotName = hole('poPipelineAngebotName');
+  ['huelleStart', 'huelleWechsel', 'huelleBlende', 'poStart', 'poWaehlen', 'poSchreiben', 'poLesen', 'poListe', 'poFakeOrdner',
+   'poPipelineStart', 'poPipelineSichern', 'poPipelineAngebot', 'poPipelineLaden', 'poPipelineVerdrahten', 'wHuelleName', 'angebotAusText'].forEach(nm => {
+    if(typeof hole(nm) === 'function') ok('Funktion vorhanden: ' + nm); else bad('Funktion fehlt: ' + nm);
+  });
+  /* (1) Die Wege - DOM-frei */
+  gleich('die Pipeline erkennt sich am Ordner im Pfad (Pages, Datei zum Doppelklicken, docs/)',
+    [huelleHier('https://dz-werkstatt.github.io/werkstatt-pipeline/'), huelleHier('file:///C:/x/werkstatt-pipeline/werkstatt-pipeline.html'), huelleHier('file:///C:/x/werkstatt-pipeline/docs/index.html')].join(','), 'pipeline,pipeline,pipeline');
+  gleich('Wege zu den CAM-Apps: file:// in den Nachbarordner (Tiefe je Datei), sonst Pages',
+    [huelleZiel('dreh', 'file:///C:/x/werkstatt-pipeline/werkstatt-pipeline.html', 'file:'), huelleZiel('fraes', 'file:///C:/x/werkstatt-pipeline/docs/index.html', 'file:'), huelleZiel('fraes', 'https://dz-werkstatt.github.io/werkstatt-pipeline/', 'https:')].join(' | '),
+    '../Dokumente%20euroturn/euroturn-kontur-cam.html | ../../Dokumente%20euroturn/dz-cam-fraesen.html | https://dz-werkstatt.github.io/dz-cam/fraesen.html');
+  { const k = huelleKopfHtml('pipeline', {von:'dreh', text:'Drehen: Master'}, 'file:///C:/x/werkstatt-pipeline/docs/index.html');
+    gleich('Werkstatt-Kopfzeile: Pipeline hervorgehoben, Drehen und Fraesen als Links mit data-wziel, Ruecksprung zu Drehen',
+      [/<span class="hier"[^>]*>Pipeline</.test(k), /class="wsa" href="\.\.\/\.\.\/Dokumente%20euroturn\/euroturn-kontur-cam\.html" data-wziel="dreh"/.test(k), /data-wziel="fraes"/.test(k), /class="wzur" [^>]*data-wziel="dreh"[^>]*><\/a>|class="wzur"/.test(k), /<b>Drehen: Master<\/b>/.test(k)].join(','), 'true,true,true,true,true'); }
+  { const t = 1000000, s = {von:'fraes', programm:'DZ1', zeit:t, ziel:'pipeline'};
+    gleich('Ruecksprung und Ankunft DOM-frei: hier ja, in der Herkunftsapp nein, nach einem halben Tag nein, Ankunft nur zehn Sekunden',
+      [JSON.stringify(huelleRueck('pipeline', s, t + 1)), huelleRueck('fraes', s, t + 1), huelleRueck('pipeline', s, t + 13 * 3600 * 1000), !!huelleAnkunft('pipeline', s, t + 1), huelleAnkunft('pipeline', s, t + 20000)].map(String).join(' | '),
+      '{"von":"fraes","text":"Fräsen: DZ1"} | null | null | true | null'); }
+  /* (2) Der Projektordner dieser App: Namen und Arten, sync */
+  gleich('Dateinamen: Sicherung mit Datum, Angebot nach Zeichnungsnummer, beide mit eigener Endung',
+    [poPipelineSicherungName('2026-09-26'), poPipelineAngebotName({teil:{zeichnungsnr:'Z 4711/2', name:'Flansch'}}), poPipelineAngebotName({teil:{name:'Flansch'}}), poPipelineAngebotName(null)].join(' | '),
+    'werkstatt-sicherung-2026-09-26.werkstatt.wp.json | Z 4711_2.angebot.wp.json | Flansch.angebot.wp.json | angebot.angebot.wp.json');
+  gleich('Art aus dem Namen: Sicherung, Angebot, fremde Datei (CAM-Programm) null',
+    [poPipelineArt('werkstatt-sicherung-2026-09-26.werkstatt.wp.json'), poPipelineArt('Flansch.angebot.wp.json'), poPipelineArt('Master.dreh.json'), poPipelineArt('')].join(','), 'sicherung,angebot,,');
+  /* (3) Der Bau */
+  { const man = JSON.parse(fs.readFileSync(path.join(ORDNER, 'manifest.json'), 'utf8')).dateien;
+    gleich('Manifest: die Kopien stehen hinter dem Schema, die Ordner-Karte hinter der Werkstatt-Bedienung',
+      [man[man.indexOf('shared/20-schema.js') + 1], man[man.indexOf('shared/20-schema.js') + 2], man[man.indexOf('werkstatt/53-werkstatt-ui.js') + 1]].join(','), 'shared/06-projektordner.js,shared/07-huelle.js,ui/54-ordner.js'); }
+  { const nachbar = path.join(ORDNER, '..', 'Dokumente euroturn', 'quellen');
+    if(fs.existsSync(nachbar)){
+      ['06-projektordner.js', '07-huelle.js'].forEach(f => {
+        const a = fs.readFileSync(path.join(ORDNER, 'shared', f)), b = fs.readFileSync(path.join(nachbar, f));
+        if(a.equals(b)) ok('shared/' + f + ' ist byteidentisch mit der Quelle im CAM-Repo'); else bad('shared/' + f + ' weicht von quellen/' + f + ' im CAM-Repo ab - Kopie nachziehen');
+      });
+    } else warn('CAM-Repo nicht neben diesem Ordner - Kopien nicht verglichen'); }
+  gleich('Kopfzeile: unter 900 px unsichtbar, ab 900 px sichtbar, Emblem dort aus; Blende am body',
+    [/\n\.wseg\{ display:none; \}/.test(quelltext), /\n  \.wseg\{ display:flex;/.test(quelltext), /header \.emblem\{ display:none; \}/.test(quelltext), /#wblende\{ position:fixed; inset:0; z-index:9990/.test(quelltext)].join(','), 'true,true,true,true');
+  gleich('Start: huelleStart mit dem Namen fuers Ruecksprung-Chip, Ordner-Karte verdrahtet und gestartet',
+    [/huelleStart\(\{programm: wHuelleName\}\)/.test(quelltext), /poPipelineVerdrahten\(\); poPipelineStart\(\);/.test(quelltext)].join(','), 'true,true');
+  gleich('Dunkelmodus: der Knopf schreibt den gemeinsamen Schluessel UND den alten', /localStorage\.setItem\('etDunkel', an \? '1' : '0'\); localStorage\.setItem\('wp_dunkel', an \? '1' : '0'\);/.test(quelltext), true);
+  ['einOrdnerKarte', 'poStatus', 'poWaehlen', 'poErlauben', 'poSichern', 'poAngebot', 'poLoesen', 'poListe'].forEach(id => {
+    if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id); else bad('Bedienelement fehlt: ' + id);
+  });
+  gleich('Ordner-Karte ist bis zur Verfuegbarkeit versteckt (hidden im Markup)', /<div class="karte" id="einOrdnerKarte" hidden>/.test(quelltext), true);
+  gleich('Angebot laden ist EINE Stelle (Dialog und Ordner rufen angebotAusText)', (quelltext.match(/angebotAusText\(/g) || []).length >= 3, true);
+  gleich('Anleitung: Werkstatt-Absatz in Kap. 8, Projektordner und gemeinsamer Dunkelmodus in Kap. 9',
+    [/<h3 id="ba-08-werkstatt">/.test(quelltext), /<p><b>Projektordner<\/b> \(seit 26\.09\.2026, Blatt 5\)/.test(quelltext), /Seit dem 26\.09\.2026 ist die Einstellung <b>gemeinsam<\/b>/.test(quelltext)].join(','), 'true,true,true');
 }
 
 /* --- Ergebnis -------------------------------------------------------- */

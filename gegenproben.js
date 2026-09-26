@@ -50,6 +50,24 @@ const TMP = path.join(ORDNER, '.gegenprobe.html');
 
 const faelle = [
   {
+    name:'Dunkelmodus liest nur noch den alten Schluessel (nicht mehr den gemeinsamen etDunkel)',
+    suche:"const d = localStorage.getItem('etDunkel'); if(d === '1' || (d === null && localStorage.getItem('wp_dunkel') === '1')) document.body.classList.add('dunkel');",
+    ersatz:"if(localStorage.getItem('wp_dunkel') === '1') document.body.classList.add('dunkel');",
+    erwartet:['Dunkelmodus: der Merker wird schon im Kopf der Seite gelesen']
+  },
+  {
+    name:'Angebotsdatei im Projektordner wird nicht erkannt',
+    suche:"  if(d.endsWith(PO_ENDUNG_ANGEBOT)) return 'angebot';",
+    ersatz:"  if(false) return 'angebot';",
+    erwartet:['Art aus dem Namen: Sicherung, Angebot, fremde Datei']
+  },
+  {
+    name:'Die Pipeline erkennt sich nicht mehr am Ordner im Pfad (haelt sich fuer Drehen)',
+    suche:"  if(voll.indexOf('werkstatt-pipeline') >= 0) return 'pipeline';",
+    ersatz:"  if(false) return 'pipeline';",
+    erwartet:['die Pipeline erkennt sich am Ordner im Pfad']
+  },
+  {
     name:'Naht der umlaufenden Flaechen stillgelegt',
     suche:'function fSchleifenVereinen(f, schleifen, per){',
     ersatz:'function fSchleifenVereinen(f, schleifen, per){ return schleifen;',

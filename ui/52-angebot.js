@@ -323,6 +323,7 @@ function angebotDatensatz(){
 }
 
 function angebotVerdrahten(){
+  angebotVerdrahten2();
   on('btnJson', 'click', () => {
     if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
     const d = angebotDatensatz();
@@ -333,9 +334,20 @@ function angebotVerdrahten(){
   on('jsonDatei', 'change', () => {
     const f = el('jsonDatei').files[0]; if(!f) return;
     const r = new FileReader();
-    r.onload = () => {
+    r.onload = () => { angebotAusText(String(r.result)); };
+    r.onerror = () => meldung('Die Datei liess sich nicht lesen.', 'warn');
+    r.readAsText(f);
+  });
+  on('btnPdf', 'click', () => {
+    if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
+    angebotDrucken();
+  });
+}
+/* Ein Angebot aus seinem JSON-Text uebernehmen - EINE Stelle fuer die Datei aus
+   dem Dialog und die Datei aus dem Projektordner (26.09.2026). */
+function angebotAusText(text){
       try{
-        const d = JSON.parse(String(r.result));
+        const d = JSON.parse(String(text));
         const p = schemaPruefen(d);
         if(p.length) meldungListe('Das Angebot passt nicht ganz zum Austauschformat:', p, 'warn');
         S.d = d;
@@ -366,14 +378,11 @@ function angebotVerdrahten(){
         if(el('kWerkstoff') && d.teil.werkstoff) el('kWerkstoff').value = d.teil.werkstoff;
         kalkMalen(); camStandMalen();
         meldung('Angebot geladen.', 'info');
-      }catch(e){ meldung('Die Datei ist kein gueltiges Angebot: ' + e.message, 'fehler'); }
-    };
-    r.readAsText(f);
-  });
-  on('btnPdf', 'click', () => {
-    if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
-    angebotDrucken();
-  });
+        return true;
+      }catch(e){ meldung('Die Datei ist kein gueltiges Angebot: ' + e.message, 'fehler'); return false; }
+}
+/* Die uebrigen Knoepfe des Angebotsblatts - vorher im selben Block wie oben. */
+function angebotVerdrahten2(){
   on('btnEinExport', 'click', () => dateiSichern('werkstatt-einstellungen.json', JSON.stringify(S.V, null, 1)));
   on('btnEinImport', 'click', () => el('einDatei') && el('einDatei').click());
   on('einDatei', 'change', () => {

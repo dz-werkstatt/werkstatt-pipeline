@@ -13,6 +13,8 @@
     "shared/01-stil.html",
     "ui/10-oberflaeche.html",
     "shared/20-schema.js",
+    "shared/06-projektordner.js",
+    "shared/07-huelle.js",
     "kalkulation/defaults.json",
     "import/30-step.js",
     "import/31-geometrie.js",
@@ -25,6 +27,7 @@
     "ui/51-vorschau3d.js",
     "ui/52-angebot.js",
     "werkstatt/53-werkstatt-ui.js",
+    "ui/54-ordner.js",
     "ui/99-schluss.html"
   ],
   "inhalt": {
@@ -44,6 +47,9 @@
     "ui/51-vorschau3d.js": "3D-Vorschau des Teils mit halbdurchsichtigem Rohteil",
     "ui/52-angebot.js": "Staffelpreise, Ueberschreiben, Angebots-PDF, JSON-Export",
     "werkstatt/53-werkstatt-ui.js": "Auftragsliste, Auftragsmaske mit Arbeitsgaengen, Planungstafel, Laufkarte",
-    "ui/99-schluss.html": "Script-Ende, body- und html-Ende"
+    "ui/99-schluss.html": "Script-Ende, body- und html-Ende",
+    "shared/06-projektordner.js": "KOPIE aus dem CAM-Repo (quellen/06-projektordner.js): Projektordner-Griff, byteidentisch gehalten",
+    "shared/07-huelle.js": "KOPIE aus dem CAM-Repo (quellen/07-huelle.js): Werkstatt-Kopfzeile, Wechsel, Wege zwischen Drehen, Fraesen und Pipeline",
+    "ui/54-ordner.js": "Projektordner-Karte in Blatt 5 (Sicherung und Angebot als Datei im Ordner), Name fuer den Wechsel"
   }
 }

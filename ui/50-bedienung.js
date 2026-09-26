@@ -396,7 +396,9 @@ function bedienungVerdrahten(){
   });
   on('dunkelBtn', 'click', () => {
     const an = document.body.classList.toggle('dunkel');
-    try{ localStorage.setItem('wp_dunkel', an ? '1' : '0'); }catch(e){}
+    /* EIN Schluessel fuer alle drei Apps (26.09.2026): etDunkel ist der gemeinsame,
+       wp_dunkel bleibt fuer Kopien dieser App von vor dem Umbau. */
+    try{ localStorage.setItem('etDunkel', an ? '1' : '0'); localStorage.setItem('wp_dunkel', an ? '1' : '0'); }catch(e){}
     if(typeof vorschauMalen === 'function') vorschauMalen();
   });
   on('aIstzeit', 'input', () => { S.angebot.istzeit = fLesen(el('aIstzeit').value); istMalen(); });

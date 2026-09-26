@@ -436,6 +436,24 @@
     <div class="klein" id="sicherHinweis"></div>
   </div>
 
+  <!-- PROJEKTORDNER (26.09.2026, Huelle der drei Apps): derselbe Ordner wie in DZ CAM
+       Drehen und Fraesen - der Griff liegt in IndexedDB unter EINEM Schluessel. Nur am
+       Laptop (Edge/Chrome); bis poVerfuegbar() ja sagt, bleibt die Karte versteckt. -->
+  <div class="karte" id="einOrdnerKarte" hidden>
+    <h2>Projektordner</h2>
+    <div class="klein">Derselbe Ordner wie in DZ CAM Drehen und Fr&auml;sen: einmal gew&auml;hlt, gilt er in allen drei Apps. Die Sicherung und das
+      Angebot gehen als Datei dorthin statt in die Downloads; die Liste zeigt, was von dieser App dort liegt (<code>.wp.json</code>).</div>
+    <div class="meldung info" id="poStatus"></div>
+    <div class="knopfzeile">
+      <button class="knopf haupt" id="poWaehlen" type="button">Ordner w&auml;hlen</button>
+      <button class="knopf haupt" id="poErlauben" type="button" hidden>Zugriff erlauben</button>
+      <button class="knopf" id="poSichern" type="button" hidden>Sicherung in den Ordner</button>
+      <button class="knopf" id="poAngebot" type="button" hidden>Angebot in den Ordner</button>
+      <button class="knopf" id="poLoesen" type="button" hidden>Ordner l&ouml;sen</button>
+    </div>
+    <div id="poListe"></div>
+  </div>
+
   <!-- Zum Ausprobieren. Steht neben der Sicherung, weil beide den
        ganzen Bestand anfassen und beide vorher fragen muessen. -->
   <div class="karte" id="einDemoKarte">
@@ -576,6 +594,15 @@ Schnittzeit, Zahl der Werkzeuge und Wechsel), Aufspannungen. Knopf <i>Zeit an di
 <tr><td><code>euroturn-cam-programm</code></td><td>Pipeline &rarr; Dreh-App</td><td>Die Drehkontur aus dem STEP-Modell als Programm der Dreh-App (Konturen Au&szlig;en und Innen,
 Rohteil aus den Rohteilma&szlig;en, keine Zyklen). Dort <i>Programme &rarr; Importieren</i>.</td></tr></table>
 <p>Es gibt keinen Server dazwischen: die Datei geht &uuml;ber Downloads, Teilen-Blatt oder die Ablage des DNC-K&auml;stchens &mdash; wie das NC-Programm selbst.</p>
+<h3 id="ba-08-werkstatt">Die Werkstatt: Drehen, Fr&auml;sen, Pipeline (26.09.2026)</h3>
+<p>Drei Apps, die zusammengeh&ouml;ren: <b>Drehen</b>, <b>Fr&auml;sen</b> (beide DZ CAM) und diese <b>Pipeline</b>. <b>Am Laptop</b> steht links
+oben in der Kopfzeile der <b>Werkstatt-Schalter</b> Drehen | Fr&auml;sen | Pipeline &mdash; in allen drei Apps an derselben Stelle, die aktuelle
+hervorgehoben, ein Klick wechselt. Daneben der <b>R&uuml;cksprung</b> (&bdquo;&#x25C2; Drehen: Mastertestteil&ldquo;): er wei&szlig;, woher Du kommst und
+was dort offen war, und f&uuml;hrt genau dorthin zur&uuml;ck (einen halben Tag lang). Der Wechsel ist kein harter Schnitt: eine Blende mit Emblem und
+Zielname legt sich &uuml;ber die Seite, die Zielseite kommt mit demselben Bild. Der Weg f&uuml;hrt immer zur richtigen Datei: aus dem Ordner auf dem
+Desktop in den Nachbarordner der CAM-Apps, aus der ver&ouml;ffentlichten Fassung zu deren ver&ouml;ffentlichter Fassung. Gemeinsam sind der
+<b>Dunkelmodus</b> (ein Schalter, eine Einstellung f&uuml;r alle drei) und der <b>Projektordner</b> (Kap.&nbsp;9). Am Handy hat diese App den Schalter
+nicht; die CAM-Apps &ouml;ffnen dort ihr Werkstatt-Men&uuml; am Logo.</p>
 
 <h2 id="ba-09">9 &nbsp;Fassung, Offline, Dunkelmodus</h2>
 <p>Der <b>Stand</b> dieser Fassung steht oben rechts und im Kopf dieser Anleitung (Datum, Uhrzeit, Pr&uuml;fsumme); die Datei zum Doppelklicken
@@ -585,7 +612,14 @@ Ein Service-Worker h&auml;lt die App offline vor; sein Cache tr&auml;gt den Stan
 Schwester-App vom 15.09.2026: mit festem Namen blieb dort wochenlang die alte Kopie).</p>
 <p><b>Dunkelmodus</b>: der Mond-Knopf im Kopf, gemerkt auf diesem Ger&auml;t. Dieselben Farb-Token mit anderen Werten; die 3D-Vorschau bleibt hell,
 gedruckt wird immer hell. <b>Kachelfelder</b>: Vorgaben, Kapazit&auml;t und Einstellungen zeigen ihre Felder als Kacheln (Beschriftung oben, Wert gro&szlig;),
-dasselbe Muster wie die Zyklusmasken der CAM-Apps.</p>
+dasselbe Muster wie die Zyklusmasken der CAM-Apps. Seit dem 26.09.2026 ist die Einstellung <b>gemeinsam</b> mit Drehen und Fr&auml;sen: wer dort dunkel schaltet,
+kommt hier dunkel an.</p>
+<p><b>Projektordner</b> (seit 26.09.2026, Blatt 5): am Laptop (Edge, Chrome) einmal <i>Ordner w&auml;hlen</i> &mdash; den Ordner, in dem Zeichnung, STEP und
+NC-Programme liegen. Er ist <b>derselbe Ordner wie in DZ CAM Drehen und Fr&auml;sen</b> (ein Griff f&uuml;r alle drei). <i>Sicherung in den Ordner</i> legt
+dieselbe Datei dorthin, die <i>Alles als Datei sichern</i> in die Downloads legt; <i>Angebot in den Ordner</i> das Angebot des geladenen Teils. Die Liste zeigt,
+was von dieser App dort liegt (Endung <code>.wp.json</code>; die Programme der CAM-Apps im selben Ordner bleiben ungezeigt), <i>Laden</i> holt eine Sicherung in die
+Vorschau (dann wie beim Zur&uuml;ckholen entscheiden) bzw. ein Angebot ins Blatt 2. Beim n&auml;chsten Start fragt der Browser einmal nach der Erlaubnis
+(<i>Zugriff erlauben</i>). Safari am iPhone kennt das nicht &mdash; dort bleibt alles, wie es war.</p>
 
 <h2 id="ba-10">10 &nbsp;Was fehlt (ehrlich)</h2>
 <ul><li>Zeichnungen (PDF) werden nicht ausgewertet: Toleranzen und Oberfl&auml;chen w&auml;hlt man in den Vorgaben.</li>

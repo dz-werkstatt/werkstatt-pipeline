@@ -9,7 +9,7 @@
 <!-- DER STAND dieser Fassung: bauen.js ersetzt ARBEITSKOPIE durch Datum und Pruefsumme (in beiden Zielen,
      im Cache-Namen des Service-Workers und in docs/stand.txt). Die App zeigt ihn im Kopf und prueft ihn
      gegen stand.txt auf dem Server - eine alte Kopie im Geraet faellt sonst niemandem auf. -->
-<script>window.__WP_STAND="19.09.2026 09:30 (c195bf7b)";</script>
+<script>window.__WP_STAND="26.09.2026 21:02 (95f114c6)";</script>
 <title>Werkstatt-Pipeline — Angebot</title>
 <!-- Symbol: Rohteilklotz mit Fertigteil darin. Inline, damit die Datei
      offline nichts nachlaedt (dieselbe Doktrin wie in den beiden CAM-Apps). -->
@@ -135,6 +135,47 @@ header .rechts button{ width:32px; height:32px; border:1px solid var(--rand); bo
   header .rechts .stand{ display:none; }
   header .chip{ max-width:150px; }
 }
+
+/* ---- DIE WERKSTATT-KOPFZEILE (26.09.2026, Entwurf Paket A der CAM-Apps) ----------
+   Dieselbe Zeile wie in Drehen und Fraesen: links aussen das Emblem (Klon des Kopf-
+   Emblems) und der Segment-Schalter Drehen | Fraesen | Pipeline, daneben der
+   Ruecksprung-Chip. Ab 900 px; darunter bleibt der Kopf, wie er war. Die Zahlen sind
+   die des abgenommenen Prototyps, die Farben haengen am Farbregler --ton. */
+.wseg{ display:none; }
+@media (min-width: 900px){
+  .wseg{ display:flex; align-items:center; gap:10px; padding:0 4px 0 0; flex:0 0 auto; }
+  .wseg .we{ display:flex; color:var(--text); flex:0 0 auto; }
+  .wseg .we svg{ width:26px; height:26px; }
+  .wseg .wsg{ display:flex; background:hsl(var(--ton), 28%, 91%); border-radius:10px; padding:3px; gap:2px; }
+  .wseg .wsg a, .wseg .wsg span{ display:block; padding:6px 15px; border-radius:8px; font-size:12.5px; font-weight:600; color:hsl(var(--ton), 12%, 42%); text-decoration:none; line-height:1.2; white-space:nowrap; letter-spacing:.1px; }
+  .wseg .wsg a:hover{ color:hsl(var(--ton), 74%, 36%); }
+  .wseg .wsg .hier{ background:#fff; color:hsl(var(--ton), 74%, 36%); box-shadow:0 1px 2px rgba(0,0,0,.14), 0 0 0 1px hsla(var(--ton), 30%, 20%, .06); }
+  .wzur{ display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:hsl(var(--ton), 12%, 42%); border:1px dashed hsl(var(--ton), 18%, 78%); border-radius:999px; padding:3px 10px 3px 8px; text-decoration:none; white-space:nowrap; }
+  .wzur b{ color:hsl(var(--ton), 74%, 36%); font-weight:600; }
+  .wzur:hover{ border-style:solid; }
+  body.dunkel .wseg .wsg{ background:hsl(var(--ton), 16%, 22%); }
+  body.dunkel .wseg .wsg a, body.dunkel .wseg .wsg span{ color:hsl(var(--ton), 15%, 72%); }
+  body.dunkel .wseg .wsg .hier{ background:hsl(var(--ton), 16%, 32%); color:#fff; }
+  body.dunkel .wseg .we{ color:#dde; }
+  body.dunkel .wzur{ border-color:hsl(var(--ton), 14%, 36%); color:hsl(var(--ton), 15%, 72%); }
+  header .emblem{ display:none; }   /* das Emblem steht jetzt im Schalter */
+}
+/* DIE BLENDE beim Wechsel (Paket B): Emblem, Zielname, eine Zeile, laufender Strich;
+   haengt am body ueber allem, blendet in 0,4 s aus. Bild, kein Layout. */
+#wblende{ position:fixed; inset:0; z-index:9990; background:rgba(255,255,255,.86); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; opacity:1; transition:opacity .4s ease; }
+#wblende.weg{ opacity:0; pointer-events:none; }
+#wblende .wb-em{ width:84px; height:84px; color:var(--text); }
+#wblende .wb-ziel{ font-size:28px; font-weight:700; color:var(--akzent); letter-spacing:.5px; }
+#wblende .wb-sub{ font-size:13px; color:var(--text-blass); }
+#wblende .wb-strich{ width:220px; height:3px; margin-top:8px; background:hsl(var(--ton), 28%, 91%); border-radius:2px; overflow:hidden; }
+#wblende .wb-strich i{ display:block; height:100%; width:30%; background:hsl(var(--ton), 74%, 46%); animation:wbLauf .7s linear infinite; }
+@keyframes wbLauf{ from{ transform:translateX(-100%); } to{ transform:translateX(340%); } }
+body.dunkel #wblende{ background:hsla(var(--ton), 14%, 12%, .88); }
+/* Projektordner-Karte (Blatt 5): die Liste der eigenen Dateien im Ordner. */
+.po-zeile{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; padding:6px 0; border-top:1px solid var(--rand-fein); }
+.po-zeile .po-art{ font-size:11px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--text-blass); min-width:70px; }
+.po-zeile .po-name{ font-weight:600; flex:1 1 200px; overflow:hidden; text-overflow:ellipsis; }
 
 /* ---- Seitenaufbau ---- */
 main{ padding: 14px; max-width: 1400px; margin: 0 auto; }
@@ -557,7 +598,9 @@ label[data-ba]{ cursor:help; }
 </style>
 </head>
 <body>
-<script>try{ if(localStorage.getItem('wp_dunkel') === '1') document.body.classList.add('dunkel'); }catch(e){}</script>
+<!-- EIN Dunkelmodus in allen drei Apps (26.09.2026): der gemeinsame Schluessel etDunkel der CAM-Apps gilt;
+     der alte wp_dunkel zaehlt nur noch, solange der gemeinsame nie gesetzt wurde. -->
+<script>try{ const d = localStorage.getItem('etDunkel'); if(d === '1' || (d === null && localStorage.getItem('wp_dunkel') === '1')) document.body.classList.add('dunkel'); }catch(e){}</script>
 
 <header>
   <!-- Kopfzeile wie die Schwestern (19.09.2026): Emblem, Titel, Chip mit Teil und Kunde, die Blaetter als
@@ -997,6 +1040,24 @@ label[data-ba]{ cursor:help; }
     <div class="klein" id="sicherHinweis"></div>
   </div>
 
+  <!-- PROJEKTORDNER (26.09.2026, Huelle der drei Apps): derselbe Ordner wie in DZ CAM
+       Drehen und Fraesen - der Griff liegt in IndexedDB unter EINEM Schluessel. Nur am
+       Laptop (Edge/Chrome); bis poVerfuegbar() ja sagt, bleibt die Karte versteckt. -->
+  <div class="karte" id="einOrdnerKarte" hidden>
+    <h2>Projektordner</h2>
+    <div class="klein">Derselbe Ordner wie in DZ CAM Drehen und Fr&auml;sen: einmal gew&auml;hlt, gilt er in allen drei Apps. Die Sicherung und das
+      Angebot gehen als Datei dorthin statt in die Downloads; die Liste zeigt, was von dieser App dort liegt (<code>.wp.json</code>).</div>
+    <div class="meldung info" id="poStatus"></div>
+    <div class="knopfzeile">
+      <button class="knopf haupt" id="poWaehlen" type="button">Ordner w&auml;hlen</button>
+      <button class="knopf haupt" id="poErlauben" type="button" hidden>Zugriff erlauben</button>
+      <button class="knopf" id="poSichern" type="button" hidden>Sicherung in den Ordner</button>
+      <button class="knopf" id="poAngebot" type="button" hidden>Angebot in den Ordner</button>
+      <button class="knopf" id="poLoesen" type="button" hidden>Ordner l&ouml;sen</button>
+    </div>
+    <div id="poListe"></div>
+  </div>
+
   <!-- Zum Ausprobieren. Steht neben der Sicherung, weil beide den
        ganzen Bestand anfassen und beide vorher fragen muessen. -->
   <div class="karte" id="einDemoKarte">
@@ -1137,6 +1198,15 @@ Schnittzeit, Zahl der Werkzeuge und Wechsel), Aufspannungen. Knopf <i>Zeit an di
 <tr><td><code>euroturn-cam-programm</code></td><td>Pipeline &rarr; Dreh-App</td><td>Die Drehkontur aus dem STEP-Modell als Programm der Dreh-App (Konturen Au&szlig;en und Innen,
 Rohteil aus den Rohteilma&szlig;en, keine Zyklen). Dort <i>Programme &rarr; Importieren</i>.</td></tr></table>
 <p>Es gibt keinen Server dazwischen: die Datei geht &uuml;ber Downloads, Teilen-Blatt oder die Ablage des DNC-K&auml;stchens &mdash; wie das NC-Programm selbst.</p>
+<h3 id="ba-08-werkstatt">Die Werkstatt: Drehen, Fr&auml;sen, Pipeline (26.09.2026)</h3>
+<p>Drei Apps, die zusammengeh&ouml;ren: <b>Drehen</b>, <b>Fr&auml;sen</b> (beide DZ CAM) und diese <b>Pipeline</b>. <b>Am Laptop</b> steht links
+oben in der Kopfzeile der <b>Werkstatt-Schalter</b> Drehen | Fr&auml;sen | Pipeline &mdash; in allen drei Apps an derselben Stelle, die aktuelle
+hervorgehoben, ein Klick wechselt. Daneben der <b>R&uuml;cksprung</b> (&bdquo;&#x25C2; Drehen: Mastertestteil&ldquo;): er wei&szlig;, woher Du kommst und
+was dort offen war, und f&uuml;hrt genau dorthin zur&uuml;ck (einen halben Tag lang). Der Wechsel ist kein harter Schnitt: eine Blende mit Emblem und
+Zielname legt sich &uuml;ber die Seite, die Zielseite kommt mit demselben Bild. Der Weg f&uuml;hrt immer zur richtigen Datei: aus dem Ordner auf dem
+Desktop in den Nachbarordner der CAM-Apps, aus der ver&ouml;ffentlichten Fassung zu deren ver&ouml;ffentlichter Fassung. Gemeinsam sind der
+<b>Dunkelmodus</b> (ein Schalter, eine Einstellung f&uuml;r alle drei) und der <b>Projektordner</b> (Kap.&nbsp;9). Am Handy hat diese App den Schalter
+nicht; die CAM-Apps &ouml;ffnen dort ihr Werkstatt-Men&uuml; am Logo.</p>
 
 <h2 id="ba-09">9 &nbsp;Fassung, Offline, Dunkelmodus</h2>
 <p>Der <b>Stand</b> dieser Fassung steht oben rechts und im Kopf dieser Anleitung (Datum, Uhrzeit, Pr&uuml;fsumme); die Datei zum Doppelklicken
@@ -1146,7 +1216,14 @@ Ein Service-Worker h&auml;lt die App offline vor; sein Cache tr&auml;gt den Stan
 Schwester-App vom 15.09.2026: mit festem Namen blieb dort wochenlang die alte Kopie).</p>
 <p><b>Dunkelmodus</b>: der Mond-Knopf im Kopf, gemerkt auf diesem Ger&auml;t. Dieselben Farb-Token mit anderen Werten; die 3D-Vorschau bleibt hell,
 gedruckt wird immer hell. <b>Kachelfelder</b>: Vorgaben, Kapazit&auml;t und Einstellungen zeigen ihre Felder als Kacheln (Beschriftung oben, Wert gro&szlig;),
-dasselbe Muster wie die Zyklusmasken der CAM-Apps.</p>
+dasselbe Muster wie die Zyklusmasken der CAM-Apps. Seit dem 26.09.2026 ist die Einstellung <b>gemeinsam</b> mit Drehen und Fr&auml;sen: wer dort dunkel schaltet,
+kommt hier dunkel an.</p>
+<p><b>Projektordner</b> (seit 26.09.2026, Blatt 5): am Laptop (Edge, Chrome) einmal <i>Ordner w&auml;hlen</i> &mdash; den Ordner, in dem Zeichnung, STEP und
+NC-Programme liegen. Er ist <b>derselbe Ordner wie in DZ CAM Drehen und Fr&auml;sen</b> (ein Griff f&uuml;r alle drei). <i>Sicherung in den Ordner</i> legt
+dieselbe Datei dorthin, die <i>Alles als Datei sichern</i> in die Downloads legt; <i>Angebot in den Ordner</i> das Angebot des geladenen Teils. Die Liste zeigt,
+was von dieser App dort liegt (Endung <code>.wp.json</code>; die Programme der CAM-Apps im selben Ordner bleiben ungezeigt), <i>Laden</i> holt eine Sicherung in die
+Vorschau (dann wie beim Zur&uuml;ckholen entscheiden) bzw. ein Angebot ins Blatt 2. Beim n&auml;chsten Start fragt der Browser einmal nach der Erlaubnis
+(<i>Zugriff erlauben</i>). Safari am iPhone kennt das nicht &mdash; dort bleibt alles, wie es war.</p>
 
 <h2 id="ba-10">10 &nbsp;Was fehlt (ehrlich)</h2>
 <ul><li>Zeichnungen (PDF) werden nicht ausgewertet: Toleranzen und Oberfl&auml;chen w&auml;hlt man in den Vorgaben.</li>
@@ -1323,6 +1400,454 @@ if(typeof module !== 'undefined' && module.exports){
   module.exports = {SCHEMA_VERSION, neuerDatensatz, schemaPruefen, SCHEMA_KLASSEN, SCHEMA_FORMEN,
                     CAM_ZEIT_FORMAT, camZeitPruefen, camZeitUebernahme, wpWerkstoffeDatei, WP_KERNLOCH, fGewindeAusKernloch,
                     fRund, fZahl, fEuro, fMin, fLesen, fText, fKopie};
+}
+// =====================================================================
+// PROJEKTORDNER: Programme als Dateien auf dem Rechner [26.09.2026,
+// Punkt 5 der Liste vom 25.09.]. Gemeinsames Modul beider Apps.
+//
+// WARUM: die Programme lebten nur im Browserspeicher (Fraesen) oder gar
+// nur in der Sitzung (Drehen: `programs` ist ein Array im Speicher, mit
+// dem Schliessen weg). Wer sie behalten wollte, lud eine .json herunter
+// und holte sie ueber "Importieren" zurueck - jedes Mal von Hand, jedes
+// Mal in den Downloads. Ein Projektordner ist der Ort, an dem die Dateien
+// eines Teils zusammenliegen: Zeichnung, STEP, Programm, NC. Genau dort
+// sollen sie hin, und von dort sollen sie wieder aufgehen.
+//
+// WIE: der Browser gibt am Laptop (Edge/Chrome) mit showDirectoryPicker
+// einen GRIFF auf einen Ordner; der Griff laesst sich in IndexedDB
+// merken und in der naechsten Sitzung wieder holen - dann fragt der
+// Browser einmal nach der Erlaubnis (requestPermission braucht einen
+// Klick). Safari am iPhone kennt das nicht: dort bleibt alles, wie es
+// war, und der ganze Block ist unsichtbar (Regel 3: unter 900 px kein
+// Pixel anders - der Block ist display:none, bis poVerfuegbar() ja sagt).
+//
+// JEDE Ein-/Ausgabe laeuft ueber den GRIFF als Parameter. Der Pruefstand
+// reicht einen Fake-Ordner (poFakeOrdner) hinein und misst die Logik
+// ohne Browser; die Browser-Szene nimmt denselben Fake und obendrein den
+// echten Weg ueber IndexedDB.
+//
+// EIN Griff fuer beide Apps [Huelle, 26.09.2026]: gemerkt unter dem
+// Schluessel 'projekt' - beide Apps liegen auf derselben Herkunft (GitHub
+// Pages bzw. file://), wer den Ordner in der einen waehlt, hat ihn in der
+// anderen. Jede sieht nur ihre Dateien (.dreh.json / .fraes.json). Die
+// alten Schluessel 'dreh'/'fraes' vom Vormittag werden beim Start
+// uebernommen und nicht mehr geschrieben.
+// =====================================================================
+var PO = {app:'', griff:null, name:'', bereit:false};
+const PO_DB = 'dz-projektordner', PO_STORE = 'griffe', PO_SCHLUESSEL = 'projekt';
+
+function poVerfuegbar(){
+  try{
+    return typeof window !== 'undefined' && typeof window.showDirectoryPicker === 'function' &&
+           typeof indexedDB !== 'undefined' && !!indexedDB;
+  }catch(e){ return false; }
+}
+// Ein Programmname wird ein Dateiname, den Windows und macOS nehmen:
+// die verbotenen Zeichen werden Unterstriche, Punkt und Leerzeichen am
+// Ende fallen weg (Windows legt "Name." als "Name" an), hoechstens 60
+// Zeichen, nie leer. Traegt der Name die Endung schon, kommt sie nicht
+// doppelt.
+function poDateiname(name, endung){
+  let s = String(name == null ? '' : name).replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_').replace(/\s+/g, ' ').trim().replace(/[. ]+$/, '');
+  if(!s) s = 'Programm';
+  if(s.length > 60) s = s.slice(0, 60).replace(/[. ]+$/, '');
+  endung = endung || '';
+  if(endung && s.toLowerCase().endsWith(endung.toLowerCase())) return s;
+  return s + endung;
+}
+function poNameAusDatei(datei, endung){
+  const d = String(datei || '');
+  if(endung && d.toLowerCase().endsWith(String(endung).toLowerCase())) return d.slice(0, d.length - endung.length);
+  return d;
+}
+// Neueste zuerst; bei gleichem Datum nach Namen.
+function poSortieren(l){
+  return l.slice().sort((a, b) => ((b.datum || 0) - (a.datum || 0)) || String(a.name).localeCompare(String(b.name), 'de'));
+}
+function poDatumText(ms){
+  const d = new Date(ms || 0), z = n => (n < 10 ? '0' : '') + n;
+  return z(d.getDate()) + '.' + z(d.getMonth() + 1) + '.' + d.getFullYear() + ' ' + z(d.getHours()) + ':' + z(d.getMinutes());
+}
+function poGroesseText(b){
+  b = +b || 0;
+  return b < 1024 ? b + ' B' : (b < 1048576 ? Math.round(b / 1024) + ' kB' : (b / 1048576).toFixed(1) + ' MB');
+}
+// Fehlertexte in Worten, die auf dem Bildschirm etwas sagen. Ein
+// Abbruch durch den Bediener (Dialog weggeklickt) ist kein Fehler und
+// liefert einen leeren Text.
+function poFehlerText(e){
+  if(!e) return 'unbekannter Fehler';
+  if(e.name === 'AbortError') return '';
+  if(e.name === 'NotAllowedError' || e.name === 'SecurityError') return 'Zugriff auf den Ordner nicht erlaubt';
+  if(e.name === 'NotFoundError') return 'Datei oder Ordner nicht mehr da';
+  if(e.name === 'InvalidStateError') return 'der Ordner ist nicht mehr erreichbar (verschoben, umbenannt, Laufwerk weg)';
+  return e.message || String(e);
+}
+
+// --- Der Griff in IndexedDB (ueberlebt das Schliessen des Browsers) ---
+function poDb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(PO_DB, 1);
+    r.onupgradeneeded = () => { r.result.createObjectStore(PO_STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error || new Error('IndexedDB'));
+  });
+}
+function poDbTx(art, tu){
+  return poDb().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(PO_STORE, art), st = tx.objectStore(PO_STORE);
+    const q = tu(st);
+    tx.oncomplete = () => { db.close(); res(q && q.result); };
+    tx.onerror = () => { db.close(); rej(tx.error || new Error('IndexedDB')); };
+  }));
+}
+function poGriffMerken(app, griff){ return poDbTx('readwrite', st => st.put(griff, app)); }
+function poGriffHolen(app){ return poDbTx('readonly', st => st.get(app)); }
+function poGriffLoeschen(app){ return poDbTx('readwrite', st => st.delete(app)); }
+
+// --- Der Zustand: keiner / erlauben / bereit ---
+// poStart holt den gemerkten Griff. Ob er noch gilt, sagt queryPermission:
+// 'granted' = sofort bereit, 'prompt' = der Bediener muss einmal klicken
+// (poErlauben), sonst ist der Ordner nur gemerkt, nicht nutzbar.
+async function poStart(app){
+  PO.app = app; PO.griff = null; PO.name = ''; PO.bereit = false;
+  if(!poVerfuegbar()) return 'nicht verfuegbar';
+  let g = null;
+  try{ g = await poGriffHolen(PO_SCHLUESSEL); }catch(e){ return 'keiner'; }
+  if(!g){
+    // Umzug vom Vormittag: der Griff lag je App getrennt.
+    try{ g = await poGriffHolen(app); if(g){ await poGriffMerken(PO_SCHLUESSEL, g); await poGriffLoeschen(app); } }catch(e){ g = g || null; }
+  }
+  if(!g || typeof g.queryPermission !== 'function') return 'keiner';
+  PO.griff = g; PO.name = g.name || 'Ordner';
+  let p = 'prompt';
+  try{ p = await g.queryPermission({mode:'readwrite'}); }catch(e){ p = 'prompt'; }
+  PO.bereit = (p === 'granted');
+  return PO.bereit ? 'bereit' : 'erlauben';
+}
+async function poErlauben(){
+  if(!PO.griff) return false;
+  let p = 'denied';
+  try{ p = await PO.griff.requestPermission({mode:'readwrite'}); }catch(e){ p = 'denied'; }
+  PO.bereit = (p === 'granted');
+  return PO.bereit;
+}
+async function poWaehlen(app){
+  const g = await window.showDirectoryPicker({id:'dz-cam-' + app, mode:'readwrite'});
+  PO.app = app; PO.griff = g; PO.name = g.name || 'Ordner'; PO.bereit = true;
+  // Merken kann scheitern (IndexedDB gesperrt) - der Ordner gilt dann
+  // trotzdem fuer diese Sitzung, nur nicht fuer die naechste.
+  try{ await poGriffMerken(PO_SCHLUESSEL, g); }catch(e){}
+  return g;
+}
+async function poLoesen(){
+  const app = PO.app;
+  PO.griff = null; PO.name = ''; PO.bereit = false;
+  try{ await poGriffLoeschen(PO_SCHLUESSEL); await poGriffLoeschen(app); }catch(e){}
+}
+
+// --- Dateien im Ordner. createWritable schreibt in eine Hilfsdatei und
+//     tauscht beim close - eine halb geschriebene Datei gibt es nicht.
+async function poSchreiben(griff, datei, text){
+  const fh = await griff.getFileHandle(datei, {create:true});
+  const w = await fh.createWritable();
+  await w.write(text);
+  await w.close();
+  return datei;
+}
+async function poLesen(griff, datei){
+  const fh = await griff.getFileHandle(datei);
+  const f = await fh.getFile();
+  return await f.text();
+}
+async function poLoeschen(griff, datei){ await griff.removeEntry(datei); }
+// Nur Dateien mit der Endung dieser App; Unterordner werden nicht
+// durchsucht (ein Projektordner ist flach, und wer verschachtelt, waehlt
+// den Unterordner).
+async function poListe(griff, endung){
+  const l = [], e = String(endung || '').toLowerCase();
+  for await (const [n, h] of griff.entries()){
+    if(!h || h.kind !== 'file') continue;
+    if(e && !n.toLowerCase().endsWith(e)) continue;
+    let f = null;
+    try{ f = await h.getFile(); }catch(x){ continue; }
+    l.push({datei:n, name:e ? n.slice(0, n.length - e.length) : n, datum:f.lastModified, groesse:f.size});
+  }
+  return poSortieren(l);
+}
+
+// --- Ein Ordner im Speicher mit derselben Schnittstelle, fuer Pruefstand
+//     und Browser-Szene. Er tut, was der echte tut: schreiben, lesen,
+//     auflisten, loeschen - und er merkt sich das Datum jeder Datei.
+function poFakeOrdner(name){
+  const dateien = {};
+  let uhr = 1000;
+  const griff = {
+    kind:'directory', name:name || 'Fake',
+    queryPermission(){ return Promise.resolve('granted'); },
+    requestPermission(){ return Promise.resolve('granted'); },
+    getFileHandle(n, opt){
+      if(!dateien[n] && !(opt && opt.create)){ const e = new Error('kein ' + n); e.name = 'NotFoundError'; return Promise.reject(e); }
+      if(!dateien[n]) dateien[n] = {text:'', datum:uhr++};
+      const fh = {
+        kind:'file', name:n,
+        getFile(){ const d = dateien[n]; return Promise.resolve({name:n, lastModified:d.datum, size:d.text.length, text(){ return Promise.resolve(d.text); }}); },
+        createWritable(){ let puffer = ''; return Promise.resolve({write(t){ puffer += String(t); return Promise.resolve(); }, close(){ dateien[n] = {text:puffer, datum:uhr++}; return Promise.resolve(); }}); },
+      };
+      return Promise.resolve(fh);
+    },
+    removeEntry(n){ if(!dateien[n]){ const e = new Error('kein ' + n); e.name = 'NotFoundError'; return Promise.reject(e); } delete dateien[n]; return Promise.resolve(); },
+    entries(){
+      const es = Object.keys(dateien).map(n => [n, {kind:'file', name:n, getFile(){ const d = dateien[n]; return Promise.resolve({name:n, lastModified:d.datum, size:d.text.length, text(){ return Promise.resolve(d.text); }}); }}]);
+      let i = 0;
+      return {[Symbol.asyncIterator](){ return this; }, next(){ return Promise.resolve(i < es.length ? {value:es[i++], done:false} : {value:undefined, done:true}); }};
+    },
+    _dateien:dateien,
+  };
+  return griff;
+}
+// =====================================================================
+// DIE GEMEINSAME HUELLE [26.09.2026, Punkt 7 der Liste vom 25.09.; am
+// selben Abend nach der Durchsicht auf "drei Dateien, eine Oberflaeche"
+// erweitert - Entwurf ENTWURF-HUELLE.md, Pakete A und B]:
+// "ein Start, eine Werkzeugverwaltung, ein Projektordner, ein Dunkelmodus,
+// und darin Drehen oder Fraesen - der sichtbare Sprung. Was fehlt, ist
+// nicht Glanz, sondern Einheit."
+//
+// Drei Apps, drei Dateien - das bleibt (Regel 1: eine Datei, Doppelklick,
+// offline). Die Huelle ist deshalb kein viertes Programm, sondern das,
+// was alle drei GLEICH haben und was den Weg zwischen ihnen kennt:
+//   - die WERKSTATT-KOPFZEILE (ab 900 px): links aussen das Emblem und
+//     der Segment-Schalter Drehen | Fraesen | Pipeline, die eigene App
+//     hervorgehoben; daneben der RUECKSPRUNG-Chip "Drehen: Mastertestteil",
+//     wenn man von dort kommt. In allen drei Apps an derselben Stelle.
+//   - am Handy (unter 900 px) bleibt alles, wie es war: das Logo ist der
+//     Werkstatt-Schalter (ein Tipp oeffnet das Menue), die Leiste steht
+//     ueber dem Startbild. Regel 3: dort aendert sich kein Pixel.
+//   - der WECHSEL ist kein harter Schnitt mehr: eine Blende mit Emblem und
+//     Zielname legt sich ueber die Seite, der Stand (von wo, welches
+//     Programm, wann) geht ueber den gemeinsamen Speicherschluessel
+//     dz_werkstatt mit, die Zielseite zeigt ihn als Ruecksprung-Chip.
+//   - EIN Projektordner (06-projektordner.js, Schluessel 'projekt') und
+//     EIN Dunkelmodus (etDunkel) in allen drei Apps.
+//
+// WOHIN der Sprung fuehrt, haengt an der FORM, in der die App laeuft:
+// im Projektordner heissen die Dateien euroturn-kontur-cam.html und
+// dz-cam-fraesen.html, auf GitHub Pages (PWA) index.html und fraesen.html
+// (pwa-bauen.js benennt um). Die Pipeline ist ein eigenes Repo: auf Pages
+// ihre Adresse, im Projektordner der Nachbarordner auf dem Desktop - und
+// von ihr aus fuehrt der Weg zurueck in den Nachbarordner der CAM-Apps
+// (werkstatt-pipeline.html liegt eine Ebene tiefer als docs/index.html).
+// Ausgerechnet wird das aus dem eigenen Dateinamen, nicht aus einer
+// Einstellung - eine Einstellung wuerde beim naechsten Umbenennen luegen.
+//
+// DASSELBE MODUL liegt als Kopie im Repo der Pipeline (shared/07-huelle.js);
+// der Pruefstand der Pipeline haelt die Kopie byteidentisch, sobald der
+// Nachbarordner da ist. Zwei Fassungen einer Regel driften.
+// =====================================================================
+const HUELLE_APPS = [
+  {id:'dreh',     name:'Drehen',             kurz:'Drehen',   sub:'Monforts 1000 / 1500, Siemens 810T / 840D', projekt:'euroturn-kontur-cam.html', pwa:'index.html',   https:'https://dz-werkstatt.github.io/dz-cam/'},
+  {id:'fraes',    name:'Fräsen',        kurz:'Fräsen',  sub:'iTNC 530, TNC 410, 840D powerline',        projekt:'dz-cam-fraesen.html',      pwa:'fraesen.html', https:'https://dz-werkstatt.github.io/dz-cam/fraesen.html'},
+  {id:'pipeline', name:'Werkstatt-Pipeline', kurz:'Pipeline', sub:'Anfrage, Angebot, Auftrag',                 projekt:'../werkstatt-pipeline/docs/index.html', pwa:'https://dz-werkstatt.github.io/werkstatt-pipeline/', https:'https://dz-werkstatt.github.io/werkstatt-pipeline/', eigen:true},
+];
+// Der gemeinsame Speicherschluessel des Wechsels und seine Fristen: der
+// Ruecksprung-Chip gilt einen halben Tag (danach ist "von wo komme ich"
+// keine Auskunft mehr), die Ankunftsblende nur, wenn der Wechsel gerade
+// eben war (sonst zeigte jeder spaetere Neustart eine Blende).
+const HUELLE_KEY = 'dz_werkstatt', HUELLE_RUECK_MS = 12 * 3600 * 1000, HUELLE_ANKUNFT_MS = 10000, HUELLE_BLENDE_MS = 260;
+// Der eigene Dateiname (letztes Pfadstueck, ohne ?query und #hash); ein
+// nackter Ordner ("…/dz-cam/") ist index.html - so liefert Pages die PWA.
+function huelleDateiname(href){
+  const h = String(href || (typeof location !== 'undefined' && location.href) || '');
+  const ohne = h.split('#')[0].split('?')[0];
+  const teil = ohne.split('/').pop();
+  let d = ''; try{ d = decodeURIComponent(teil); }catch(e){ d = teil; }
+  return d || 'index.html';
+}
+// Die Pipeline heisst auf Pages UND im Projektordner index.html - erkannt
+// wird sie am Ordner im Pfad, nicht am Dateinamen.
+function huelleHier(href){
+  const voll = String(href || (typeof location !== 'undefined' && location.href) || '').toLowerCase();
+  if(voll.indexOf('werkstatt-pipeline') >= 0) return 'pipeline';
+  const d = huelleDateiname(href).toLowerCase();
+  const a = HUELLE_APPS.find(x => !x.eigen && (x.projekt.toLowerCase() === d || String(x.pwa).toLowerCase() === d));
+  return a ? a.id : 'dreh';
+}
+// 'pwa' = die umbenannten Dateien der Veroeffentlichung, sonst 'projekt'.
+function huelleForm(href){
+  const d = huelleDateiname(href).toLowerCase();
+  return (d === 'index.html' || d === 'fraesen.html') ? 'pwa' : 'projekt';
+}
+function huelleZiel(id, href, protokoll){
+  const a = HUELLE_APPS.find(x => x.id === id); if(!a) return null;
+  const p = String(protokoll || (typeof location !== 'undefined' && location.protocol) || 'file:');
+  const hier = huelleHier(href);
+  if(a.eigen) return (p === 'file:') ? a.projekt : a.https;
+  if(hier === 'pipeline'){
+    // Von der Pipeline aus: docs/index.html liegt eine Ebene tiefer als
+    // werkstatt-pipeline.html - der Rueckweg in den Nachbarordner ist
+    // entsprechend laenger. Der Ordnername traegt ein Leerzeichen.
+    if(p === 'file:'){
+      const h = String(href || (typeof location !== 'undefined' && location.href) || '').split('#')[0].split('?')[0];
+      const tief = /\/docs\/[^\/]*$/i.test(h);
+      return (tief ? '../../' : '../') + 'Dokumente%20euroturn/' + a.projekt;
+    }
+    return a.https;
+  }
+  return huelleForm(href) === 'pwa' ? a.pwa : a.projekt;
+}
+// --- Der Stand des Wechsels: von wo, welches Programm, wann, wohin. ---
+function huelleStandLesen(){
+  try{ const r = localStorage.getItem(HUELLE_KEY); if(!r) return null; const o = JSON.parse(r); return (o && typeof o === 'object') ? o : null; }
+  catch(e){ return null; }
+}
+function huelleStandSchreiben(o){
+  try{ localStorage.setItem(HUELLE_KEY, JSON.stringify(o)); return true; }catch(e){ return false; }
+}
+// Der Ruecksprung: nur wenn man wirklich von einer ANDEREN App hierher
+// gekommen ist, und nur einen halben Tag lang. DOM-frei - der Stand kommt
+// als Parameter, damit der Pruefstand ihn ohne Browserspeicher misst.
+function huelleRueck(hier, stand, jetzt){
+  const s = (stand === undefined) ? huelleStandLesen() : stand;
+  const t = jetzt || Date.now();
+  if(!s || !s.von || s.von === hier || s.ziel !== hier) return null;
+  if(!((t - (+s.zeit || 0)) < HUELLE_RUECK_MS)) return null;
+  const a = HUELLE_APPS.find(x => x.id === s.von); if(!a) return null;
+  return {von:s.von, text:a.kurz + (s.programm ? ': ' + s.programm : '')};
+}
+// Die Ankunft: der Wechsel war gerade eben (Blende kurz zeigen).
+function huelleAnkunft(hier, stand, jetzt){
+  const s = (stand === undefined) ? huelleStandLesen() : stand;
+  const t = jetzt || Date.now();
+  if(!s || s.ziel !== hier || !((t - (+s.zeit || 0)) < HUELLE_ANKUNFT_MS)) return null;
+  return s;
+}
+// EIN Emblem, EINE Zeichnung: die Kopfzeile und die Blende KLONEN das Emblem aus
+// dem Logo der Seite (CAM: .logo svg, Pipeline: header .emblem svg) - wie das
+// Startbild seit dem 31.08. Kein zweiter Quelltext derselben Zeichnung.
+function huelleEmblemKlon(){
+  try{ const e = document.querySelector('.hdr .logo svg') || document.querySelector('header .emblem svg'); return (e && e.cloneNode) ? e.cloneNode(true) : null; }
+  catch(x){ return null; }
+}
+function huelleEmblemEinsetzen(ziel, klasse){
+  if(!ziel) return false; const k = huelleEmblemKlon(); if(!k) return false;
+  try{ k.setAttribute('class', klasse || ''); ziel.appendChild(k); return true; }catch(x){ return false; }
+}
+const HUELLE_EMBLEM = '<span class="we"></span>';
+function huelleEsc(s){ return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+// Die Werkstatt-Kopfzeile: Emblem, Segment-Schalter, Ruecksprung-Chip.
+// Die eigene App ist ein span (kein Link), die anderen sind Links mit
+// echtem href UND data-wziel - der Klick laeuft ueber huelleWechsel (Blende,
+// Stand), faellt aber auf das href zurueck, wenn kein Skript laeuft.
+function huelleKopfHtml(hier, zurueck, href){
+  const h = hier || huelleHier(href);
+  return '<div class="wseg">' + HUELLE_EMBLEM + '<div class="wsg">' +
+    HUELLE_APPS.map(a => a.id === h
+      ? '<span class="hier" title="' + huelleEsc(a.name + ' — ' + a.sub) + '">' + huelleEsc(a.kurz) + '</span>'
+      : '<a class="wsa" href="' + huelleEsc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '" title="' + huelleEsc(a.name + ' — ' + a.sub) + '">' + huelleEsc(a.kurz) + '</a>').join('') +
+    '</div>' +
+    (zurueck && zurueck.von ? '<a class="wzur" href="' + huelleEsc(huelleZiel(zurueck.von, href)) + '" data-wziel="' + huelleEsc(zurueck.von) + '" title="zurück, wo Du herkommst">&#x25C2; <b>' + huelleEsc(zurueck.text) + '</b></a>' : '') +
+    '</div>';
+}
+// Die Werkstatt-Leiste ueber dem Startbild (Handy; am Laptop ausgeblendet,
+// dort steht der Schalter im Kopf).
+function huelleLeisteHtml(hier, href){
+  const h = hier || huelleHier(href);
+  const esc = huelleEsc;
+  return '<div class="wleiste"><span class="wl-tit">DZ CAM · Werkstatt</span>' +
+    HUELLE_APPS.map(a => a.id === h
+      ? '<span class="wl-app hier" title="' + esc(a.sub) + '">' + esc(a.name) + '</span>'
+      : '<a class="wl-app" href="' + esc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '" title="' + esc(a.sub) + '">' + esc(a.name) + '</a>').join('') +
+    '</div>';
+}
+function huelleMenueHtml(hier, href){
+  const h = hier || huelleHier(href);
+  const esc = huelleEsc;
+  return HUELLE_APPS.map(a => a.id === h
+    ? '<span class="wm-app hier">' + esc(a.name) + '<span class="wm-sub">hier</span></span>'
+    : '<a class="wm-app" href="' + esc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '">' + esc(a.name) + '<span class="wm-sub">' + esc(a.sub) + '</span></a>').join('');
+}
+// Die Blende: Emblem, Zielname, eine Zeile darunter, ein laufender Strich.
+// Sie haengt am body (Wurzelkontext, ueber allem) und ist reines Bild.
+function huelleBlende(ziel, sub){
+  let b = document.getElementById('wblende');
+  if(!b){ b = document.createElement('div'); b.id = 'wblende'; document.body.appendChild(b); }
+  b.className = '';
+  b.innerHTML = '<div class="wb-ziel">' + huelleEsc(ziel) + '</div>' +
+    (sub ? '<div class="wb-sub">' + huelleEsc(sub) + '</div>' : '') +
+    '<div class="wb-strich"><i></i></div>';
+  try{ const k = huelleEmblemKlon(); if(k){ k.setAttribute('class', 'wb-em'); b.insertBefore(k, b.firstChild); } }catch(e){}
+  return b;
+}
+function huelleBlendeWeg(b, nachMs){
+  setTimeout(() => { try{ b.classList.add('weg'); }catch(e){}
+    setTimeout(() => { try{ b.parentNode.removeChild(b); }catch(e){} }, 450); }, nachMs || 0);
+}
+// Der Wechsel: Stand merken, Blende zeigen, dann die Zielseite laden. Der
+// Programmname kommt aus der App (opt.programm liefert ihn), damit der
+// Ruecksprung-Chip der Zielseite "Drehen: Mastertestteil" sagen kann.
+function huelleWechsel(zielId, hier, opt){
+  const a = HUELLE_APPS.find(x => x.id === zielId); if(!a) return false;
+  const h = hier || huelleHier();
+  if(a.id === h) return false;
+  const href = huelleZiel(zielId); if(!href) return false;
+  let programm = '';
+  try{ if(opt && typeof opt.programm === 'function') programm = String(opt.programm() || ''); }catch(e){ programm = ''; }
+  huelleStandSchreiben({von:h, programm:programm, zeit:Date.now(), ziel:zielId});
+  const sub = (programm ? programm + ' bleibt gemerkt · ' : '') + 'Dunkelmodus und Projektordner gehen mit';
+  try{ huelleBlende(a.name, sub); }catch(e){}
+  setTimeout(() => { location.href = href; }, HUELLE_BLENDE_MS);
+  return true;
+}
+// Beim Start: Kopfzeile einsetzen, Klicks auf jedes [data-wziel] (Segment,
+// Ruecksprung, Menue, Leiste) ueber den Wechsel fuehren, die Ankunft
+// zeigen, das Logo-Menue (Handy) verdrahten. Das Menue haengt am body
+// (Wurzelkontext - dieselbe Lehre wie beim Meldebanner: in der Kopfzeile
+// laege es unter jeder offenen Maske) und steht unter dem Logo.
+function huelleStart(opt){
+  if(typeof document === 'undefined') return false;
+  opt = opt || {};
+  const hier = opt.hier || huelleHier();
+  const kopf = document.querySelector('.hdr') || document.querySelector('header');
+  if(!kopf) return false;
+  try{
+    if(kopf.insertBefore && !document.querySelector('.wseg')){
+      const d = document.createElement('div');
+      d.innerHTML = huelleKopfHtml(hier, huelleRueck(hier));
+      if(d.firstChild) kopf.insertBefore(d.firstChild, kopf.firstChild);
+      huelleEmblemEinsetzen(document.querySelector('.wseg .we'), 'we-svg');
+    }
+  }catch(e){}
+  document.addEventListener('click', (e) => {
+    const a = (e.target && e.target.closest) ? e.target.closest('[data-wziel]') : null;
+    if(!a) return;
+    if(huelleWechsel(a.getAttribute('data-wziel'), hier, opt)) e.preventDefault();
+  });
+  // Ankunft ohne Startbild (Pipeline): die Blende kurz zeigen und ausblenden.
+  // Die CAM-Apps haben ihr Startbild - das ist dort die Ankunft, nur kuerzer.
+  try{ if(huelleAnkunft(hier) && !document.getElementById('splash')){ const a = HUELLE_APPS.find(x => x.id === hier); huelleBlendeWeg(huelleBlende(a ? a.name : 'DZ CAM', ''), 350); } }catch(e){}
+  const logo = document.querySelector('.hdr .logo');
+  if(logo && logo.addEventListener){
+    let m = document.getElementById('wmenue');
+    if(!m){ m = document.createElement('div'); m.id = 'wmenue'; m.className = 'wmenue'; document.body.appendChild(m); }
+    m.innerHTML = huelleMenueHtml(hier);
+    logo.style.cursor = 'pointer';
+    logo.setAttribute('title', 'Werkstatt: Drehen · Fräsen · Pipeline');
+    const zu = () => { m.classList.remove('auf'); };
+    logo.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(m.classList.contains('auf')){ zu(); return; }
+      m.classList.add('auf');
+      // Unter dem Logo, aber im Bild: das Logo steht rechts in der Kopfzeile, ein
+      // links buendiges Menue lief aus dem Fenster (Aufnahme 26.09.2026).
+      try{ const r = logo.getBoundingClientRect(), w = m.offsetWidth || 220;
+        m.style.top = (r.bottom + 4) + 'px';
+        m.style.left = Math.max(6, Math.min(r.left, window.innerWidth - w - 6)) + 'px'; }catch(x){}
+    });
+    document.addEventListener('click', (e) => { if(!m.contains(e.target)) zu(); });
+    document.addEventListener('keydown', (e) => { if(e.key === 'Escape') zu(); });
+  }
+  return true;
 }
 const KALK_VORGABEN = {
   "_hinweis": "Startwerte der Kalkulation. Lastenheft Regel 7: JEDER Startwert steht hier, nicht im Code. Wird beim Bauen als Konstante KALK_VORGABEN eingebettet; im Browser ueberschreibt der gespeicherte Stand diese Werte je Feld.",
@@ -5957,7 +6482,9 @@ function bedienungVerdrahten(){
   });
   on('dunkelBtn', 'click', () => {
     const an = document.body.classList.toggle('dunkel');
-    try{ localStorage.setItem('wp_dunkel', an ? '1' : '0'); }catch(e){}
+    /* EIN Schluessel fuer alle drei Apps (26.09.2026): etDunkel ist der gemeinsame,
+       wp_dunkel bleibt fuer Kopien dieser App von vor dem Umbau. */
+    try{ localStorage.setItem('etDunkel', an ? '1' : '0'); localStorage.setItem('wp_dunkel', an ? '1' : '0'); }catch(e){}
     if(typeof vorschauMalen === 'function') vorschauMalen();
   });
   on('aIstzeit', 'input', () => { S.angebot.istzeit = fLesen(el('aIstzeit').value); istMalen(); });
@@ -6567,6 +7094,7 @@ function angebotDatensatz(){
 }
 
 function angebotVerdrahten(){
+  angebotVerdrahten2();
   on('btnJson', 'click', () => {
     if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
     const d = angebotDatensatz();
@@ -6577,9 +7105,20 @@ function angebotVerdrahten(){
   on('jsonDatei', 'change', () => {
     const f = el('jsonDatei').files[0]; if(!f) return;
     const r = new FileReader();
-    r.onload = () => {
+    r.onload = () => { angebotAusText(String(r.result)); };
+    r.onerror = () => meldung('Die Datei liess sich nicht lesen.', 'warn');
+    r.readAsText(f);
+  });
+  on('btnPdf', 'click', () => {
+    if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
+    angebotDrucken();
+  });
+}
+/* Ein Angebot aus seinem JSON-Text uebernehmen - EINE Stelle fuer die Datei aus
+   dem Dialog und die Datei aus dem Projektordner (26.09.2026). */
+function angebotAusText(text){
       try{
-        const d = JSON.parse(String(r.result));
+        const d = JSON.parse(String(text));
         const p = schemaPruefen(d);
         if(p.length) meldungListe('Das Angebot passt nicht ganz zum Austauschformat:', p, 'warn');
         S.d = d;
@@ -6610,14 +7149,11 @@ function angebotVerdrahten(){
         if(el('kWerkstoff') && d.teil.werkstoff) el('kWerkstoff').value = d.teil.werkstoff;
         kalkMalen(); camStandMalen();
         meldung('Angebot geladen.', 'info');
-      }catch(e){ meldung('Die Datei ist kein gueltiges Angebot: ' + e.message, 'fehler'); }
-    };
-    r.readAsText(f);
-  });
-  on('btnPdf', 'click', () => {
-    if(!S.d) return meldung('Erst ein Teil laden.', 'fehler');
-    angebotDrucken();
-  });
+        return true;
+      }catch(e){ meldung('Die Datei ist kein gueltiges Angebot: ' + e.message, 'fehler'); return false; }
+}
+/* Die uebrigen Knoepfe des Angebotsblatts - vorher im selben Block wie oben. */
+function angebotVerdrahten2(){
   on('btnEinExport', 'click', () => dateiSichern('werkstatt-einstellungen.json', JSON.stringify(S.V, null, 1)));
   on('btnEinImport', 'click', () => el('einDatei') && el('einDatei').click());
   on('einDatei', 'change', () => {
@@ -9086,6 +9622,178 @@ function wVerdrahten(){
   wDemoMalen();
 }
 
+/* =====================================================================
+   PROJEKTORDNER UND WERKSTATT-HUELLE der Pipeline (26.09.2026, Entwurf
+   "drei Dateien, eine Oberflaeche", Pakete A+B der CAM-Apps).
+   ---------------------------------------------------------------------
+   Die Bausteine dafuer sind KOPIEN aus dem Repo der CAM-Apps
+   (shared/06-projektordner.js, shared/07-huelle.js): dieselbe Kopfzeile,
+   derselbe Wechsel, derselbe Ordner-Griff (IndexedDB-Schluessel 'projekt').
+   Wer den Ordner in Drehen waehlt, hat ihn hier - und umgekehrt. Der
+   Pruefstand haelt die Kopien byteidentisch mit dem Nachbarordner.
+
+   Was hier dazukommt, ist die Bedienung fuer DIESE App: die Sicherung
+   (Auftraege, Maschinen, freie Tage, Regeln, Einstellungen - derselbe
+   Bau wie "Alles als Datei sichern") und das Angebot gehen als Datei in
+   den Ordner statt in die Downloads, und die Liste zeigt, was von dieser
+   App dort liegt. Eigene Endung .wp.json - die Programme der CAM-Apps
+   (.dreh.json / .fraes.json) liegen im selben Ordner und gehen niemanden
+   hier etwas an.
+
+   Nur am Laptop (Edge, Chrome): bis poVerfuegbar() ja sagt, bleibt die
+   Karte versteckt; Safari am iPhone sieht nichts davon.
+   ===================================================================== */
+const PO_ENDUNG = '.wp.json';
+const PO_ENDUNG_SICHERUNG = '.werkstatt.wp.json';
+const PO_ENDUNG_ANGEBOT = '.angebot.wp.json';
+
+/* Der Name, der beim Wechsel in die Schwester-App mitgeht (Ruecksprung-Chip
+   dort: "Pipeline: Flansch 4711"): das geladene Teil, sonst die Zahl der
+   Auftraege, sonst nichts. */
+function wHuelleName(){
+  try{
+    if(typeof S !== 'undefined' && S && S.d && S.d.teil){
+      const t = S.d.teil; return String(t.name || t.zeichnungsnr || (S.d.quelle && S.d.quelle.step) || 'Teil');
+    }
+    if(typeof W !== 'undefined' && W && Array.isArray(W.auftraege) && W.auftraege.length)
+      return W.auftraege.length + ' Aufträge';
+  }catch(e){}
+  return '';
+}
+
+/* Dateinamen und ihre Art - sync, damit der Pruefstand sie ohne Ordner misst. */
+function poPipelineSicherungName(datum){ return 'werkstatt-sicherung-' + (datum || 'ohne-datum') + PO_ENDUNG_SICHERUNG; }
+function poPipelineAngebotName(d){
+  const t = (d && d.teil) ? (d.teil.zeichnungsnr || d.teil.name || '') : '';
+  return poDateiname(t || 'angebot', PO_ENDUNG_ANGEBOT);
+}
+function poPipelineArt(datei){
+  const d = String(datei || '').toLowerCase();
+  if(d.endsWith(PO_ENDUNG_SICHERUNG)) return 'sicherung';
+  if(d.endsWith(PO_ENDUNG_ANGEBOT)) return 'angebot';
+  return null;
+}
+
+function poPipelineMalen(zustand){
+  const k = el('einOrdnerKarte'); if(!k) return;
+  k.hidden = !poVerfuegbar();
+  const bereit = zustand === 'bereit', erlauben = zustand === 'erlauben';
+  const zeig = (id, an) => { const e = el(id); if(e) e.hidden = !an; };
+  zeig('poWaehlen', !bereit);
+  zeig('poErlauben', erlauben);
+  zeig('poSichern', bereit);
+  zeig('poAngebot', bereit);
+  zeig('poLoesen', bereit || erlauben);
+  const s = el('poStatus');
+  if(s){
+    if(bereit) s.innerHTML = 'Ordner <b>' + wEsc(PO.name) + '</b> ist bereit &mdash; derselbe wie in Drehen und Fr&auml;sen.';
+    else if(erlauben) s.innerHTML = 'Ordner <b>' + wEsc(PO.name) + '</b> ist gemerkt. Der Browser will einmal die Erlaubnis &mdash; <i>Zugriff erlauben</i>.';
+    else s.innerHTML = 'Noch kein Projektordner. <i>Ordner w&auml;hlen</i> zeigt den Ordnerdialog des Browsers.';
+  }
+  if(!bereit) htm('poListe', '');
+}
+
+async function poPipelineListe(){
+  const l = el('poListe'); if(!l || !PO.bereit || !PO.griff) return;
+  let liste = [];
+  try{ liste = await poListe(PO.griff, PO_ENDUNG); }
+  catch(e){ l.innerHTML = '<div class="klein">Ordner nicht lesbar: ' + wEsc(poFehlerText(e)) + '</div>'; return; }
+  if(!liste.length){ l.innerHTML = '<div class="klein">Von dieser App liegt noch nichts im Ordner.</div>'; return; }
+  l.innerHTML = liste.map(f => {
+    const art = poPipelineArt(f.datei);
+    return '<div class="po-zeile"><span class="po-art">' + (art === 'sicherung' ? 'Sicherung' : art === 'angebot' ? 'Angebot' : 'Datei') + '</span>' +
+      '<span class="po-name">' + wEsc(f.name) + '</span><span class="klein">' + poDatumText(f.datum) + ' &middot; ' + poGroesseText(f.groesse) + '</span>' +
+      '<button class="knopf mini" type="button" data-pol="' + wEsc(f.datei) + '">Laden</button>' +
+      '<button class="knopf mini" type="button" data-pox="' + wEsc(f.datei) + '">L&ouml;schen</button></div>';
+  }).join('');
+}
+
+async function poPipelineSichern(){
+  if(!PO.bereit || !PO.griff) return false;
+  const d = sicherungBauen({auftraege: W.auftraege, maschinen: W.maschinen, frei: W.frei, regeln: W.regeln, einstellungen: S.V, heute: wHeute()});
+  const n = poPipelineSicherungName(wHeute());
+  try{ await poSchreiben(PO.griff, n, JSON.stringify(d, null, 1)); }
+  catch(e){ meldung('Sichern in den Ordner nicht m&ouml;glich: ' + wEsc(poFehlerText(e)), 'fehler'); return false; }
+  wStandSchreiben({gesichert: wHeute(), zahl: 0}); wStandMalen();
+  const z = d.enthaelt;
+  meldung('Im Projektordner gesichert als <b>' + wEsc(n) + '</b>: ' + z.auftraege + ' Auftr&auml;ge, ' + z.maschinen + ' Maschinen, ' + z.freieTage + ' freie Tage.', 'info');
+  poPipelineListe();
+  return true;
+}
+
+async function poPipelineAngebot(){
+  if(!PO.bereit || !PO.griff) return false;
+  if(!S.d){ meldung('Erst ein Teil laden.', 'fehler'); return false; }
+  const d = angebotDatensatz();
+  const n = poPipelineAngebotName(d);
+  try{ await poSchreiben(PO.griff, n, JSON.stringify(d, null, 1)); }
+  catch(e){ meldung('Angebot in den Ordner nicht m&ouml;glich: ' + wEsc(poFehlerText(e)), 'fehler'); return false; }
+  meldung('Angebot im Projektordner als <b>' + wEsc(n) + '</b> abgelegt.', 'info');
+  poPipelineListe();
+  return true;
+}
+
+async function poPipelineLaden(datei){
+  if(!PO.bereit || !PO.griff) return false;
+  let text = '';
+  try{ text = await poLesen(PO.griff, datei); }
+  catch(e){ meldung('Datei nicht lesbar: ' + wEsc(poFehlerText(e)), 'fehler'); return false; }
+  const art = poPipelineArt(datei);
+  if(art === 'sicherung'){
+    let d = null;
+    try{ d = JSON.parse(text); }catch(e){ meldung('Das ist keine lesbare Sicherung.', 'warn'); return false; }
+    const f2 = sicherungPruefen(d);
+    if(f2.length){ meldungListe('Diese Sicherung l&auml;sst sich nicht zur&uuml;ckholen:', f2, 'warn'); return false; }
+    W.sicherung = d; wSicherVorschau();
+    blatt('Ein');
+    const k = el('einSicherKarte'); if(k && k.scrollIntoView){ try{ k.scrollIntoView({block:'start'}); }catch(e){} }
+    meldung('Sicherung aus dem Ordner gelesen &mdash; unten entscheiden: alles ersetzen oder nur Auftr&auml;ge dazu.', 'info');
+    return true;
+  }
+  if(art === 'angebot'){
+    const ok = angebotAusText(text);
+    if(ok) blatt('Kalk');
+    return ok;
+  }
+  meldung('Diese Datei geh&ouml;rt nicht zu dieser App.', 'warn');
+  return false;
+}
+
+async function poPipelineStart(){
+  if(!poVerfuegbar()) return 'nicht verfuegbar';
+  let z = 'keiner';
+  try{ z = await poStart('pipeline'); }catch(e){ z = 'keiner'; }
+  poPipelineMalen(z);
+  if(z === 'bereit') poPipelineListe();
+  return z;
+}
+
+function poPipelineVerdrahten(){
+  on('poWaehlen', 'click', async () => {
+    try{ await poWaehlen('pipeline'); }
+    catch(e){ const t = poFehlerText(e); if(t) meldung('Ordner w&auml;hlen: ' + wEsc(t), 'warn'); return; }
+    poPipelineMalen('bereit'); poPipelineListe();
+    meldung('Projektordner <b>' + wEsc(PO.name) + '</b> gew&auml;hlt &mdash; er gilt jetzt auch in Drehen und Fr&auml;sen.', 'info');
+  });
+  on('poErlauben', 'click', async () => {
+    const ok = await poErlauben();
+    poPipelineMalen(ok ? 'bereit' : 'erlauben');
+    if(ok) poPipelineListe(); else meldung('Der Browser hat den Zugriff nicht erlaubt.', 'warn');
+  });
+  on('poLoesen', 'click', async () => { await poLoesen(); poPipelineMalen('keiner'); meldung('Projektordner gel&ouml;st (in allen drei Apps).', 'info'); });
+  on('poSichern', 'click', () => { poPipelineSichern(); });
+  on('poAngebot', 'click', () => { poPipelineAngebot(); });
+  on('poListe', 'click', async (e) => {
+    const b = e.target && e.target.closest ? e.target.closest('button[data-pol],button[data-pox]') : null;
+    if(!b) return;
+    if(b.dataset.pol){ poPipelineLaden(b.dataset.pol); return; }
+    const f = b.dataset.pox;
+    if(b.dataset.armed !== '1'){ b.dataset.armed = '1'; b.textContent = 'Wirklich?'; setTimeout(() => { b.dataset.armed = ''; b.textContent = 'Löschen'; }, 2500); return; }
+    try{ await poLoeschen(PO.griff, f); }catch(x){ meldung('L&ouml;schen nicht m&ouml;glich: ' + wEsc(poFehlerText(x)), 'fehler'); }
+    poPipelineListe();
+  });
+}
+
 /* ---- Start ----------------------------------------------------------
    Alles ist geladen; jetzt werden die Startwerte geholt, die Knoepfe
    verdrahtet und die leeren Blaetter gemalt. Ein Fehler hier darf die
@@ -9104,6 +9812,10 @@ function start(){
        gemalt (Bild P-00: fuenf leere Karten statt des Leerzustands). */
     if(typeof wUebersichtMalen === 'function') wUebersichtMalen();
     if(typeof standMalen === 'function') standMalen();
+    /* DIE HUELLE (26.09.2026): Werkstatt-Kopfzeile und Wechsel (shared/07-huelle.js),
+       Projektordner-Karte in Blatt 5 (ui/54-ordner.js). */
+    if(typeof huelleStart === 'function') huelleStart({programm: wHuelleName});
+    if(typeof poPipelineVerdrahten === 'function'){ poPipelineVerdrahten(); poPipelineStart(); }
     /* PWA-Offline: nur ueber einen Server (https oder localhost) - die Datei zum
        Doppelklicken bleibt unberuehrt. Der Worker liegt neben index.html in docs/. */
     if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
