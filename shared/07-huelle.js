@@ -72,7 +72,11 @@ function huelleForm(href){
 }
 function huelleZiel(id, href, protokoll){
   const a = HUELLE_APPS.find(x => x.id === id); if(!a) return null;
-  const p = String(protokoll || (typeof location !== 'undefined' && location.protocol) || 'file:');
+  // Das Protokoll gehoert zum href, wenn eines uebergeben ist - sonst antwortete die
+  // Funktion mit einem fremden href nach der Seite, in der sie gerade laeuft (Pruefstand
+  // der Pipeline, 26.09.2026: Pages-href, file-Antwort).
+  const ausHref = (href && /^[a-z]+:/i.test(String(href))) ? String(href).split(':')[0].toLowerCase() + ':' : '';
+  const p = String(protokoll || ausHref || (typeof location !== 'undefined' && location.protocol) || 'file:');
   const hier = huelleHier(href);
   if(a.eigen) return (p === 'file:') ? a.projekt : a.https;
   if(hier === 'pipeline'){
@@ -190,6 +194,41 @@ function huelleWechsel(zielId, hier, opt){
   try{ huelleBlende(a.name, sub); }catch(e){}
   setTimeout(() => { location.href = href; }, HUELLE_BLENDE_MS);
   return true;
+}
+// --- DER STAND JE APP [Paket D]: jede App merkt sich unter dz_werkstatt_stand,
+//     was bei ihr offen ist (Drehen/Fraesen: Programmname und Schritte, Pipeline:
+//     Auftraege und ueberfaellige). Die WERKSTATT-KARTE auf jedem Startbild zeigt
+//     den Stand der ANDEREN beiden - man sieht die Werkstatt, nicht nur die App.
+//     DOM-frei: Stand als Parameter, damit der Pruefstand ohne Speicher misst.
+const HUELLE_STAND_KEY = 'dz_werkstatt_stand';
+function huelleWerkstattLesen(){
+  try{ const r = localStorage.getItem(HUELLE_STAND_KEY); if(!r) return {}; const o = JSON.parse(r); return (o && typeof o === 'object') ? o : {}; }
+  catch(e){ return {}; }
+}
+function huelleStandMerken(app, info){
+  const o = huelleWerkstattLesen();
+  o[app] = Object.assign({}, info || {}, {zeit:Date.now()});
+  try{ localStorage.setItem(HUELLE_STAND_KEY, JSON.stringify(o)); return true; }catch(e){ return false; }
+}
+// Ein Satz je App: "Mastertestteil, 12 Schritte" / "10 Auftraege, 1 ueberfaellig" / ehrlich "noch nichts".
+function huelleStandText(app, s){
+  if(!s) return app === 'pipeline' ? 'noch keine Aufträge' : 'noch nichts gemerkt';
+  if(app === 'pipeline'){
+    const a = +s.auftraege || 0, u = +s.ueberfaellig || 0;
+    if(!a) return 'noch keine Aufträge';
+    return a + (a === 1 ? ' Auftrag' : ' Aufträge') + (u ? ', ' + u + ' überfällig' : '');
+  }
+  if(!s.name) return 'noch nichts gemerkt';
+  const k = +s.schritte || 0;
+  return String(s.name) + (k ? ', ' + k + (k === 1 ? ' Schritt' : ' Schritte') : '');
+}
+function huelleKarteHtml(hier, stand, href){
+  const h = hier || huelleHier(href);
+  const st = (stand === undefined) ? huelleWerkstattLesen() : (stand || {});
+  return '<div class="wkarte"><span class="wk-tit">Werkstatt</span>' +
+    HUELLE_APPS.filter(a => a.id !== h).map(a =>
+      '<a class="wk-app" href="' + huelleEsc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '"><b>' + huelleEsc(a.kurz) + '</b><span>' + huelleEsc(huelleStandText(a.id, st[a.id])) + '</span></a>').join('') +
+    '</div>';
 }
 // Beim Start: Kopfzeile einsetzen, Klicks auf jedes [data-wziel] (Segment,
 // Ruecksprung, Menue, Leiste) ueber den Wechsel fuehren, die Ankunft

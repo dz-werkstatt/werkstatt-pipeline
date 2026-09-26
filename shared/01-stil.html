@@ -138,6 +138,19 @@ header .rechts button{ width:32px; height:32px; border:1px solid var(--rand); bo
   body.dunkel .wzur{ border-color:hsl(var(--ton), 14%, 36%); color:hsl(var(--ton), 15%, 72%); }
   header .emblem{ display:none; }   /* das Emblem steht jetzt im Schalter */
 }
+/* DIE WERKSTATT-KARTE (Paket D): der Stand der anderen beiden Bereiche oben in der
+   Uebersicht - nur am Laptop. */
+.wkarte{ display:none; }
+@media (min-width: 900px){
+  .wkarte{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin:0 0 12px; padding:8px 14px; border:1px solid var(--rand-fein); border-radius:12px;
+    background:linear-gradient(135deg, hsl(var(--ton), 45%, 97%), hsl(var(--ton), 40%, 94%) 60%); }
+  .wkarte .wk-tit{ font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:hsl(var(--ton), 55%, 38%); margin-right:4px; }
+  .wkarte .wk-app{ display:inline-flex; align-items:baseline; gap:6px; text-decoration:none; color:var(--text); font-size:12.5px; padding:3px 10px; border-radius:999px; border:1px solid transparent; }
+  .wkarte .wk-app b{ color:var(--akzent); font-weight:700; }
+  .wkarte .wk-app span{ color:var(--text-blass); }
+  .wkarte .wk-app:hover{ border-color:var(--rand); background:var(--flaeche); }
+  body.dunkel .wkarte{ background:linear-gradient(135deg, hsl(var(--ton), 16%, 16%), hsl(var(--ton), 14%, 13%) 60%); border-color:hsl(var(--ton), 14%, 26%); }
+}
 /* DIE BLENDE beim Wechsel (Paket B): Emblem, Zielname, eine Zeile, laufender Strich;
    haengt am body ueber allem, blendet in 0,4 s aus. Bild, kein Layout. */
 #wblende{ position:fixed; inset:0; z-index:9990; background:rgba(255,255,255,.86); backdrop-filter:blur(7px); -webkit-backdrop-filter:blur(7px);

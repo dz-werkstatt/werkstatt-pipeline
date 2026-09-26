@@ -9,7 +9,7 @@
 <!-- DER STAND dieser Fassung: bauen.js ersetzt ARBEITSKOPIE durch Datum und Pruefsumme (in beiden Zielen,
      im Cache-Namen des Service-Workers und in docs/stand.txt). Die App zeigt ihn im Kopf und prueft ihn
      gegen stand.txt auf dem Server - eine alte Kopie im Geraet faellt sonst niemandem auf. -->
-<script>window.__WP_STAND="26.09.2026 21:57 (65ea594e)";</script>
+<script>window.__WP_STAND="26.09.2026 22:07 (0e571ca5)";</script>
 <title>Werkstatt-Pipeline — Angebot</title>
 <!-- Symbol: Rohteilklotz mit Fertigteil darin. Inline, damit die Datei
      offline nichts nachlaedt (dieselbe Doktrin wie in den beiden CAM-Apps). -->
@@ -159,6 +159,19 @@ header .rechts button{ width:32px; height:32px; border:1px solid var(--rand); bo
   body.dunkel .wseg .we{ color:#dde; }
   body.dunkel .wzur{ border-color:hsl(var(--ton), 14%, 36%); color:hsl(var(--ton), 15%, 72%); }
   header .emblem{ display:none; }   /* das Emblem steht jetzt im Schalter */
+}
+/* DIE WERKSTATT-KARTE (Paket D): der Stand der anderen beiden Bereiche oben in der
+   Uebersicht - nur am Laptop. */
+.wkarte{ display:none; }
+@media (min-width: 900px){
+  .wkarte{ display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; margin:0 0 12px; padding:8px 14px; border:1px solid var(--rand-fein); border-radius:12px;
+    background:linear-gradient(135deg, hsl(var(--ton), 45%, 97%), hsl(var(--ton), 40%, 94%) 60%); }
+  .wkarte .wk-tit{ font-size:11px; font-weight:700; letter-spacing:.4px; text-transform:uppercase; color:hsl(var(--ton), 55%, 38%); margin-right:4px; }
+  .wkarte .wk-app{ display:inline-flex; align-items:baseline; gap:6px; text-decoration:none; color:var(--text); font-size:12.5px; padding:3px 10px; border-radius:999px; border:1px solid transparent; }
+  .wkarte .wk-app b{ color:var(--akzent); font-weight:700; }
+  .wkarte .wk-app span{ color:var(--text-blass); }
+  .wkarte .wk-app:hover{ border-color:var(--rand); background:var(--flaeche); }
+  body.dunkel .wkarte{ background:linear-gradient(135deg, hsl(var(--ton), 16%, 16%), hsl(var(--ton), 14%, 13%) 60%); border-color:hsl(var(--ton), 14%, 26%); }
 }
 /* DIE BLENDE beim Wechsel (Paket B): Emblem, Zielname, eine Zeile, laufender Strich;
    haengt am body ueber allem, blendet in 0,4 s aus. Bild, kein Layout. */
@@ -676,6 +689,8 @@ label[data-ba]{ cursor:help; }
      Die Frage, die man morgens hat: wo stehe ich? In dieser
      Reihenfolge - erst was brennt, dann was laeuft, dann wie voll. -->
 <section class="blatt an" id="blattUeber">
+  <!-- Paket D: die Werkstatt-Karte (Stand von Drehen und Fraesen), gefuellt in wUebersichtMalen -->
+  <div id="ueWerkstatt"></div>
   <div class="karte" id="ueLeer" hidden>
     <h2>Noch keine Auftr&auml;ge</h2>
     <div class="klein" id="ueLeerText"></div>
@@ -1257,8 +1272,10 @@ hervorgehoben, ein Klick wechselt. Daneben der <b>R&uuml;cksprung</b> (&bdquo;&#
 was dort offen war, und f&uuml;hrt genau dorthin zur&uuml;ck (einen halben Tag lang). Der Wechsel ist kein harter Schnitt: eine Blende mit Emblem und
 Zielname legt sich &uuml;ber die Seite, die Zielseite kommt mit demselben Bild. Der Weg f&uuml;hrt immer zur richtigen Datei: aus dem Ordner auf dem
 Desktop in den Nachbarordner der CAM-Apps, aus der ver&ouml;ffentlichten Fassung zu deren ver&ouml;ffentlichter Fassung. Gemeinsam sind der
-<b>Dunkelmodus</b> (ein Schalter, eine Einstellung f&uuml;r alle drei) und der <b>Projektordner</b> (Kap.&nbsp;9). Am Handy hat diese App den Schalter
-nicht; die CAM-Apps &ouml;ffnen dort ihr Werkstatt-Men&uuml; am Logo.</p>
+<b>Dunkelmodus</b> (ein Schalter, eine Einstellung f&uuml;r alle drei) und der <b>Projektordner</b> (Kap.&nbsp;9). Am Laptop steht oben in der &Uuml;bersicht die
+<b>Werkstatt-Karte</b>: was in Drehen und Fr&auml;sen gerade offen ist (Programm und Schritte), ein Klick f&uuml;hrt hin; umgekehrt zeigen deren Startbilder,
+wie viele Auftr&auml;ge hier laufen und wie viele &uuml;berf&auml;llig sind. Am Handy hat diese App den Schalter nicht; die CAM-Apps &ouml;ffnen dort ihr
+Werkstatt-Men&uuml; am Logo.</p>
 
 <h2 id="ba-09">9 &nbsp;Fassung, Offline, Dunkelmodus</h2>
 <p>Der <b>Stand</b> dieser Fassung steht oben rechts und im Kopf dieser Anleitung (Datum, Uhrzeit, Pr&uuml;fsumme); die Datei zum Doppelklicken
@@ -1739,7 +1756,11 @@ function huelleForm(href){
 }
 function huelleZiel(id, href, protokoll){
   const a = HUELLE_APPS.find(x => x.id === id); if(!a) return null;
-  const p = String(protokoll || (typeof location !== 'undefined' && location.protocol) || 'file:');
+  // Das Protokoll gehoert zum href, wenn eines uebergeben ist - sonst antwortete die
+  // Funktion mit einem fremden href nach der Seite, in der sie gerade laeuft (Pruefstand
+  // der Pipeline, 26.09.2026: Pages-href, file-Antwort).
+  const ausHref = (href && /^[a-z]+:/i.test(String(href))) ? String(href).split(':')[0].toLowerCase() + ':' : '';
+  const p = String(protokoll || ausHref || (typeof location !== 'undefined' && location.protocol) || 'file:');
   const hier = huelleHier(href);
   if(a.eigen) return (p === 'file:') ? a.projekt : a.https;
   if(hier === 'pipeline'){
@@ -1857,6 +1878,41 @@ function huelleWechsel(zielId, hier, opt){
   try{ huelleBlende(a.name, sub); }catch(e){}
   setTimeout(() => { location.href = href; }, HUELLE_BLENDE_MS);
   return true;
+}
+// --- DER STAND JE APP [Paket D]: jede App merkt sich unter dz_werkstatt_stand,
+//     was bei ihr offen ist (Drehen/Fraesen: Programmname und Schritte, Pipeline:
+//     Auftraege und ueberfaellige). Die WERKSTATT-KARTE auf jedem Startbild zeigt
+//     den Stand der ANDEREN beiden - man sieht die Werkstatt, nicht nur die App.
+//     DOM-frei: Stand als Parameter, damit der Pruefstand ohne Speicher misst.
+const HUELLE_STAND_KEY = 'dz_werkstatt_stand';
+function huelleWerkstattLesen(){
+  try{ const r = localStorage.getItem(HUELLE_STAND_KEY); if(!r) return {}; const o = JSON.parse(r); return (o && typeof o === 'object') ? o : {}; }
+  catch(e){ return {}; }
+}
+function huelleStandMerken(app, info){
+  const o = huelleWerkstattLesen();
+  o[app] = Object.assign({}, info || {}, {zeit:Date.now()});
+  try{ localStorage.setItem(HUELLE_STAND_KEY, JSON.stringify(o)); return true; }catch(e){ return false; }
+}
+// Ein Satz je App: "Mastertestteil, 12 Schritte" / "10 Auftraege, 1 ueberfaellig" / ehrlich "noch nichts".
+function huelleStandText(app, s){
+  if(!s) return app === 'pipeline' ? 'noch keine Aufträge' : 'noch nichts gemerkt';
+  if(app === 'pipeline'){
+    const a = +s.auftraege || 0, u = +s.ueberfaellig || 0;
+    if(!a) return 'noch keine Aufträge';
+    return a + (a === 1 ? ' Auftrag' : ' Aufträge') + (u ? ', ' + u + ' überfällig' : '');
+  }
+  if(!s.name) return 'noch nichts gemerkt';
+  const k = +s.schritte || 0;
+  return String(s.name) + (k ? ', ' + k + (k === 1 ? ' Schritt' : ' Schritte') : '');
+}
+function huelleKarteHtml(hier, stand, href){
+  const h = hier || huelleHier(href);
+  const st = (stand === undefined) ? huelleWerkstattLesen() : (stand || {});
+  return '<div class="wkarte"><span class="wk-tit">Werkstatt</span>' +
+    HUELLE_APPS.filter(a => a.id !== h).map(a =>
+      '<a class="wk-app" href="' + huelleEsc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '"><b>' + huelleEsc(a.kurz) + '</b><span>' + huelleEsc(huelleStandText(a.id, st[a.id])) + '</span></a>').join('') +
+    '</div>';
 }
 // Beim Start: Kopfzeile einsetzen, Klicks auf jedes [data-wziel] (Segment,
 // Ruecksprung, Menue, Leiste) ueber den Wechsel fuehren, die Ankunft
@@ -7616,6 +7672,9 @@ function wUebersichtMalen(){
   ['ueKarteAmpel', 'ueKarteTermine', 'ueKarteLast', 'ueKarteWert', 'ueKarteSoll']
     .forEach(id => zeig(id, !leer));
   zeig('ueLeer', leer);
+  /* Paket D: die Werkstatt-Karte oben und der eigene Stand fuer die Karten der anderen Apps. */
+  if(typeof huelleKarteHtml === 'function') htm('ueWerkstatt', huelleKarteHtml('pipeline'));
+  if(leer && typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:0, ueberfaellig:0});
   if(leer){
     /* Drei Wege statt fuenf leerer Karten (19.09.2026, Design-Punkt 3): das Markup gab es,
        es wurde nur nie gezeigt - die Uebersicht wurde erst beim Reiterwechsel gemalt. */
@@ -7641,6 +7700,7 @@ function wUebersichtMalen(){
     frei:W.frei, uebergabe:W.regeln.uebergabe, mannStunden:W.mannStunden, wochen:4
   });
 
+  if(typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:W.auftraege.length, ueberfaellig:u.zahlen.ueberfaellig || 0});
   /* ---- 1. Wo stehe ich? ---- */
   {
     const z = u.zahlen;

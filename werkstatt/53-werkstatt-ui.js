@@ -300,6 +300,9 @@ function wUebersichtMalen(){
   ['ueKarteAmpel', 'ueKarteTermine', 'ueKarteLast', 'ueKarteWert', 'ueKarteSoll']
     .forEach(id => zeig(id, !leer));
   zeig('ueLeer', leer);
+  /* Paket D: die Werkstatt-Karte oben und der eigene Stand fuer die Karten der anderen Apps. */
+  if(typeof huelleKarteHtml === 'function') htm('ueWerkstatt', huelleKarteHtml('pipeline'));
+  if(leer && typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:0, ueberfaellig:0});
   if(leer){
     /* Drei Wege statt fuenf leerer Karten (19.09.2026, Design-Punkt 3): das Markup gab es,
        es wurde nur nie gezeigt - die Uebersicht wurde erst beim Reiterwechsel gemalt. */
@@ -325,6 +328,7 @@ function wUebersichtMalen(){
     frei:W.frei, uebergabe:W.regeln.uebergabe, mannStunden:W.mannStunden, wochen:4
   });
 
+  if(typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:W.auftraege.length, ueberfaellig:u.zahlen.ueberfaellig || 0});
   /* ---- 1. Wo stehe ich? ---- */
   {
     const z = u.zahlen;

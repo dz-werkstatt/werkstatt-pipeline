@@ -50,6 +50,12 @@ const TMP = path.join(ORDNER, '.gegenprobe.html');
 
 const faelle = [
   {
+    name:'Die Pipeline merkt ihren Stand nur noch im Leerzustand (nicht mit Auftraegen)',
+    suche:"  if(typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:W.auftraege.length, ueberfaellig:u.zahlen.ueberfaellig || 0});\n",
+    ersatz:"",
+    erwartet:['  Bau: Karte unter 900 px kein Element']
+  },
+  {
     name:'Leerzustand wieder drei Knoepfe ohne Untertitel',
     suche:"<span>STEP importieren<small>H&uuml;llquader, Volumen, Rohteil, Angebot</small></span>",
     ersatz:"<span>STEP importieren</span>",

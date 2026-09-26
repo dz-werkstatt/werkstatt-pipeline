@@ -5003,6 +5003,14 @@ console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus,
   gleich('Erklaertexte: drei Absaetze in Blatt 5 hinter dem i-Knopf, der Knopf wird beim Start gesetzt',
     [(quelltext.match(/class="klein erk"/g) || []).length, /\.karte \.klein\.erk\{ display:none; \}/.test(quelltext), /erklaerungenVerdrahten\(\);/.test(quelltext), /b\.className = 'erkbtn'/.test(quelltext)].join(','), '3,true,true,true');
   gleich('Anleitung: Fussleiste in Kap. 9', /<h3 id="ba-09-fussleiste">/.test(quelltext), true);
+  /* (5) PAKET D - die Werkstatt-Karte */
+  { const huelleKarteHtml = hole('huelleKarteHtml'), huelleStandText = hole('huelleStandText');
+    const k = huelleKarteHtml('pipeline', {dreh:{name:'Master', schritte:12}, fraes:null}, 'https://dz-werkstatt.github.io/werkstatt-pipeline/');
+    gleich('Werkstatt-Karte aus der Pipeline: Drehen mit Stand und Pages-Ziel, Fraesen ehrlich leer, die eigene nicht',
+      [/href="https:\/\/dz-werkstatt\.github\.io\/dz-cam\/" data-wziel="dreh"><b>Drehen<\/b><span>Master, 12 Schritte</.test(k), /data-wziel="fraes"><b>Fr\u00e4sen<\/b><span>noch nichts gemerkt</.test(k), /data-wziel="pipeline"/.test(k)].join(','), 'true,true,false');
+    gleich('  der eigene Stand fuer die anderen: Auftraege und ueberfaellige, Einzahl', [huelleStandText('pipeline', {auftraege:10, ueberfaellig:1}), huelleStandText('pipeline', {auftraege:1})].join(' | '), '10 Aufträge, 1 überfällig | 1 Auftrag');
+    gleich('  Bau: Karte unter 900 px kein Element, in der Uebersicht gemalt, Stand bei leer UND voll gemerkt',
+      [/\n\.wkarte\{ display:none; \}/.test(quelltext), /<div id="ueWerkstatt"><\/div>/.test(quelltext), /htm\('ueWerkstatt', huelleKarteHtml\('pipeline'\)\)/.test(quelltext), /huelleStandMerken\('pipeline', \{auftraege:0, ueberfaellig:0\}\)/.test(quelltext), /huelleStandMerken\('pipeline', \{auftraege:W\.auftraege\.length, ueberfaellig:u\.zahlen\.ueberfaellig \|\| 0\}\)/.test(quelltext)].join(','), 'true,true,true,true,true'); }
   gleich('Anleitung: Werkstatt-Absatz in Kap. 8, Projektordner und gemeinsamer Dunkelmodus in Kap. 9',
     [/<h3 id="ba-08-werkstatt">/.test(quelltext), /<p><b>Projektordner<\/b> \(seit 26\.09\.2026, Blatt 5\)/.test(quelltext), /Seit dem 26\.09\.2026 ist die Einstellung <b>gemeinsam<\/b>/.test(quelltext)].join(','), 'true,true,true');
 }
