@@ -5010,6 +5010,9 @@ console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus,
   gleich('Erklaertexte: drei Absaetze in Blatt 5 hinter dem i-Knopf, der Knopf wird beim Start gesetzt',
     [(quelltext.match(/class="klein erk"/g) || []).length, /\.karte \.klein\.erk\{ display:none; \}/.test(quelltext), /erklaerungenVerdrahten\(\);/.test(quelltext), /b\.className = 'erkbtn'/.test(quelltext)].join(','), '3,true,true,true');
   gleich('Anleitung: Fussleiste in Kap. 9', /<h3 id="ba-09-fussleiste">/.test(quelltext), true);
+  /* JEDER Knopf der Leiste hat seinen Listener (der Uebersicht-Knopf hatte bis zum 27.09.2026 keinen) */
+  { const fehlt = ['Ueber', 'Import', 'Kalk', 'Auf', 'Plan', 'Ein'].filter(nm => !(new RegExp("on\\('tab" + nm + "', 'click', \\(\\) => blatt\\('" + nm + "'\\)\\)")).test(quelltext));
+    gleich('Leiste: alle sechs Knoepfe verdrahtet (on(tabX, click, blatt(X)))', fehlt.join(','), ''); }
   /* (5) PAKET D - die Werkstatt-Karte */
   { const huelleKarteHtml = hole('huelleKarteHtml'), huelleStandText = hole('huelleStandText');
     const k = huelleKarteHtml('pipeline', {dreh:{name:'Master', schritte:12}, fraes:null}, 'https://dz-werkstatt.github.io/werkstatt-pipeline/');

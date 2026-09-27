@@ -9,7 +9,7 @@
 <!-- DER STAND dieser Fassung: bauen.js ersetzt ARBEITSKOPIE durch Datum und Pruefsumme (in beiden Zielen,
      im Cache-Namen des Service-Workers und in docs/stand.txt). Die App zeigt ihn im Kopf und prueft ihn
      gegen stand.txt auf dem Server - eine alte Kopie im Geraet faellt sonst niemandem auf. -->
-<script>window.__WP_STAND="27.09.2026 08:34 (3726088f)";</script>
+<script>window.__WP_STAND="27.09.2026 08:44 (391557ee)";</script>
 <title>Werkstatt-Pipeline — Angebot</title>
 <!-- Symbol: Rohteilklotz mit Fertigteil darin. Inline, damit die Datei
      offline nichts nachlaedt (dieselbe Doktrin wie in den beiden CAM-Apps). -->
@@ -6548,6 +6548,12 @@ function quelleMalen(){
 
 /* ---- Verdrahtung ---------------------------------------------------- */
 function bedienungVerdrahten(){
+  /* TOTER KNOPF [Befund vom iPhone, 27.09.2026]: die Uebersicht ist das Startblatt und hatte
+     seit ihrem Bau (19.09.) KEINEN Listener - wer sie verliess, kam nur per Neuladen zurueck.
+     Am Laptop fiel es nicht auf, weil die Szenen blatt('Ueber') direkt riefen. Dieselbe Klasse
+     wie die vier toten Knopfgruppen der Dreh-App (29.08.); Pruefabschnitt 38 wacht jetzt ueber
+     alle sechs Knoepfe der Leiste. */
+  on('tabUeber', 'click', () => blatt('Ueber'));
   on('tabImport', 'click', () => blatt('Import'));
   on('tabKalk', 'click', () => blatt('Kalk'));
   on('tabEin', 'click', () => blatt('Ein'));

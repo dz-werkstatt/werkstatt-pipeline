@@ -332,6 +332,12 @@ function quelleMalen(){
 
 /* ---- Verdrahtung ---------------------------------------------------- */
 function bedienungVerdrahten(){
+  /* TOTER KNOPF [Befund vom iPhone, 27.09.2026]: die Uebersicht ist das Startblatt und hatte
+     seit ihrem Bau (19.09.) KEINEN Listener - wer sie verliess, kam nur per Neuladen zurueck.
+     Am Laptop fiel es nicht auf, weil die Szenen blatt('Ueber') direkt riefen. Dieselbe Klasse
+     wie die vier toten Knopfgruppen der Dreh-App (29.08.); Pruefabschnitt 38 wacht jetzt ueber
+     alle sechs Knoepfe der Leiste. */
+  on('tabUeber', 'click', () => blatt('Ueber'));
   on('tabImport', 'click', () => blatt('Import'));
   on('tabKalk', 'click', () => blatt('Kalk'));
   on('tabEin', 'click', () => blatt('Ein'));
