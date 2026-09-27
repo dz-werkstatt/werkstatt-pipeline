@@ -4868,6 +4868,13 @@ console.log('\n37) Design-Uebertragung und CAM-Anbindung');
   nahe('Ruestzeit aus sechs Werkzeugen: Grund 10 + 6 x 3', U.ueber.ruestzeit, 10 + 6 * 3, 1e-9);
   gleich('Bearbeitungsseiten aus den Aufspannungen', U.seiten, 2);
   gleich('Herkunft nennt Quelle, Programm und Wechsel', /DZ CAM Drehen/.test(U.herkunft) && /O00009010/.test(U.herkunft) && /13 Werkzeugwechseln/.test(U.herkunft), true);
+  /* Kalibrierung (27.09.2026): erwartete Zeit schlaegt Schaetzung; ohne Messung bleibt die Schaetzung; kaputt faellt auf */
+  { const JK = Object.assign({}, J, {kalibrierung:{faktor:1.2, messungen:3, erwartet_min:31.48}});
+    const UK = camZeitUebernahme(JK, KALK_VORGABEN);
+    nahe('kalibriert: Hauptzeit = erwartete Zeit 31,48', UK.ueber.hauptzeit, 31.48, 1e-9);
+    gleich('  Herkunft nennt Faktor, Messungen und die Schaetzung', /kalibriert x1\.20 aus 3 Messungen \(Sch\u00e4tzung 26:14 min\)/.test(UK.herkunft) || /kalibriert x1\.20 aus 3 Messungen \(Sch\u00e4tzung/.test(UK.herkunft), true);
+    gleich('  ohne Messungen (messungen 0) bleibt die Schaetzung', camZeitUebernahme(Object.assign({}, J, {kalibrierung:{faktor:1.2, messungen:0, erwartet_min:31.48}}), KALK_VORGABEN).ueber.hauptzeit, 26.233);
+    gleich('  kalibrierung null ist erlaubt, unvollstaendig faellt auf', [camZeitPruefen(Object.assign({}, J, {kalibrierung:null})).length, camZeitPruefen(Object.assign({}, J, {kalibrierung:{faktor:1.2}})).length > 0].join(','), '0,true'); }
   const U2 = camZeitUebernahme({format:'dz-cam-zeit', version:1, quelle:'fraesen', programm:{name:'DZ20'}, zeiten:{komplett_min:12.5}}, KALK_VORGABEN);
   gleich('ohne Werkzeugzahl keine Ruestzeit-Ueberschreibung', U2.ueber.ruestzeit === undefined && U2.seiten === null, true);
   /* (3) Die Ruestzeit als ueberschreibbarer Posten in der Rechnung */

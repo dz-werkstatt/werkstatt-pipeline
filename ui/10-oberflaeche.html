@@ -590,7 +590,9 @@ ersetzt oder l&auml;dt nur Auftr&auml;ge dazu. Die kleine Datei <i>Nur die Einst
 statt stumm Unsinn zu rechnen:</p>
 <table><tr><th>Datei</th><th>Richtung</th><th>Inhalt</th></tr>
 <tr><td><code>dz-cam-zeit</code></td><td>CAM &rarr; Pipeline</td><td>Programm (Name, Maschine, Quelle drehen/fr&auml;sen), Zeiten (komplett mit Werkzeugwechseln,
-Schnittzeit, Zahl der Werkzeuge und Wechsel), Aufspannungen. Knopf <i>Zeit an die Pipeline</i> in der Kalkulation der Dreh-App und in der Simulation der Fr&auml;s-App.</td></tr>
+Schnittzeit, Zahl der Werkzeuge und Wechsel), Aufspannungen, und seit dem 27.09.2026 die <b>Kalibrierung</b>: hat die CAM-App gestoppte Ist-Zeiten
+dieser Maschine, tr&auml;gt die Datei Faktor und erwartete Zeit &mdash; dann gilt hier die <b>erwartete</b> Zeit als Hauptzeit, die Sch&auml;tzung steht in der Herkunft.
+Knopf <i>Zeit an die Pipeline</i> in der Kalkulation der Dreh-App und in der Simulation der Fr&auml;s-App.</td></tr>
 <tr><td><code>wp-werkstoffe</code></td><td>Pipeline &rarr; Dreh-App</td><td>Die Werkstoffliste aus Blatt 5. Die Dreh-App ordnet sie ihren sechs Werkstoffgruppen zu
 (S235 &rarr; Baustahl, C45/42CrMo4 &rarr; Verg&uuml;tungsstahl, 1.4301/1.4571 &rarr; Edelstahl, AlMg/AlMgSi &rarr; Alu) und &uuml;bernimmt die Preise je kg.</td></tr>
 <tr><td><code>euroturn-cam-programm</code></td><td>Pipeline &rarr; Dreh-App</td><td>Die Drehkontur aus dem STEP-Modell als Programm der Dreh-App (Konturen Au&szlig;en und Innen,

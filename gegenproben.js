@@ -50,6 +50,12 @@ const TMP = path.join(ORDNER, '.gegenprobe.html');
 
 const faelle = [
   {
+    name:'Die Kalibrierung der Zeit-Datei wird ignoriert (Schaetzung statt erwarteter Zeit)',
+    suche:"  const aus = { ueber:{ hauptzeit: fRund(kal ? +k.erwartet_min : +z.komplett_min, 3) }, seiten:null, herkunft:'',",
+    ersatz:"  const aus = { ueber:{ hauptzeit: fRund(+z.komplett_min, 3) }, seiten:null, herkunft:'',",
+    erwartet:['kalibriert: Hauptzeit = erwartete Zeit 31,48']
+  },
+  {
     name:'Die Pipeline merkt ihren Stand nur noch im Leerzustand (nicht mit Auftraegen)',
     suche:"  if(typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:W.auftraege.length, ueberfaellig:u.zahlen.ueberfaellig || 0});\n",
     ersatz:"",

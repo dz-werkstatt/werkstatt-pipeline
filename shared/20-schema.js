@@ -122,6 +122,12 @@ function camZeitPruefen(j){
   if(!z || !zahl(z.komplett_min) || z.komplett_min < 0) f.push('zeiten.komplett_min fehlt (Laufzeit in Minuten, mit Werkzeugwechseln).');
   else ['schnitt_min', 'werkzeuge', 'wechsel'].forEach(k => { if(z[k] != null && !zahl(z[k])) f.push('zeiten.' + k + ' ist keine Zahl.'); });
   if(j.aufspannungen != null && !zahl(j.aufspannungen)) f.push('aufspannungen ist keine Zahl.');
+  /* kalibrierung (seit 26.09.2026, Ist-Zeiten der CAM-Apps): darf fehlen oder null sein; steht sie da,
+     muss sie Faktor und erwartete Minuten tragen. */
+  if(j.kalibrierung != null){
+    const k = j.kalibrierung;
+    if(typeof k !== 'object' || !zahl(k.faktor) || !zahl(k.erwartet_min) || k.erwartet_min < 0 || k.faktor <= 0) f.push('kalibrierung ist unvollstaendig (faktor, erwartet_min).');
+  }
   return f;
 }
 /* Was aus der Zeit-Datei in die Kalkulation geht: die HAUPTZEIT ist die Laufzeit
@@ -132,7 +138,13 @@ function camZeitPruefen(j){
 function camZeitUebernahme(j, V){
   const Z = (V && V.zeiten) || {};
   const z = (j && j.zeiten) || {};
-  const aus = { ueber:{ hauptzeit: fRund(+z.komplett_min, 3) }, seiten:null, herkunft:'' };
+  /* KALIBRIERT SCHLAEGT GESCHAETZT (27.09.2026): traegt die Zeit-Datei eine Kalibrierung aus
+     gestoppten Zeiten (Faktor je Maschine, in der CAM-App eingetragen), gilt die ERWARTETE Zeit
+     als Hauptzeit - die Schaetzung steht daneben in der Herkunft. Ohne Messung wie bisher. */
+  const k = (j && j.kalibrierung) || null;
+  const kal = !!(k && typeof k.erwartet_min === 'number' && isFinite(k.erwartet_min) && k.erwartet_min >= 0 && +k.messungen > 0 && +k.faktor > 0);
+  const aus = { ueber:{ hauptzeit: fRund(kal ? +k.erwartet_min : +z.komplett_min, 3) }, seiten:null, herkunft:'',
+    kalibriert: kal ? {faktor:+k.faktor, messungen:+k.messungen, schaetzung_min:+z.komplett_min} : null };
   if(z.werkzeuge != null && z.werkzeuge > 0){
     const grund = Z.ruest_grund != null ? Z.ruest_grund : 10, je = Z.ruest_je_werkzeug != null ? Z.ruest_je_werkzeug : 3;
     aus.ueber.ruestzeit = fRund(grund + z.werkzeuge * je, 2);
@@ -140,7 +152,8 @@ function camZeitUebernahme(j, V){
   if(j.aufspannungen != null && j.aufspannungen >= 1) aus.seiten = Math.round(j.aufspannungen);
   const q = j.quelle === 'drehen' ? 'DZ CAM Drehen' : 'DZ CAM Fraesen';
   aus.herkunft = q + ' \u00b7 ' + ((j.programm && j.programm.name) || '') + ((j.programm && j.programm.maschine) ? ' \u00b7 ' + j.programm.maschine : '') +
-    ' \u00b7 ' + fMin(+z.komplett_min) + (z.wechsel != null ? ' mit ' + z.wechsel + ' Werkzeugwechseln' : '') +
+    ' \u00b7 ' + (kal ? fMin(+k.erwartet_min) + ' kalibriert x' + (+k.faktor).toFixed(2) + ' aus ' + (+k.messungen) + (+k.messungen === 1 ? ' Messung' : ' Messungen') + ' (Sch\u00e4tzung ' + fMin(+z.komplett_min) + ')' : fMin(+z.komplett_min)) +
+    (z.wechsel != null ? ' mit ' + z.wechsel + ' Werkzeugwechseln' : '') +
     (z.werkzeuge != null ? ', ' + z.werkzeuge + ' Werkzeuge' : '') + (j.datum ? ' \u00b7 ' + String(j.datum).slice(0, 10) : '');
   return aus;
 }
