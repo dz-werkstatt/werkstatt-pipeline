@@ -1,9 +1,9 @@
 {
- "name": "Werkstatt-Pipeline",
- "short_name": "Angebot",
+ "name": "DZ Aufträge",
+ "short_name": "DZ Aufträge",
  "lang": "de",
  "start_url": "./",
- "scope": "./",
+ "scope": "/",
  "display": "standalone",
  "background_color": "#f7f9fb",
  "theme_color": "#1858a0",

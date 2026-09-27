@@ -50,6 +50,18 @@ const TMP = path.join(ORDNER, '.gegenprobe.html');
 
 const faelle = [
   {
+    name:'Der Menue-Oeffner kennt das Pipeline-Emblem nicht mehr (nur .hdr .logo - am Handy kein Weg zurueck)',
+    suche:"document.querySelector('.hdr .logo') || document.querySelector('header .emblem')",
+    ersatz:"document.querySelector('.hdr .logo')",
+    erwartet:['Handy-Rueckweg: der Menue-Oeffner']
+  },
+  {
+    name:'Die Uebersicht traegt nur noch die Karte (die Leiste fuers Handy fehlt)',
+    suche:"htm('ueWerkstatt', huelleLeisteHtml('pipeline') + huelleKarteHtml('pipeline'))",
+    ersatz:"htm('ueWerkstatt', huelleKarteHtml('pipeline'))",
+    erwartet:['  Bau: Karte unter 900 px']   /* eingerueckter Haken: der Vergleich prueft den Anfang samt den zwei Leerzeichen */
+  },
+  {
     name:'Der Uebersicht-Knopf verliert seinen Listener wieder',
     suche:"  on('tabUeber', 'click', () => blatt('Ueber'));\n",
     ersatz:"",

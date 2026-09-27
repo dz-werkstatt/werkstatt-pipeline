@@ -38,9 +38,9 @@
 // Nachbarordner da ist. Zwei Fassungen einer Regel driften.
 // =====================================================================
 const HUELLE_APPS = [
-  {id:'dreh',     name:'Drehen',             kurz:'Drehen',   sub:'Monforts 1000 / 1500, Siemens 810T / 840D', projekt:'euroturn-kontur-cam.html', pwa:'index.html',   https:'https://dz-werkstatt.github.io/dz-cam/'},
-  {id:'fraes',    name:'Fräsen',        kurz:'Fräsen',  sub:'iTNC 530, TNC 410, 840D powerline',        projekt:'dz-cam-fraesen.html',      pwa:'fraesen.html', https:'https://dz-werkstatt.github.io/dz-cam/fraesen.html'},
-  {id:'pipeline', name:'Werkstatt-Pipeline', kurz:'Pipeline', sub:'Anfrage, Angebot, Auftrag',                 projekt:'../werkstatt-pipeline/docs/index.html', pwa:'https://dz-werkstatt.github.io/werkstatt-pipeline/', https:'https://dz-werkstatt.github.io/werkstatt-pipeline/', eigen:true},
+  {id:'dreh',     name:'DZ Drehen',          kurz:'Drehen',   sub:'Monforts 1000 / 1500, Siemens 810T / 840D', projekt:'euroturn-kontur-cam.html', pwa:'index.html',   https:'https://dz-werkstatt.github.io/dz-cam/'},
+  {id:'fraes',    name:'DZ Fräsen',     kurz:'Fräsen',  sub:'iTNC 530, TNC 410, 840D powerline',        projekt:'dz-cam-fraesen.html',      pwa:'fraesen.html', https:'https://dz-werkstatt.github.io/dz-cam/fraesen.html'},
+  {id:'pipeline', name:'DZ Aufträge',   kurz:'Aufträge', sub:'Angebot, Auftrag, Planung',                 projekt:'../werkstatt-pipeline/docs/index.html', pwa:'https://dz-werkstatt.github.io/werkstatt-pipeline/', https:'https://dz-werkstatt.github.io/werkstatt-pipeline/', eigen:true},
 ];
 // Der gemeinsame Speicherschluessel des Wechsels und seine Fristen: der
 // Ruecksprung-Chip gilt einen halben Tag (danach ist "von wo komme ich"
@@ -150,10 +150,13 @@ function huelleKopfHtml(hier, zurueck, href){
 function huelleLeisteHtml(hier, href){
   const h = hier || huelleHier(href);
   const esc = huelleEsc;
-  return '<div class="wleiste"><span class="wl-tit">DZ CAM · Werkstatt</span>' +
+  return '<div class="wleiste"><span class="wl-tit">DZ Werkstatt</span>' +
     HUELLE_APPS.map(a => a.id === h
-      ? '<span class="wl-app hier" title="' + esc(a.sub) + '">' + esc(a.name) + '</span>'
-      : '<a class="wl-app" href="' + esc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '" title="' + esc(a.sub) + '">' + esc(a.name) + '</a>').join('') +
+      // Die eigene App als Kurzname: in den CAM-Apps derselbe Text (Drehen, Fraesen), in der
+      // Pipeline 'Pipeline' statt 'Werkstatt-Pipeline' - der lange Name brach die Leiste bei
+      // 390 px in zwei Zeilen (Aufnahme 27.09.2026).
+      ? '<span class="wl-app hier" title="' + esc(a.sub) + '">' + esc(a.kurz) + '</span>'
+      : '<a class="wl-app" href="' + esc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '" title="' + esc(a.sub) + '">' + esc(a.kurz) + '</a>').join('') +
     '</div>';
 }
 function huelleMenueHtml(hier, href){
@@ -216,7 +219,9 @@ function huelleStandText(app, s){
   if(app === 'pipeline'){
     const a = +s.auftraege || 0, u = +s.ueberfaellig || 0;
     if(!a) return 'noch keine Aufträge';
-    return a + (a === 1 ? ' Auftrag' : ' Aufträge') + (u ? ', ' + u + ' überfällig' : '');
+    // 'offen' statt 'Auftraege': die App heisst seit dem 27.09.2026 selbst DZ Auftraege,
+    // und 'Auftraege: 10 Auftraege' liest sich doppelt.
+    return a + ' offen' + (u ? ', ' + u + ' überfällig' : '');
   }
   if(!s.name) return 'noch nichts gemerkt';
   const k = +s.schritte || 0;
@@ -257,7 +262,11 @@ function huelleStart(opt){
   // Ankunft ohne Startbild (Pipeline): die Blende kurz zeigen und ausblenden.
   // Die CAM-Apps haben ihr Startbild - das ist dort die Ankunft, nur kuerzer.
   try{ if(huelleAnkunft(hier) && !document.getElementById('splash')){ const a = HUELLE_APPS.find(x => x.id === hier); huelleBlendeWeg(huelleBlende(a ? a.name : 'DZ CAM', ''), 350); } }catch(e){}
-  const logo = document.querySelector('.hdr .logo');
+  // Der Oeffner: das Logo der CAM-Apps oder das Emblem der Pipeline. Bis zum 27.09.2026
+  // stand hier nur das Logo - die Pipeline hatte damit unter 900 px (wo der Segment-
+  // Schalter ausgeblendet ist) KEINEN Weg zurueck nach Drehen oder Fraesen (Befund vom
+  // iPhone). Ab 900 px ist das Pipeline-Emblem ausgeblendet, dort traegt der Schalter.
+  const logo = document.querySelector('.hdr .logo') || document.querySelector('header .emblem');
   if(logo && logo.addEventListener){
     let m = document.getElementById('wmenue');
     if(!m){ m = document.createElement('div'); m.id = 'wmenue'; m.className = 'wmenue'; document.body.appendChild(m); }

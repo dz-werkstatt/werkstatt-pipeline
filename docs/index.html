@@ -9,8 +9,8 @@
 <!-- DER STAND dieser Fassung: bauen.js ersetzt ARBEITSKOPIE durch Datum und Pruefsumme (in beiden Zielen,
      im Cache-Namen des Service-Workers und in docs/stand.txt). Die App zeigt ihn im Kopf und prueft ihn
      gegen stand.txt auf dem Server - eine alte Kopie im Geraet faellt sonst niemandem auf. -->
-<script>window.__WP_STAND="27.09.2026 08:44 (391557ee)";</script>
-<title>Werkstatt-Pipeline — Angebot</title>
+<script>window.__WP_STAND="27.09.2026 09:50 (f31f005c)";</script>
+<title>DZ Aufträge — Angebot, Auftrag, Planung</title>
 <!-- Symbol: Rohteilklotz mit Fertigteil darin. Inline, damit die Datei
      offline nichts nachlaedt (dieselbe Doktrin wie in den beiden CAM-Apps). -->
 <!-- Fuer die Verknuepfung auf dem Home-Bildschirm. Beide Verweise sind
@@ -142,6 +142,21 @@ header .rechts button{ width:32px; height:32px; border:1px solid var(--rand); bo
    Ruecksprung-Chip. Ab 900 px; darunter bleibt der Kopf, wie er war. Die Zahlen sind
    die des abgenommenen Prototyps, die Farben haengen am Farbregler --ton. */
 .wseg{ display:none; }
+/* UNTER 900 px (Handy): das Werkstatt-Menue am Emblem und die Werkstatt-Leiste oben in der
+   Uebersicht - dieselben Klassen wie in den CAM-Apps (dort Menue am Logo, Leiste im Startbild).
+   Bis zum 27.09.2026 gab es beides hier nicht, und die Pipeline hatte am Handy keinen Weg
+   zurueck (Befund vom iPhone). */
+.wmenue{ position:fixed; z-index:960; display:none; min-width:210px; padding:6px; background:var(--flaeche); border:1px solid var(--rand); border-radius:8px; box-shadow:0 10px 28px -10px rgba(0,0,0,.35); }
+.wmenue.auf{ display:block; }
+.wmenue .wm-app{ display:block; padding:7px 10px; border-radius:6px; color:var(--akzent); font-weight:600; font-size:14px; text-decoration:none; line-height:1.25; }
+.wmenue a.wm-app:hover{ background:var(--akzent-blass); }
+.wmenue .wm-app.hier{ background:var(--akzent-blass); cursor:default; }
+.wmenue .wm-sub{ display:block; font-size:11px; font-weight:400; color:var(--text-blass); }
+.wleiste{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:0 0 10px; font-size:12px; color:var(--text-blass); }
+.wleiste .wl-tit{ font-weight:700; letter-spacing:.3px; margin-right:4px; }
+.wleiste .wl-app{ padding:3px 10px; border:1px solid var(--rand); border-radius:12px; color:var(--akzent); font-weight:600; text-decoration:none; font-size:12px; line-height:1.3; }
+.wleiste .wl-app.hier{ background:var(--akzent); color:#fff; border-color:var(--akzent); }
+body.dunkel .wleiste .wl-app.hier{ color:hsl(var(--ton), 15%, 12%); }
 @media (min-width: 900px){
   .wseg{ display:flex; align-items:center; gap:10px; padding:0 4px 0 0; flex:0 0 auto; }
   .wseg .we{ display:flex; color:var(--text); flex:0 0 auto; }
@@ -159,6 +174,7 @@ header .rechts button{ width:32px; height:32px; border:1px solid var(--rand); bo
   body.dunkel .wseg .we{ color:#dde; }
   body.dunkel .wzur{ border-color:hsl(var(--ton), 14%, 36%); color:hsl(var(--ton), 15%, 72%); }
   header .emblem{ display:none; }   /* das Emblem steht jetzt im Schalter */
+  .wleiste{ display:none; }         /* am Laptop traegt der Schalter */
 }
 /* DIE WERKSTATT-KARTE (Paket D): der Stand der anderen beiden Bereiche oben in der
    Uebersicht - nur am Laptop. */
@@ -670,7 +686,7 @@ label[data-ba]{ cursor:help; }
 <header>
   <!-- Kopfzeile wie die Schwestern (19.09.2026): Emblem, Titel, Chip mit Teil und Kunde, die Blaetter als
        Reiter mit Glyphe, rechts der Stand dieser Fassung, Dunkelmodus und Anleitung. -->
-  <span class="emblem" title="Werkstatt-Pipeline"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--akzent)" stroke-width="4"/><path d="M16 16.5 H32 L16 31.5 H32" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="miter"/></svg><span class="titel">Werkstatt-Pipeline</span></span>
+  <span class="emblem" title="DZ Aufträge"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--akzent)" stroke-width="4"/><path d="M16 16.5 H32 L16 31.5 H32" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="miter"/></svg><span class="titel">DZ Aufträge</span></span>
   <span class="chip" id="kopfChip" title="Geladenes Teil und Kunde"></span>
   <nav class="schritt" aria-label="Bl&auml;tter">
     <button id="tabUeber" class="an" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>&Uuml;bersicht</button>
@@ -1158,7 +1174,7 @@ label[data-ba]{ cursor:help; }
      erzeugt (baTocBauen), Sprung aus den Feldern ueber label[data-ba]. Kein Name, keine Anschrift - das Repo
      ist oeffentlich. ===== -->
 <div id="baPanel" class="kein-druck" aria-label="Anleitung">
-  <div class="ba-kopf"><b>Anleitung &mdash; Werkstatt-Pipeline</b><span class="ba-stand" id="baStand"></span>
+  <div class="ba-kopf"><b>Anleitung &mdash; DZ Aufträge</b><span class="ba-stand" id="baStand"></span>
     <span class="knopfzeile"><button class="knopf mini" id="baInhaltBtn" type="button">Inhalt</button><button class="knopf mini" id="baZu" type="button">&#x2715;</button></span></div>
   <div class="ba-inhalt" id="baScroll"><div class="ba-text" id="baText">
 <h2 id="ba-inhalt">Inhalt</h2><div id="baToc"></div>
@@ -1268,7 +1284,7 @@ Knopf <i>Zeit an die Pipeline</i> in der Kalkulation der Dreh-App und in der Sim
 Rohteil aus den Rohteilma&szlig;en, keine Zyklen). Dort <i>Programme &rarr; Importieren</i>.</td></tr></table>
 <p>Es gibt keinen Server dazwischen: die Datei geht &uuml;ber Downloads, Teilen-Blatt oder die Ablage des DNC-K&auml;stchens &mdash; wie das NC-Programm selbst.</p>
 <h3 id="ba-08-werkstatt">Die Werkstatt: Drehen, Fr&auml;sen, Pipeline (26.09.2026)</h3>
-<p>Drei Apps, die zusammengeh&ouml;ren: <b>Drehen</b>, <b>Fr&auml;sen</b> (beide DZ CAM) und diese <b>Pipeline</b>. <b>Am Laptop</b> steht links
+<p>Drei Apps, die zusammengeh&ouml;ren: <b>DZ Drehen</b>, <b>DZ Fr&auml;sen</b> (zusammen DZ CAM) und diese, <b>DZ Auftr&auml;ge</b> (bis zum 27.09.2026 &bdquo;Werkstatt-Pipeline&ldquo; &mdash; der Name im Adresspfad bleibt). <b>Am Laptop</b> steht links
 oben in der Kopfzeile der <b>Werkstatt-Schalter</b> Drehen | Fr&auml;sen | Pipeline &mdash; in allen drei Apps an derselben Stelle, die aktuelle
 hervorgehoben, ein Klick wechselt. Daneben der <b>R&uuml;cksprung</b> (&bdquo;&#x25C2; Drehen: Mastertestteil&ldquo;): er wei&szlig;, woher Du kommst und
 was dort offen war, und f&uuml;hrt genau dorthin zur&uuml;ck (einen halben Tag lang). Der Wechsel ist kein harter Schnitt: eine Blende mit Emblem und
@@ -1276,8 +1292,9 @@ Zielname legt sich &uuml;ber die Seite, die Zielseite kommt mit demselben Bild. 
 Desktop in den Nachbarordner der CAM-Apps, aus der ver&ouml;ffentlichten Fassung zu deren ver&ouml;ffentlichter Fassung. Gemeinsam sind der
 <b>Dunkelmodus</b> (ein Schalter, eine Einstellung f&uuml;r alle drei) und der <b>Projektordner</b> (Kap.&nbsp;9). Am Laptop steht oben in der &Uuml;bersicht die
 <b>Werkstatt-Karte</b>: was in Drehen und Fr&auml;sen gerade offen ist (Programm und Schritte), ein Klick f&uuml;hrt hin; umgekehrt zeigen deren Startbilder,
-wie viele Auftr&auml;ge hier laufen und wie viele &uuml;berf&auml;llig sind. Am Handy hat diese App den Schalter nicht; die CAM-Apps &ouml;ffnen dort ihr
-Werkstatt-Men&uuml; am Logo.</p>
+wie viele Auftr&auml;ge hier laufen und wie viele &uuml;berf&auml;llig sind. <b>Am Handy</b> (unter 900 px) gibt es den Schalter nicht; dort f&uuml;hren
+zwei Wege zur&uuml;ck: ein Tipp auf das <b>Emblem</b> links in der Kopfzeile &ouml;ffnet das Werkstatt-Men&uuml; (Drehen &middot; Fr&auml;sen &middot; Pipeline &mdash;
+wie das Logo-Men&uuml; der CAM-Apps), und oben in der &Uuml;bersicht steht die <b>Werkstatt-Leiste</b> mit denselben drei Zielen. <b>Am iPhone gen&uuml;gt ein Symbol:</b> alle drei liegen unter derselben Adresse, und seit dem 27.09.2026 gilt jede Verkn&uuml;pfung f&uuml;r die ganze Werkstatt &mdash; der Wechsel bleibt in der installierten App, Dunkelmodus, Projektordner und Ablage sind ein Speicher. Eine &auml;ltere Verkn&uuml;pfung einmal l&ouml;schen und neu anlegen, sonst &ouml;ffnet der Wechsel noch die Safari-Ansicht.</p>
 
 <h2 id="ba-09">9 &nbsp;Fassung, Offline, Dunkelmodus</h2>
 <p>Der <b>Stand</b> dieser Fassung steht oben rechts und im Kopf dieser Anleitung (Datum, Uhrzeit, Pr&uuml;fsumme); die Datei zum Doppelklicken
@@ -1737,9 +1754,9 @@ function poFakeOrdner(name){
 // Nachbarordner da ist. Zwei Fassungen einer Regel driften.
 // =====================================================================
 const HUELLE_APPS = [
-  {id:'dreh',     name:'Drehen',             kurz:'Drehen',   sub:'Monforts 1000 / 1500, Siemens 810T / 840D', projekt:'euroturn-kontur-cam.html', pwa:'index.html',   https:'https://dz-werkstatt.github.io/dz-cam/'},
-  {id:'fraes',    name:'Fräsen',        kurz:'Fräsen',  sub:'iTNC 530, TNC 410, 840D powerline',        projekt:'dz-cam-fraesen.html',      pwa:'fraesen.html', https:'https://dz-werkstatt.github.io/dz-cam/fraesen.html'},
-  {id:'pipeline', name:'Werkstatt-Pipeline', kurz:'Pipeline', sub:'Anfrage, Angebot, Auftrag',                 projekt:'../werkstatt-pipeline/docs/index.html', pwa:'https://dz-werkstatt.github.io/werkstatt-pipeline/', https:'https://dz-werkstatt.github.io/werkstatt-pipeline/', eigen:true},
+  {id:'dreh',     name:'DZ Drehen',          kurz:'Drehen',   sub:'Monforts 1000 / 1500, Siemens 810T / 840D', projekt:'euroturn-kontur-cam.html', pwa:'index.html',   https:'https://dz-werkstatt.github.io/dz-cam/'},
+  {id:'fraes',    name:'DZ Fräsen',     kurz:'Fräsen',  sub:'iTNC 530, TNC 410, 840D powerline',        projekt:'dz-cam-fraesen.html',      pwa:'fraesen.html', https:'https://dz-werkstatt.github.io/dz-cam/fraesen.html'},
+  {id:'pipeline', name:'DZ Aufträge',   kurz:'Aufträge', sub:'Angebot, Auftrag, Planung',                 projekt:'../werkstatt-pipeline/docs/index.html', pwa:'https://dz-werkstatt.github.io/werkstatt-pipeline/', https:'https://dz-werkstatt.github.io/werkstatt-pipeline/', eigen:true},
 ];
 // Der gemeinsame Speicherschluessel des Wechsels und seine Fristen: der
 // Ruecksprung-Chip gilt einen halben Tag (danach ist "von wo komme ich"
@@ -1849,10 +1866,13 @@ function huelleKopfHtml(hier, zurueck, href){
 function huelleLeisteHtml(hier, href){
   const h = hier || huelleHier(href);
   const esc = huelleEsc;
-  return '<div class="wleiste"><span class="wl-tit">DZ CAM · Werkstatt</span>' +
+  return '<div class="wleiste"><span class="wl-tit">DZ Werkstatt</span>' +
     HUELLE_APPS.map(a => a.id === h
-      ? '<span class="wl-app hier" title="' + esc(a.sub) + '">' + esc(a.name) + '</span>'
-      : '<a class="wl-app" href="' + esc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '" title="' + esc(a.sub) + '">' + esc(a.name) + '</a>').join('') +
+      // Die eigene App als Kurzname: in den CAM-Apps derselbe Text (Drehen, Fraesen), in der
+      // Pipeline 'Pipeline' statt 'Werkstatt-Pipeline' - der lange Name brach die Leiste bei
+      // 390 px in zwei Zeilen (Aufnahme 27.09.2026).
+      ? '<span class="wl-app hier" title="' + esc(a.sub) + '">' + esc(a.kurz) + '</span>'
+      : '<a class="wl-app" href="' + esc(huelleZiel(a.id, href)) + '" data-wziel="' + a.id + '" title="' + esc(a.sub) + '">' + esc(a.kurz) + '</a>').join('') +
     '</div>';
 }
 function huelleMenueHtml(hier, href){
@@ -1915,7 +1935,9 @@ function huelleStandText(app, s){
   if(app === 'pipeline'){
     const a = +s.auftraege || 0, u = +s.ueberfaellig || 0;
     if(!a) return 'noch keine Aufträge';
-    return a + (a === 1 ? ' Auftrag' : ' Aufträge') + (u ? ', ' + u + ' überfällig' : '');
+    // 'offen' statt 'Auftraege': die App heisst seit dem 27.09.2026 selbst DZ Auftraege,
+    // und 'Auftraege: 10 Auftraege' liest sich doppelt.
+    return a + ' offen' + (u ? ', ' + u + ' überfällig' : '');
   }
   if(!s.name) return 'noch nichts gemerkt';
   const k = +s.schritte || 0;
@@ -1956,7 +1978,11 @@ function huelleStart(opt){
   // Ankunft ohne Startbild (Pipeline): die Blende kurz zeigen und ausblenden.
   // Die CAM-Apps haben ihr Startbild - das ist dort die Ankunft, nur kuerzer.
   try{ if(huelleAnkunft(hier) && !document.getElementById('splash')){ const a = HUELLE_APPS.find(x => x.id === hier); huelleBlendeWeg(huelleBlende(a ? a.name : 'DZ CAM', ''), 350); } }catch(e){}
-  const logo = document.querySelector('.hdr .logo');
+  // Der Oeffner: das Logo der CAM-Apps oder das Emblem der Pipeline. Bis zum 27.09.2026
+  // stand hier nur das Logo - die Pipeline hatte damit unter 900 px (wo der Segment-
+  // Schalter ausgeblendet ist) KEINEN Weg zurueck nach Drehen oder Fraesen (Befund vom
+  // iPhone). Ab 900 px ist das Pipeline-Emblem ausgeblendet, dort traegt der Schalter.
+  const logo = document.querySelector('.hdr .logo') || document.querySelector('header .emblem');
   if(logo && logo.addEventListener){
     let m = document.getElementById('wmenue');
     if(!m){ m = document.createElement('div'); m.id = 'wmenue'; m.className = 'wmenue'; document.body.appendChild(m); }
@@ -7694,7 +7720,9 @@ function wUebersichtMalen(){
     .forEach(id => zeig(id, !leer));
   zeig('ueLeer', leer);
   /* Paket D: die Werkstatt-Karte oben und der eigene Stand fuer die Karten der anderen Apps. */
-  if(typeof huelleKarteHtml === 'function') htm('ueWerkstatt', huelleKarteHtml('pipeline'));
+  /* Am Handy die Werkstatt-Leiste (Rueckweg nach Drehen/Fraesen, seit 27.09.2026), am Laptop
+     die Werkstatt-Karte - das Stylesheet blendet je Breite die andere aus. */
+  if(typeof huelleKarteHtml === 'function') htm('ueWerkstatt', huelleLeisteHtml('pipeline') + huelleKarteHtml('pipeline'));
   if(leer && typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:0, ueberfaellig:0});
   if(leer){
     /* Drei Wege statt fuenf leerer Karten (19.09.2026, Design-Punkt 3): das Markup gab es,

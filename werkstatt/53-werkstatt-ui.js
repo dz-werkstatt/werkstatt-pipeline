@@ -301,7 +301,9 @@ function wUebersichtMalen(){
     .forEach(id => zeig(id, !leer));
   zeig('ueLeer', leer);
   /* Paket D: die Werkstatt-Karte oben und der eigene Stand fuer die Karten der anderen Apps. */
-  if(typeof huelleKarteHtml === 'function') htm('ueWerkstatt', huelleKarteHtml('pipeline'));
+  /* Am Handy die Werkstatt-Leiste (Rueckweg nach Drehen/Fraesen, seit 27.09.2026), am Laptop
+     die Werkstatt-Karte - das Stylesheet blendet je Breite die andere aus. */
+  if(typeof huelleKarteHtml === 'function') htm('ueWerkstatt', huelleLeisteHtml('pipeline') + huelleKarteHtml('pipeline'));
   if(leer && typeof huelleStandMerken === 'function') huelleStandMerken('pipeline', {auftraege:0, ueberfaellig:0});
   if(leer){
     /* Drei Wege statt fuenf leerer Karten (19.09.2026, Design-Punkt 3): das Markup gab es,

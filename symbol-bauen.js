@@ -88,8 +88,8 @@ fs.mkdirSync(ziel, {recursive:true});
   fs.writeFileSync(path.join(ziel, 'symbol-' + n + '.png'), symbol(n));
 });
 fs.writeFileSync(path.join(ziel, 'manifest.webmanifest'), JSON.stringify({
-  name:'Werkstatt-Pipeline', short_name:'Angebot', lang:'de',
-  start_url:'./', scope:'./', display:'standalone',
+  name:'DZ Aufträge', short_name:'DZ Aufträge', lang:'de',
+  start_url:'./', scope:'/', display:'standalone',   /* '/' = EINE installierte App fuer die ganze Werkstatt (27.09.2026) */
   background_color:'#f7f9fb', theme_color:'#1858a0',
   icons:[
     {src:'symbol-192.png', sizes:'192x192', type:'image/png'},

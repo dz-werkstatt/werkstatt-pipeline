@@ -1,7 +1,7 @@
 <header>
   <!-- Kopfzeile wie die Schwestern (19.09.2026): Emblem, Titel, Chip mit Teil und Kunde, die Blaetter als
        Reiter mit Glyphe, rechts der Stand dieser Fassung, Dunkelmodus und Anleitung. -->
-  <span class="emblem" title="Werkstatt-Pipeline"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--akzent)" stroke-width="4"/><path d="M16 16.5 H32 L16 31.5 H32" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="miter"/></svg><span class="titel">Werkstatt-Pipeline</span></span>
+  <span class="emblem" title="DZ Aufträge"><svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="20" fill="none" stroke="var(--akzent)" stroke-width="4"/><path d="M16 16.5 H32 L16 31.5 H32" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="miter"/></svg><span class="titel">DZ Aufträge</span></span>
   <span class="chip" id="kopfChip" title="Geladenes Teil und Kunde"></span>
   <nav class="schritt" aria-label="Bl&auml;tter">
     <button id="tabUeber" class="an" type="button"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>&Uuml;bersicht</button>
@@ -489,7 +489,7 @@
      erzeugt (baTocBauen), Sprung aus den Feldern ueber label[data-ba]. Kein Name, keine Anschrift - das Repo
      ist oeffentlich. ===== -->
 <div id="baPanel" class="kein-druck" aria-label="Anleitung">
-  <div class="ba-kopf"><b>Anleitung &mdash; Werkstatt-Pipeline</b><span class="ba-stand" id="baStand"></span>
+  <div class="ba-kopf"><b>Anleitung &mdash; DZ Aufträge</b><span class="ba-stand" id="baStand"></span>
     <span class="knopfzeile"><button class="knopf mini" id="baInhaltBtn" type="button">Inhalt</button><button class="knopf mini" id="baZu" type="button">&#x2715;</button></span></div>
   <div class="ba-inhalt" id="baScroll"><div class="ba-text" id="baText">
 <h2 id="ba-inhalt">Inhalt</h2><div id="baToc"></div>
@@ -599,7 +599,7 @@ Knopf <i>Zeit an die Pipeline</i> in der Kalkulation der Dreh-App und in der Sim
 Rohteil aus den Rohteilma&szlig;en, keine Zyklen). Dort <i>Programme &rarr; Importieren</i>.</td></tr></table>
 <p>Es gibt keinen Server dazwischen: die Datei geht &uuml;ber Downloads, Teilen-Blatt oder die Ablage des DNC-K&auml;stchens &mdash; wie das NC-Programm selbst.</p>
 <h3 id="ba-08-werkstatt">Die Werkstatt: Drehen, Fr&auml;sen, Pipeline (26.09.2026)</h3>
-<p>Drei Apps, die zusammengeh&ouml;ren: <b>Drehen</b>, <b>Fr&auml;sen</b> (beide DZ CAM) und diese <b>Pipeline</b>. <b>Am Laptop</b> steht links
+<p>Drei Apps, die zusammengeh&ouml;ren: <b>DZ Drehen</b>, <b>DZ Fr&auml;sen</b> (zusammen DZ CAM) und diese, <b>DZ Auftr&auml;ge</b> (bis zum 27.09.2026 &bdquo;Werkstatt-Pipeline&ldquo; &mdash; der Name im Adresspfad bleibt). <b>Am Laptop</b> steht links
 oben in der Kopfzeile der <b>Werkstatt-Schalter</b> Drehen | Fr&auml;sen | Pipeline &mdash; in allen drei Apps an derselben Stelle, die aktuelle
 hervorgehoben, ein Klick wechselt. Daneben der <b>R&uuml;cksprung</b> (&bdquo;&#x25C2; Drehen: Mastertestteil&ldquo;): er wei&szlig;, woher Du kommst und
 was dort offen war, und f&uuml;hrt genau dorthin zur&uuml;ck (einen halben Tag lang). Der Wechsel ist kein harter Schnitt: eine Blende mit Emblem und
@@ -607,8 +607,9 @@ Zielname legt sich &uuml;ber die Seite, die Zielseite kommt mit demselben Bild. 
 Desktop in den Nachbarordner der CAM-Apps, aus der ver&ouml;ffentlichten Fassung zu deren ver&ouml;ffentlichter Fassung. Gemeinsam sind der
 <b>Dunkelmodus</b> (ein Schalter, eine Einstellung f&uuml;r alle drei) und der <b>Projektordner</b> (Kap.&nbsp;9). Am Laptop steht oben in der &Uuml;bersicht die
 <b>Werkstatt-Karte</b>: was in Drehen und Fr&auml;sen gerade offen ist (Programm und Schritte), ein Klick f&uuml;hrt hin; umgekehrt zeigen deren Startbilder,
-wie viele Auftr&auml;ge hier laufen und wie viele &uuml;berf&auml;llig sind. Am Handy hat diese App den Schalter nicht; die CAM-Apps &ouml;ffnen dort ihr
-Werkstatt-Men&uuml; am Logo.</p>
+wie viele Auftr&auml;ge hier laufen und wie viele &uuml;berf&auml;llig sind. <b>Am Handy</b> (unter 900 px) gibt es den Schalter nicht; dort f&uuml;hren
+zwei Wege zur&uuml;ck: ein Tipp auf das <b>Emblem</b> links in der Kopfzeile &ouml;ffnet das Werkstatt-Men&uuml; (Drehen &middot; Fr&auml;sen &middot; Pipeline &mdash;
+wie das Logo-Men&uuml; der CAM-Apps), und oben in der &Uuml;bersicht steht die <b>Werkstatt-Leiste</b> mit denselben drei Zielen. <b>Am iPhone gen&uuml;gt ein Symbol:</b> alle drei liegen unter derselben Adresse, und seit dem 27.09.2026 gilt jede Verkn&uuml;pfung f&uuml;r die ganze Werkstatt &mdash; der Wechsel bleibt in der installierten App, Dunkelmodus, Projektordner und Ablage sind ein Speicher. Eine &auml;ltere Verkn&uuml;pfung einmal l&ouml;schen und neu anlegen, sonst &ouml;ffnet der Wechsel noch die Safari-Ansicht.</p>
 
 <h2 id="ba-09">9 &nbsp;Fassung, Offline, Dunkelmodus</h2>
 <p>Der <b>Stand</b> dieser Fassung steht oben rechts und im Kopf dieser Anleitung (Datum, Uhrzeit, Pr&uuml;fsumme); die Datei zum Doppelklicken

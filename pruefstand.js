@@ -4966,7 +4966,7 @@ console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus,
     '../Dokumente%20euroturn/euroturn-kontur-cam.html | ../../Dokumente%20euroturn/dz-cam-fraesen.html | https://dz-werkstatt.github.io/dz-cam/fraesen.html');
   { const k = huelleKopfHtml('pipeline', {von:'dreh', text:'Drehen: Master'}, 'file:///C:/x/werkstatt-pipeline/docs/index.html');
     gleich('Werkstatt-Kopfzeile: Pipeline hervorgehoben, Drehen und Fraesen als Links mit data-wziel, Ruecksprung zu Drehen',
-      [/<span class="hier"[^>]*>Pipeline</.test(k), /class="wsa" href="\.\.\/\.\.\/Dokumente%20euroturn\/euroturn-kontur-cam\.html" data-wziel="dreh"/.test(k), /data-wziel="fraes"/.test(k), /class="wzur" [^>]*data-wziel="dreh"[^>]*><\/a>|class="wzur"/.test(k), /<b>Drehen: Master<\/b>/.test(k)].join(','), 'true,true,true,true,true'); }
+      [/<span class="hier"[^>]*>Auftr\u00e4ge</.test(k), /class="wsa" href="\.\.\/\.\.\/Dokumente%20euroturn\/euroturn-kontur-cam\.html" data-wziel="dreh"/.test(k), /data-wziel="fraes"/.test(k), /class="wzur" [^>]*data-wziel="dreh"[^>]*><\/a>|class="wzur"/.test(k), /<b>Drehen: Master<\/b>/.test(k)].join(','), 'true,true,true,true,true'); }
   { const t = 1000000, s = {von:'fraes', programm:'DZ1', zeit:t, ziel:'pipeline'};
     gleich('Ruecksprung und Ankunft DOM-frei: hier ja, in der Herkunftsapp nein, nach einem halben Tag nein, Ankunft nur zehn Sekunden',
       [JSON.stringify(huelleRueck('pipeline', s, t + 1)), huelleRueck('fraes', s, t + 1), huelleRueck('pipeline', s, t + 13 * 3600 * 1000), !!huelleAnkunft('pipeline', s, t + 1), huelleAnkunft('pipeline', s, t + 20000)].map(String).join(' | '),
@@ -4992,6 +4992,17 @@ console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus,
     [/\n\.wseg\{ display:none; \}/.test(quelltext), /\n  \.wseg\{ display:flex;/.test(quelltext), /header \.emblem\{ display:none; \}/.test(quelltext), /#wblende\{ position:fixed; inset:0; z-index:9990/.test(quelltext)].join(','), 'true,true,true,true');
   gleich('Start: huelleStart mit dem Namen fuers Ruecksprung-Chip, Ordner-Karte verdrahtet und gestartet',
     [/huelleStart\(\{programm: wHuelleName\}\)/.test(quelltext), /poPipelineVerdrahten\(\); poPipelineStart\(\);/.test(quelltext)].join(','), 'true,true');
+  /* HANDY-RUECKWEG (27.09.2026, Befund vom iPhone): unter 900 px hatte die Pipeline weder Menue
+     noch Leiste. Jetzt haengt das Werkstatt-Menue am Emblem (Oeffner im gemeinsamen Modul mit
+     Rueckfall auf header .emblem), die Leiste steht in der Uebersicht, das Stylesheet kennt beide. */
+  gleich('Handy-Rueckweg: der Menue-Oeffner faellt auf das Pipeline-Emblem zurueck (.hdr .logo || header .emblem)',
+    /document\.querySelector\('\.hdr \.logo'\) \|\| document\.querySelector\('header \.emblem'\)/.test(quelltext), true);
+  gleich('  Menue und Leiste im Stylesheet der Pipeline, die Leiste ab 900 px aus (dort traegt der Schalter)',
+    [/\n\.wmenue\{ position:fixed; z-index:960; display:none;/.test(quelltext), /\n\.wmenue\.auf\{ display:block; \}/.test(quelltext), /\n\.wleiste\{ display:flex;/.test(quelltext), /\n  \.wleiste\{ display:none; \}/.test(quelltext)].join(','), 'true,true,true,true');
+  { const huelleLeisteHtml = hole('huelleLeisteHtml');
+    const l = huelleLeisteHtml ? huelleLeisteHtml('pipeline', 'https://dz-werkstatt.github.io/werkstatt-pipeline/') : '';
+    gleich('  die Leiste aus der Pipeline: Drehen und Fraesen als Ziele mit data-wziel, Pipeline als hier',
+      [(l.match(/class="wl-app" href="https:\/\/dz-werkstatt\.github\.io\/dz-cam\/(fraesen\.html)?" data-wziel="(dreh|fraes)"/g) || []).length, /class="wl-app hier"[^>]*>Auftr\u00e4ge</.test(l), /data-wziel="pipeline"/.test(l)].join(','), '2,true,false'); }
   gleich('Dunkelmodus: der Knopf schreibt den gemeinsamen Schluessel UND den alten', /localStorage\.setItem\('etDunkel', an \? '1' : '0'\); localStorage\.setItem\('wp_dunkel', an \? '1' : '0'\);/.test(quelltext), true);
   ['einOrdnerKarte', 'poStatus', 'poWaehlen', 'poErlauben', 'poSichern', 'poAngebot', 'poLoesen', 'poListe'].forEach(id => {
     if(quelltext.indexOf('id="' + id + '"') > 0) ok('Bedienelement vorhanden: ' + id); else bad('Bedienelement fehlt: ' + id);
@@ -5018,9 +5029,9 @@ console.log('\n38) Drei Dateien, eine Oberflaeche: Huelle, Wechsel, Dunkelmodus,
     const k = huelleKarteHtml('pipeline', {dreh:{name:'Master', schritte:12}, fraes:null}, 'https://dz-werkstatt.github.io/werkstatt-pipeline/');
     gleich('Werkstatt-Karte aus der Pipeline: Drehen mit Stand und Pages-Ziel, Fraesen ehrlich leer, die eigene nicht',
       [/href="https:\/\/dz-werkstatt\.github\.io\/dz-cam\/" data-wziel="dreh"><b>Drehen<\/b><span>Master, 12 Schritte</.test(k), /data-wziel="fraes"><b>Fr\u00e4sen<\/b><span>noch nichts gemerkt</.test(k), /data-wziel="pipeline"/.test(k)].join(','), 'true,true,false');
-    gleich('  der eigene Stand fuer die anderen: Auftraege und ueberfaellige, Einzahl', [huelleStandText('pipeline', {auftraege:10, ueberfaellig:1}), huelleStandText('pipeline', {auftraege:1})].join(' | '), '10 Aufträge, 1 überfällig | 1 Auftrag');
+    gleich('  der eigene Stand fuer die anderen: Auftraege und ueberfaellige, Einzahl', [huelleStandText('pipeline', {auftraege:10, ueberfaellig:1}), huelleStandText('pipeline', {auftraege:1})].join(' | '), '10 offen, 1 überfällig | 1 offen');
     gleich('  Bau: Karte unter 900 px kein Element, in der Uebersicht gemalt, Stand bei leer UND voll gemerkt',
-      [/\n\.wkarte\{ display:none; \}/.test(quelltext), /<div id="ueWerkstatt"><\/div>/.test(quelltext), /htm\('ueWerkstatt', huelleKarteHtml\('pipeline'\)\)/.test(quelltext), /huelleStandMerken\('pipeline', \{auftraege:0, ueberfaellig:0\}\)/.test(quelltext), /huelleStandMerken\('pipeline', \{auftraege:W\.auftraege\.length, ueberfaellig:u\.zahlen\.ueberfaellig \|\| 0\}\)/.test(quelltext)].join(','), 'true,true,true,true,true'); }
+      [/\n\.wkarte\{ display:none; \}/.test(quelltext), /<div id="ueWerkstatt"><\/div>/.test(quelltext), /htm\('ueWerkstatt', huelleLeisteHtml\('pipeline'\) \+ huelleKarteHtml\('pipeline'\)\)/.test(quelltext), /huelleStandMerken\('pipeline', \{auftraege:0, ueberfaellig:0\}\)/.test(quelltext), /huelleStandMerken\('pipeline', \{auftraege:W\.auftraege\.length, ueberfaellig:u\.zahlen\.ueberfaellig \|\| 0\}\)/.test(quelltext)].join(','), 'true,true,true,true,true'); }
   gleich('Anleitung: Werkstatt-Absatz in Kap. 8, Projektordner und gemeinsamer Dunkelmodus in Kap. 9',
     [/<h3 id="ba-08-werkstatt">/.test(quelltext), /<p><b>Projektordner<\/b> \(seit 26\.09\.2026, Blatt 5\)/.test(quelltext), /Seit dem 26\.09\.2026 ist die Einstellung <b>gemeinsam<\/b>/.test(quelltext)].join(','), 'true,true,true');
 }
