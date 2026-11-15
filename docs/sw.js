@@ -1,6 +1,6 @@
 // Offline-Cache der Werkstatt-Pipeline. DER NAME TRAEGT DEN STAND: nur ein
 // geaendertes Skript installiert den Worker neu und holt alle Dateien frisch.
-const STAND='14.11.2026 18:06 (3526e7f7)';
+const STAND='15.11.2026 11:31 (a2e8b3ec)';
 const CACHE='wp-'+STAND.replace(/[^0-9a-f]/gi,'');
 // KEIN ./ in der Liste: ein Server ohne Verzeichnis-Index laesst sonst die
 // GANZE Installation platzen; Navigationen fallen unten auf index.html zurueck.
